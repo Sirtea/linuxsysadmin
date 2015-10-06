@@ -25,6 +25,7 @@ LINKS = (
 
 # Social widget
 SOCIAL = (
+    ('GitHub', 'https://github.com/sirtea'),
 )
 
 DEFAULT_PAGINATION = 5
