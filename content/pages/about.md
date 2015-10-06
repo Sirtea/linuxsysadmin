@@ -15,6 +15,6 @@ ayudándoles en sus pasos autodidactas en el mundo de la tecnología.
 
 No voy entrar en detalles personales por lo mucho que me incomoda;
 queda a vuestro buen juicio haceros a la idea. Agradezco la visita y
-los comentarios, y espero algo de aquí os sea útil.
+los comentarios, y espero que algo de aquí os sea útil.
 
 ***Gerard Monells***
