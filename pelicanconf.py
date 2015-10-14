@@ -62,7 +62,7 @@ DEFAULT_DATE_FORMAT = '%Y-%m-%d'
 
 # Settings de plugins
 PLUGIN_PATHS = ['../../plugins']
-PLUGINS = ['sitemap', 'tag_cloud', 'related_posts']
+PLUGINS = ['sitemap', 'tag_cloud', 'related_posts', 'series']
 
 RELATED_POSTS_MAX = 3
 
