@@ -8,8 +8,9 @@ Tags: linux, debian, jessie, lxc, bridge, firehol
 
 En este tutorial se propone montar un servidor de contenedores LXC,
 de forma que todos los contenedores queden expuestos a la misma red
-que el servidor que los aloja. Evidentemente, todas quedan protegidas
-por un firewall ante los ataques de dicha red.
+que el servidor que los aloja. Para protegerlos de posibles ataques
+de esta red, pondremos un firewall basado en *iptables* mediante una
+capa de abstracción llamada *firehol*.
 
 Para conseguir este objetivo, se van a usar las siguientes tecnologías:
 
