@@ -82,7 +82,7 @@ SITEMAP = {
 
 # Settings del theme
 THEME = '../../themes/pelican-bootstrap3'
-BOOTSTRAP_THEME = 'slate'
+BOOTSTRAP_THEME = 'cosmo'
 PYGMENTS_STYLE = 'vim'
 SHOW_ARTICLE_AUTHOR = True
 SHOW_ARTICLE_CATEGORY = True
