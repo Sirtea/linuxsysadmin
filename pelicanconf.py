@@ -107,6 +107,3 @@ EXTRA_PATH_METADATA = {
     'extra/CNAME': {'path': 'CNAME'},
     'extra/google85de17e42482bf61': {'path': 'google85de17e42482bf61.html'},
 }
-
-# Settings de cookie consent
-COOKIE_TEXT = 'De acuerdo a la ley vigente, estoy obligado a informarte de la obviedad de que este sitio utiliza cookies.'

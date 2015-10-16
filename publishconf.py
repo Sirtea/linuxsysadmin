@@ -22,3 +22,6 @@ DELETE_OUTPUT_DIRECTORY = True
 
 DISQUS_SITENAME = "linuxsysadmin-gmb"
 GOOGLE_ANALYTICS = "UA-68486572-1"
+
+# Settings de cookie consent
+COOKIE_TEXT = 'De acuerdo a la ley vigente, estoy obligado a informarte de la obviedad de que este sitio utiliza cookies.'
