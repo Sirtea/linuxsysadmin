@@ -6,7 +6,7 @@ Tags: linux, debian, jessie, firehol, port knocking, ssh, nmap
 
 
 
-En este arículo vamos a enseñar como ocultar un puerto tras el firewall,
+En este artículo vamos a enseñar como ocultar un puerto tras el firewall,
 de forma que solamente se abra tras utilizar el protocolo *port knocking*.
 Las tecnologías usadas van a ser *firehol* como firewall y el demonio
 *knockd* ocultando el *SSH*, aunque vamos a permitir acceder al puerto
@@ -28,7 +28,7 @@ El hardware va a ser uno con capacidades limitadas, virtualizado en VirtualBox.
 * **Disco**: 2 Gb
 * **Red**: 1 interfaz (*eth0*) *host-only* o *bridged* con IP fija
 
-La intalación base es una *Debian* mínima instalada con el CD netinstall,
+La instalación base es una *Debian* mínima instalada con el CD netinstall,
 con todo desmarcado y con el servidor de *SSH* previamente instalado.
 
 ## Instalación del servidor
