@@ -1,7 +1,7 @@
 Title: Liberando memoria caché
 Slug: liberando-memoria-cache
 Date: 2015-11-02 14:00
-Category: Optimización
+Category: Operaciones
 Tags: linux, kernel, memory manager, drop caches
 
 

@@ -1,7 +1,7 @@
 Title: Restart automático de servicios con systemd
 Slug: restart-automatico-de-servicios-con-systemd
 Date: 2015-11-05 22:30
-Category: Sistemas
+Category: Operaciones
 Tags: linux, debian, jessie, systemd, nginx
 
 
