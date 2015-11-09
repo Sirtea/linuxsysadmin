@@ -64,7 +64,10 @@ DEFAULT_DATE_FORMAT = '%Y-%m-%d'
 PLUGIN_PATHS = ['../../plugins']
 PLUGINS = ['sitemap', 'tag_cloud', 'related_posts', 'series']
 
+RELATED_POSTS_TEXT = 'Posts relacionados:'
 RELATED_POSTS_MAX = 3
+
+SERIES_TEXT = 'Parte %(index)s de la serie "%(name)s"'
 
 SITEMAP = {
     'format': 'xml',
