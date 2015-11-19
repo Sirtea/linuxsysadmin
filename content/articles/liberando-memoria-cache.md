@@ -6,11 +6,7 @@ Tags: linux, kernel, memory manager, drop caches
 
 
 
-A veces nos encontramos que nuestro sistema linux parece tener la
-memoria *virtual* ocupada, cuando no tenemos nada de memoria *RSS*;
-esto no es un problema, ya que por la forma de funcionar del
-*memory manager* de linux, se conserva "por si acaso" y se libera
-cuando realmente se necesita.
+A veces nos encontramos que nuestro sistema linux parece tener la memoria *virtual* ocupada, cuando no tenemos nada de memoria *RSS*; esto no es un problema, ya que por la forma de funcionar del *memory manager* de linux, se conserva "por si acaso" y se libera cuando realmente se necesita.
 
 ```bash
 gerard@desktop:~$ free -m
@@ -21,13 +17,9 @@ Swap:         2381          0       2381
 gerard@desktop:~$ 
 ```
 
-Sin embargo este detalle nos puede resultar molesto y puede que queramos
-**liberar** esa memoria de verdad, por ejemplo, para comparar memoria
-real ocupada por el sistema o sencillamente porque así lo queremos.
+Sin embargo este detalle nos puede resultar molesto y puede que queramos **liberar** esa memoria de verdad, por ejemplo, para comparar memoria real ocupada por el sistema o sencillamente porque así lo queremos.
 
-En este caso no tenemos mas remedio que solicitar el *memory manager*
-que la libere, escribiendo en el fichero de control habilitado para ello,
-de acuerdo a la [documentación del *kernel* de linux](https://www.kernel.org/doc/Documentation/sysctl/vm.txt).
+En este caso no tenemos mas remedio que solicitar el *memory manager* que la libere, escribiendo en el fichero de control habilitado para ello, de acuerdo a la [documentación del *kernel* de linux](https://www.kernel.org/doc/Documentation/sysctl/vm.txt).
 
 ```bash
 drop_caches
@@ -50,18 +42,14 @@ number of dirty objects on the system and create more candidates to be
 dropped.
 ```
 
-Este fichero viene por defecto con permisos de escritura solamente para
-el usuario **root** y no se puede escribir sin el mismo. Como no queremos
-trabajar con el usuario **root**, vamos a usar el comando *sudo* con un
-usuario normal:
+Este fichero viene por defecto con permisos de escritura solamente para el usuario **root** y no se puede escribir sin el mismo. Como no queremos trabajar con el usuario **root**, vamos a usar el comando *sudo* con un usuario normal:
 
 ```bash
 gerard@desktop:~$ sudo bash -c "echo 3 > /proc/sys/vm/drop_caches"
 gerard@desktop:~$ 
 ```
 
-Alternativamente, podemos utilizar el comando *tee* para realizar la
-misma operación, sin el envoltorio de *bash*:
+Alternativamente, podemos utilizar el comando *tee* para realizar la misma operación, sin el envoltorio de *bash*:
 
 ```bash
 gerard@desktop:~$ echo 3 | sudo tee /proc/sys/vm/drop_caches
@@ -69,8 +57,7 @@ gerard@desktop:~$ echo 3 | sudo tee /proc/sys/vm/drop_caches
 gerard@desktop:~$ 
 ```
 
-Y finalmente nuestra memoria queda vacía de todo aquello que no era
-indispensable para la ejecución del sistema.
+Y finalmente nuestra memoria queda vacía de todo aquello que no era indispensable para la ejecución del sistema.
 
 ```bash
 gerard@desktop:~$ free -m
@@ -83,6 +70,4 @@ gerard@desktop:~$
 
 ¡Acabamos de liberar 2 gigabytes de memoria!
 
-**CUIDADO**: Esta operación puede afectar el rendimiento puntual del
-sistema, ya que en caso de volver a necesitar la información *cacheada*,
-deberá volver a recargar la memoria, probablemente desde disco.
+**CUIDADO**: Esta operación puede afectar el rendimiento puntual del sistema, ya que en caso de volver a necesitar la información *cacheada*, deberá volver a recargar la memoria, probablemente desde disco.

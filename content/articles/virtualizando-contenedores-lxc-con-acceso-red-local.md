@@ -6,11 +6,7 @@ Tags: linux, debian, jessie, lxc, bridge, firehol
 
 
 
-En este tutorial se propone montar un servidor de contenedores LXC,
-de forma que todos los contenedores queden expuestos a la misma red
-que el servidor que los aloja. Para protegerlos de posibles ataques
-de esta red, pondremos un firewall basado en *iptables* mediante una
-capa de abstracción llamada *firehol*.
+En este tutorial se propone montar un servidor de contenedores LXC, de forma que todos los contenedores queden expuestos a la misma red que el servidor que los aloja. Para protegerlos de posibles ataques de esta red, pondremos un firewall basado en *iptables* mediante una capa de abstracción llamada *firehol*.
 
 Para conseguir este objetivo, se van a usar las siguientes tecnologías:
 
@@ -19,16 +15,14 @@ Para conseguir este objetivo, se van a usar las siguientes tecnologías:
 * **Bridges**: Un bridge es en software el equivalente a un switch hardware
 * **Firehol**: Una serie de scripts para construir firewalls basados en iptables de forma fácil
 
-En cuanto a las capacidades hardware, vamos a hacer el tutorial con un equipo
-de capacidades modestas, virtualizado en una máquina virtual VirtualBox.
+En cuanto a las capacidades hardware, vamos a hacer el tutorial con un equipo de capacidades modestas, virtualizado en una máquina virtual VirtualBox.
 
 * **CPUs**: 1
 * **Memoria**: 256 Mb
 * **Disco**: 2 Gb
 * **Red**: 1 interfaz (*eth0*) *host-only* o *bridged* con IP fija
 
-Partimos de una distribución *Debian jessie* instalada con un CD *netinstall*
-y con el único paquete instalado *openssh-server*, para mi comodidad.
+Partimos de una distribución *Debian jessie* instalada con un CD *netinstall* y con el único paquete instalado *openssh-server*, para mi comodidad.
 
 ## Preparar el servidor
 
@@ -47,9 +41,7 @@ Procesando disparadores para systemd (215-17+deb8u2) ...
 root@lxc:~# 
 ```
 
-Acto seguido debemos modificar la configuración de red, para que la interfaz
-de red de la máquina represente la salida de todas las IPs que maneja el bridge
-y para que el host obtenga una dirección de red en el bridge.
+Acto seguido debemos modificar la configuración de red, para que la interfaz de red de la máquina represente la salida de todas las IPs que maneja el bridge y para que el host obtenga una dirección de red en el bridge.
 
 **ANTES**:
 
@@ -86,8 +78,7 @@ iface lxc0 inet static
 root@lxc:~# 
 ```
 
-En este punto es necesario reconfigurar la red, siendo especialmente importante
-que *eth0* quede sin dirección IP asignada (en mi caso tuve que reiniciar la máquina).
+En este punto es necesario reconfigurar la red, siendo especialmente importante que *eth0* quede sin dirección IP asignada (en mi caso tuve que reiniciar la máquina).
 
 ```bash
 root@lxc:~# ip addr
@@ -108,11 +99,7 @@ root@lxc:~# ip addr
 root@lxc:~# 
 ```
 
-El último paso consiste en activar el firewall con unas reglas básicas,
-para proteger el equipo anfitrión de posibles ataques o intrusiones, dejando
-solamente el acceso a SSH. Con firehol es posible combinar el demonio *knockd*
-para ocultar el puerto tras una secuencia de port knocking; en principio
-sería suficiente con forzar la entrada SSH por claves RSA.
+El último paso consiste en activar el firewall con unas reglas básicas, para proteger el equipo anfitrión de posibles ataques o intrusiones, dejando solamente el acceso a SSH. Con firehol es posible combinar el demonio *knockd* para ocultar el puerto tras una secuencia de port knocking; en principio sería suficiente con forzar la entrada SSH por claves RSA.
 
 ```bash
 root@lxc:~# cat /etc/firehol/firehol.conf 
@@ -161,14 +148,9 @@ root@lxc:~#
 
 ## Creación de contenedores
 
-La creación de contenedores pasa por usar las herramientas estándar
-de la distribución, a lo solo tendremos que modificar algunas
-configuraciones propias de nuestra red.
+La creación de contenedores pasa por usar las herramientas estándar de la distribución, a lo solo tendremos que modificar algunas configuraciones propias de nuestra red.
 
-Creamos un contenedor *webserver* como demostración. La primera que se
-crea es un poco lenta porque hace un *debootstrap* de una distribución
-debian estable para crear una cache en */var/cache/lxc*; las siguientes
-se benefician de esta caché y solo la actualizan, acelerando el proceso.
+Creamos un contenedor *webserver* como demostración. La primera que se crea es un poco lenta porque hace un *debootstrap* de una distribución debian estable para crear una cache en */var/cache/lxc*; las siguientes se benefician de esta caché y solo la actualizan, acelerando el proceso.
 
 ```bash
 root@lxc:~# lxc-create -n webserver -t debian
@@ -188,9 +170,7 @@ Root password is 'sFj7Jm9N', please change !
 root@lxc:~# 
 ```
 
-Acabada la generación del contenedor, vamos a configurarle algunos
-parámetros; que tenga una interfaz *eth0* activa y enchufada al bridge
-*lxc0*, y que el contenedor se autoinicie en cada reinicio del anfitrión.
+Acabada la generación del contenedor, vamos a configurarle algunos parámetros; que tenga una interfaz *eth0* activa y enchufada al bridge *lxc0*, y que el contenedor se autoinicie en cada reinicio del anfitrión.
 
 ```bash
 root@lxc:~# cat /var/lib/lxc/webserver/config 
@@ -203,10 +183,7 @@ lxc.network.name = eth0
 root@lxc:~# 
 ```
 
-Y para que su interfaz de red sea funcional, vamos a configurarle una
-dirección IP. Todo esto se hace en los ficheros habituales, teniendo
-en cuenta que un contenedor es una jaula, y que esta se encuentra en
-*/var/lib/lxc/webserver/rootfs/*
+Y para que su interfaz de red sea funcional, vamos a configurarle una dirección IP. Todo esto se hace en los ficheros habituales, teniendo en cuenta que un contenedor es una jaula, y que esta se encuentra en */var/lib/lxc/webserver/rootfs/*
 
 ```bash
 root@lxc:~# cat /var/lib/lxc/webserver/rootfs/etc/network/interfaces
@@ -228,19 +205,11 @@ root@lxc:~# lxc-start -n webserver -d
 root@lxc:~# 
 ```
 
-Sin embargo, el firewall impide que se llegue al mismo; tendremos que
-poner reglas para permitir el flujo de red hacia la nueva dirección IP
-configurada para el contenedor. Esto se consigue con reglas de *forward*
-que entren por el bridge y salgan por el mismo hacia nuestro contenedor.
+Sin embargo, el firewall impide que se llegue al mismo; tendremos que poner reglas para permitir el flujo de red hacia la nueva dirección IP configurada para el contenedor. Esto se consigue con reglas de *forward* que entren por el bridge y salgan por el mismo hacia nuestro contenedor.
 
-Ya de paso habilitamos reglas para que todo lo que pase por el bridge
-hacia internet se permita. Como particularidad de nuestra red, el
-servidor anfitrión tiene un servidor DNS *dnsmasq*; así que añadimos
-también esa ruta.
+Ya de paso habilitamos reglas para que todo lo que pase por el bridge hacia internet se permita. Como particularidad de nuestra red, el servidor anfitrión tiene un servidor DNS *dnsmasq*; así que añadimos también esa ruta.
 
-Por ejemplo, suponiendo que queremos habilitar el servicio *SSH* (tcp 22)
-y el puerto del servicio *HTTP* (tcp 80), pondremos lo siguiente en la
-configuración del firewall (tras lo cual lo reiniciaremos):
+Por ejemplo, suponiendo que queremos habilitar el servicio *SSH* (tcp 22) y el puerto del servicio *HTTP* (tcp 80), pondremos lo siguiente en la configuración del firewall (tras lo cual lo reiniciaremos):
 
 ```bash
 root@lxc:~# cat /etc/firehol/firehol.conf 
@@ -275,9 +244,7 @@ Message from syslogd@lxc at Oct 14 17:43:38 ...
 root@lxc:~# 
 ```
 
-Y solamente queda entrar al contenedor, por ejemplo por *SSH* para
-instalar lo que se necesite; en este caso con un *nginx* sería
-suficiente como demostración.
+Y solamente queda entrar al contenedor, por ejemplo por *SSH* para instalar lo que se necesite; en este caso con un *nginx* sería suficiente como demostración.
 
 ```bash
 gerard@workstation:~$ ssh root@192.168.56.10
@@ -309,5 +276,4 @@ Procesando disparadores para systemd (215-17+deb8u2) ...
 root@webserver:~# 
 ```
 
-Y con esto ya tenemos nuestro contenedor en marcha y ofreciendo
-servicios en nuestra red local de forma segura.
+Y con esto ya tenemos nuestro contenedor en marcha y ofreciendo servicios en nuestra red local de forma segura.
