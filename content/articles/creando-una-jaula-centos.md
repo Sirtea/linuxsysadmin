@@ -91,6 +91,18 @@ Complete!
 [root@mars ~]#
 ```
 
+Si queremos una jaula mas mínima todavía, en vez de *yum* podemos instalar los paquetes necesarios, dejando que las dependencias hagan el resto:
+
+```bash
+[root@mars ~]# yum --installroot=${JAIL} install bash httpd
+```
+
+Alternativamente, se puede construir una jaula completa instalando el grupo *core* en vez de *yum*:
+
+```bash
+[root@mars ~]# yum --installroot=${JAIL} groupinstall core
+```
+
 Ya tenemos la jaula; es un buen momento para sacar una copia  de la carpeta.
 
 ## Uso de la jaula
