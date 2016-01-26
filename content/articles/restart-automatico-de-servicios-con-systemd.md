@@ -56,7 +56,7 @@ root@server:~#
 En caso de ser una **unit** escrita por nosotros, se encontraría en */etc/systemd/system/*. Esta es la convención:
 
 * */lib/systemd/system/* &rarr; **units** de sistema, puestas por los paquetes instalados
-* */lib/systemd/system/* &rarr; **units** o **overrides** puestos por el usuario (nosotros)
+* */etc/systemd/system/* &rarr; **units** o **overrides** puestos por el usuario (nosotros)
 
 Para añadir nuevas directivas (**overrides**) a una **unit** sin reescribirla entera, basta con crear una carpeta con su mismo nombre, concatenando **.d**. Dentro podemos poner tantos ficheros *.conf* como creamos necesarios, añadiendo las directivas que queramos añadir o modificar.
 
