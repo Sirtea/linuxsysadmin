@@ -101,6 +101,7 @@ CUSTOM_CSS = 'static/custom.css'
 # Static paths
 STATIC_PATHS = [
     'images',
+    'downloads',
     'extra/custom.css',
     'extra/CNAME',
     'extra/google85de17e42482bf61',
