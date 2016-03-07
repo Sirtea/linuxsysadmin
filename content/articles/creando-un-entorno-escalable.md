@@ -21,7 +21,7 @@ Esto es lo que propongo montar:
 
 ![Entorno propuesto]({filename}/images/entorno_propuesto.png)
 
-Para ello, vamos a crear las máquinas virtuales necesarias. En este caso, voy a usar mi servidor de **virtualización con LXC**, tal como lo monté en [este artículo](/2015/11/virtualizando-contenedores-lxc-tras-bridge-interno.html).
+Para ello, vamos a crear las máquinas virtuales necesarias. En este caso, voy a usar mi servidor de **virtualización con LXC**, tal como lo monté en [este artículo]({filename}/articles/virtualizando-contenedores-lxc-tras-bridge-interno.md).
 
 ```bash
 root@lxc:~# lxc-ls -f

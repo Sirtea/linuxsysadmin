@@ -128,7 +128,7 @@ Añadir un paquete a nuestro repositorio es tan fácil como invocar el comando *
 
 **WARNING**: Si se pone un paquete empaquetado por nosotros, es importante que su fichero *control* incluya las directivas *Section* y *Priority*, normalmente solo recomendadas, pero necesarias para **reprepro**.
 
-Por ejemplo, podemos usar el paquete de un [artículo anterior](/2015/12/empaquetando-ficheros-punto-deb.html).
+Por ejemplo, podemos usar el paquete de un [artículo anterior]({filename}/articles/empaquetando-ficheros-punto-deb.md).
 
 ```bash
 root@repository:/opt/repo# reprepro --distdir ./public/dists --outdir ./public includedeb linuxsysadmin /root/welcome_1.0-1_all.deb 

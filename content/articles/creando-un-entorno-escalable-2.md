@@ -9,7 +9,7 @@ Series: Creando un entorno escalable
 
 Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un *cluster* de bases de datos; será **mongodb** porque la aplicación lo requiere y usará la topología de un **replica set**.
 
-Este artículo se basa enormemente en [otro artículo](/2015/12/construyendo-una-replica-set-en-mongodb.html) que ya publicamos, al que vamos a añadir algunas mejoras reflejadas en otros.
+Este artículo se basa enormemente en [otro artículo]({filename}/articles/construyendo-una-replica-set-en-mongodb.md) que ya publicamos, al que vamos a añadir algunas mejoras reflejadas en otros.
 
 Como ya vimos en el artículo referido, solo necesitamos levantar un proceso *mongod* en cada una de las máquinas, para posteriormente casarlos entre sí.
 
@@ -56,7 +56,7 @@ replication:
 root@mongo1:~#
 ```
 
-**Truco**: Es un buen momento para montar un sistema de ficheros alternativo para almacenar los datos, sea poner [LVM](/2016/01/lvm-logical-volume-manager.html) (para tener crecimiento dinámico o [snapshots](/2016/02/haciendo-snapshots-con-lvm.html), sea un [RAID](/2015/12/construyendo-un-raid-10-en-linux.html) (por ejemplo para tener alto rendimiento y/o replicación de datos), o incluso ambos.
+**Truco**: Es un buen momento para montar un sistema de ficheros alternativo para almacenar los datos, sea poner [LVM]({filename}/articles/lvm-logical-volume-manager.md) (para tener crecimiento dinámico o [snapshots]({filename}/articles/haciendo-snapshots-con-lvm.md), sea un [RAID]({filename}/articles/construyendo-un-raid-10-en-linux.md) (por ejemplo para tener alto rendimiento y/o replicación de datos), o incluso ambos.
 
 Cumpliendo con una política de seguridad básica, vamos a crear un usuario de sistema para correr el proceso.
 

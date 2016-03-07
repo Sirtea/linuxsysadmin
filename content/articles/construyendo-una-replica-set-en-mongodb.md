@@ -32,7 +32,7 @@ Estas máquinas se comunican entre sí por el puerto TCP en el que corran sus pr
 
 ## Preparación de las máquinas individuales
 
-Queremos una versión de *mongodb* un poco reciente, así que no vamos a usar los paquetes oficiales de la distribución, y la empresa de *mongodb* no ofrece paquete para *Debian jessie*. Por ello vamos a montar un esqueleto de ficheros como se describe en [un artículo anterior](http://www.linuxsysadmin.tk/2015/11/escribiendo-units-en-systemd.html). Vamos a describir el proceso en la máquina **mongo1**, para replicarlo a posteriori en las otras 2.
+Queremos una versión de *mongodb* un poco reciente, así que no vamos a usar los paquetes oficiales de la distribución, y la empresa de *mongodb* no ofrece paquete para *Debian jessie*. Por ello vamos a montar un esqueleto de ficheros como se describe en [un artículo anterior]({filename}/articles/escribiendo-units-en-systemd.md). Vamos a describir el proceso en la máquina **mongo1**, para replicarlo a posteriori en las otras 2.
 
 Creamos la estructura de carpetas que van a contener todo lo relativo a **mongodb**.
 
