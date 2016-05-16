@@ -1,5 +1,5 @@
 Title: Reduciendo el tamaño de nuestros binarios con musl libc
-Slug: reduciendo-el tamano-de-nuestros-binarios-con-musl-libc
+Slug: reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc
 Date: 2016-05-16 13:00
 Category: Seguridad
 Tags: linux, musl, libc, chroot, jaula
