@@ -131,7 +131,7 @@ gerard@seginus:~/docker/jenkins_ansible$
 Levantamos un contenedor para la nueva imagen creada, de la misma forma que levantaríamos la imagen de **Jenkins** oficial. Mas información en [Docker Hub](https://hub.docker.com/_/jenkins/).
 
 ```bash
-gerard@seginus:~/docker/jenkins_ansible$ docker run -p 8080:8080 -d jenkins
+gerard@seginus:~/docker/jenkins_ansible$ docker run -p 8080:8080 -d jenkins_ansible
 f9b6a9d23fde25411cd2086d13b7a171633eb2cf0b18295fde89c4466c08ef54
 gerard@seginus:~/docker/jenkins_ansible$ 
 ```
