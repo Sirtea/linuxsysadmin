@@ -51,7 +51,7 @@ El *script* de *build* va a depender bastante de como se prepara nuestra aplicac
 
 ```bash
 gerard@sirius:~/docker/autobuilder$ cat builder/build.sh 
-#/bin/sh
+#!/bin/sh
 
 mkdir /app
 git clone ${REPO} /build
