@@ -1,0 +1,386 @@
+Title: Un escáner SSL con sslyze
+Slug: un-escaner-ssl-con-sslyze
+Date: 2017-01-30 10:00
+Category: Seguridad
+Tags: sslyze, python, pentest
+
+
+
+El otro día cayó en mis manos un escaneo de la plataforma para uno de los servicios que gestiono. No voy a dar detalles al respecto en virtud del acuerdo de confidencialidad que mantengo con ellos, pero consideré interesante una de las herramientas que usaron para testear el dominio SSL.
+
+Se trata de una herramienta llamada **sslyze** y hecha en **python**, que podemos encontrar en [PyPI](https://pypi.python.org/pypi/SSLyze) y que podemos instalar con un simple `pip install sslyze`. La parte mala es que tiene extensiones escritas en lenguaje C, que necesitan compilarse y requieren de otras librerías, además del compilador.
+
+Como me gusta mantener mi entorno minimalista, decidí crear una imagen con **Docker**, para disponer de ella cuando la necesite y poder deshacerme de ella cuando no. Este es el *Dockerfile* que he usado:
+
+```bash
+gerard@marcopolo:~$ cat sslyze/Dockerfile 
+FROM alpine:3.4
+RUN apk add --no-cache py-pip gcc python-dev musl-dev && \
+    pip install sslyze && \
+    apk del gcc python-dev musl-dev
+ENTRYPOINT ["/usr/bin/sslyze", "--regular"]
+CMD ["-h"]
+gerard@marcopolo:~$ 
+```
+
+De esta manera puedo lanzar la imagen sin especificar los parámetros; por defecto va a ejecutar `sslyze --regular -h` para darnos una idea de lo que debemos hacer. En caso de especificar uno o más dominios después de la imagen durante el `docker run`, se lanza su escaneo directamente.
+
+Construimos la imagen de la forma habitual:
+
+```bash
+gerard@marcopolo:~$ docker build -t sslyze sslyze/
+Sending build context to Docker daemon 2.048 kB
+Step 1 : FROM alpine:3.4
+ ---> baa5d63471ea
+Step 2 : RUN apk add --no-cache py-pip gcc python-dev musl-dev &&     pip install sslyze &&     apk del gcc python-dev musl-dev
+ ---> Running in 21a5ddf65843
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.4/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.4/community/x86_64/APKINDEX.tar.gz
+(1/29) Upgrading musl (1.1.14-r12 -> 1.1.14-r14)
+(2/29) Installing binutils-libs (2.26-r0)
+(3/29) Installing binutils (2.26-r0)
+(4/29) Installing gmp (6.1.0-r0)
+(5/29) Installing isl (0.14.1-r0)
+(6/29) Installing libgomp (5.3.0-r0)
+(7/29) Installing libatomic (5.3.0-r0)
+(8/29) Installing libgcc (5.3.0-r0)
+(9/29) Installing pkgconf (0.9.12-r0)
+(10/29) Installing pkgconfig (0.25-r1)
+(11/29) Installing mpfr3 (3.1.2-r0)
+(12/29) Installing mpc1 (1.0.3-r0)
+(13/29) Installing libstdc++ (5.3.0-r0)
+(14/29) Installing gcc (5.3.0-r0)
+(15/29) Upgrading musl-utils (1.1.14-r12 -> 1.1.14-r14)
+(16/29) Installing musl-dev (1.1.14-r14)
+(17/29) Installing libbz2 (1.0.6-r5)
+(18/29) Installing expat (2.1.1-r1)
+(19/29) Installing libffi (3.2.1-r2)
+(20/29) Installing gdbm (1.11-r1)
+(21/29) Installing ncurses-terminfo-base (6.0-r7)
+(22/29) Installing ncurses-terminfo (6.0-r7)
+(23/29) Installing ncurses-libs (6.0-r7)
+(24/29) Installing readline (6.3.008-r4)
+(25/29) Installing sqlite-libs (3.13.0-r0)
+(26/29) Installing python (2.7.12-r0)
+(27/29) Installing py-setuptools (20.8.0-r0)
+(28/29) Installing py-pip (8.1.2-r0)
+(29/29) Installing python-dev (2.7.12-r0)
+Executing busybox-1.24.2-r11.trigger
+OK: 150 MiB in 38 packages
+Collecting sslyze
+  Downloading SSLyze-0.14.1.tar.gz (1.1MB)
+Collecting nassl<0.15.0,>=0.14.0 (from sslyze)
+  Downloading nassl-0.14.1.tar.gz (15.2MB)
+Installing collected packages: nassl, sslyze
+  Running setup.py install for nassl: started
+    Running setup.py install for nassl: finished with status 'done'
+  Running setup.py install for sslyze: started
+    Running setup.py install for sslyze: finished with status 'done'
+Successfully installed nassl-0.14.1 sslyze-0.14.1
+You are using pip version 8.1.2, however version 9.0.1 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+WARNING: Ignoring APKINDEX.167438ca.tar.gz: No such file or directory
+WARNING: Ignoring APKINDEX.a2e6dac0.tar.gz: No such file or directory
+(1/15) Purging gcc (5.3.0-r0)
+(2/15) Purging binutils (2.26-r0)
+(3/15) Purging isl (0.14.1-r0)
+(4/15) Purging libatomic (5.3.0-r0)
+(5/15) Purging musl-dev (1.1.14-r14)
+(6/15) Purging python-dev (2.7.12-r0)
+(7/15) Purging pkgconfig (0.25-r1)
+(8/15) Purging pkgconf (0.9.12-r0)
+(9/15) Purging binutils-libs (2.26-r0)
+(10/15) Purging mpc1 (1.0.3-r0)
+(11/15) Purging mpfr3 (3.1.2-r0)
+(12/15) Purging gmp (6.1.0-r0)
+(13/15) Purging libgomp (5.3.0-r0)
+(14/15) Purging libstdc++ (5.3.0-r0)
+(15/15) Purging libgcc (5.3.0-r0)
+Executing busybox-1.24.2-r11.trigger
+OK: 61 MiB in 23 packages
+ ---> 27687d30520b
+Removing intermediate container 21a5ddf65843
+Step 3 : ENTRYPOINT /usr/bin/sslyze --regular
+ ---> Running in 6ee35651756c
+ ---> 0199b0fde79a
+Removing intermediate container 6ee35651756c
+Step 4 : CMD -h
+ ---> Running in 2e53a6f5f90b
+ ---> 8e493a176b44
+Removing intermediate container 2e53a6f5f90b
+Successfully built 8e493a176b44
+gerard@marcopolo:~$ 
+```
+
+Vamos a lanzar dos veces el escaneo, contra dos conocidos dominios, solo para ver como funciona. El primero es el dominio español de [Google](https://www.google.es/). Este no presenta vulnerabilidades y su alta disponibilidad nos permite hacer pruebas de forma indiscriminada.
+
+```bash
+gerard@marcopolo:~$ docker run -ti --rm sslyze www.google.es
+
+
+
+ AVAILABLE PLUGINS
+ -----------------
+
+  CertificateInfoPlugin
+  SessionRenegotiationPlugin
+  HttpHeadersPlugin
+  OpenSslCcsInjectionPlugin
+  OpenSslCipherSuitesPlugin
+  FallbackScsvPlugin
+  SessionResumptionPlugin
+  CompressionPlugin
+  HeartbleedPlugin
+
+
+
+ CHECKING HOST(S) AVAILABILITY
+ -----------------------------
+
+   www.google.es:443                       => 216.58.208.195 
+
+
+
+ SCAN RESULTS FOR WWW.GOOGLE.ES:443 - 216.58.208.195:443
+ -------------------------------------------------------
+
+  * TLSV1_1 Cipher Suites:
+      Preferred:                       
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 200 OK                                                 
+
+  * TLSV1_2 Cipher Suites:
+      Preferred:                       
+        OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256   ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384             ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        OLD_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256   ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384             ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_256_CBC_SHA256                   -              256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_256_GCM_SHA384                   -              256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256             ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256             ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_128_CBC_SHA256                   -              128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_128_GCM_SHA256                   -              128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 200 OK                                                 
+
+  * Session Renegotiation:
+      Client-initiated Renegotiation:    OK - Rejected
+      Secure Renegotiation:              OK - Supported
+
+  * Deflate Compression:
+                                         OK - Compression disabled
+
+  * Session Resumption:
+      With Session IDs:                  OK - Supported (5 successful, 0 failed, 0 errors, 5 total attempts).
+      With TLS Tickets:                  OK - Supported
+
+  * SSLV3 Cipher Suites:
+      Server rejected all cipher suites.
+
+  * OpenSSL Heartbleed:
+                                         OK - Not vulnerable to Heartbleed
+
+  * OpenSSL CCS Injection:
+                                         OK - Not vulnerable to OpenSSL CCS injection
+
+  * SSLV2 Cipher Suites:
+      Server rejected all cipher suites.
+
+  * Downgrade Attacks:
+      TLS_FALLBACK_SCSV:                 OK - Supported
+
+  * TLSV1 Cipher Suites:
+      Preferred:                       
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 200 OK                                                 
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 200 OK                                                 
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 200 OK                                                 
+
+  * Certificate Basic Information:
+      SHA1 Fingerprint:                  cdce30907e101061671f2c17c5e445c3dadf0d00
+      Common Name:                       *.google.es
+      Issuer:                            Google Internet Authority G2
+      Serial Number:                     7B527383A3925A33
+      Not Before:                        Nov 10 15:30:00 2016 GMT
+      Not After:                         Feb  2 15:30:00 2017 GMT
+      Signature Algorithm:               sha256WithRSAEncryption
+      Public Key Algorithm:              rsaEncryption
+      Key Size:                          2048
+      Exponent:                          65537 (0x10001)
+      X509v3 Subject Alternative Name:   {'DNS': ['*.google.es', 'google.es']}
+
+  * Certificate - Trust:
+      Hostname Validation:               OK - Subject Alternative Name matches www.google.es
+      Mozilla NSS CA Store (09/2016):    OK - Certificate is trusted
+      Microsoft CA Store (09/2016):      OK - Certificate is trusted
+      Apple CA Store (OS X 10.11.6):     OK - Certificate is trusted
+      Java 7 CA Store (Update 79):       OK - Certificate is trusted
+      AOSP CA Store (7.0.0 r1):          OK - Certificate is trusted
+      Received Chain:                    *.google.es --> Google Internet Authority G2 --> GeoTrust Global CA
+      Verified Chain w/ Mozilla Store:   *.google.es --> Google Internet Authority G2 --> GeoTrust Global CA
+      Received Chain Contains Anchor:    OK - Anchor certificate not sent
+      Received Chain Order:              OK - Order is valid
+      Verified Chain contains SHA1:      OK - No SHA1-signed certificate in the verified certificate chain
+
+  * Certificate - OCSP Stapling:
+                                         NOT SUPPORTED - Server did not send back an OCSP response.
+
+
+
+ SCAN COMPLETED IN 1.09 S
+ ------------------------
+
+gerard@marcopolo:~$ 
+```
+
+El segundo es un dominio vulnerable cualquiera. Para este ejemplo, vamos a usar la página web del proveedor de servicios de internet que me está dando conectividad, [Telefónica](https://www.telefonica.es/es/). No hay malas intenciones, así que si alguien se da por ofendido o atacado, pido disculpas con anterioridad.
+
+```bash
+gerard@marcopolo:~$ docker run -ti --rm sslyze www.telefonica.es
+
+
+
+ AVAILABLE PLUGINS
+ -----------------
+
+  CertificateInfoPlugin
+  SessionRenegotiationPlugin
+  HttpHeadersPlugin
+  OpenSslCcsInjectionPlugin
+  OpenSslCipherSuitesPlugin
+  FallbackScsvPlugin
+  SessionResumptionPlugin
+  CompressionPlugin
+  HeartbleedPlugin
+
+
+
+ CHECKING HOST(S) AVAILABILITY
+ -----------------------------
+
+   www.telefonica.es:443                       => 212.170.36.79 
+
+
+
+ SCAN RESULTS FOR WWW.TELEFONICA.ES:443 - 212.170.36.79:443
+ ----------------------------------------------------------
+
+  * TLSV1 Cipher Suites:
+      Preferred:                       
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_RC4_128_SHA                          -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA               ECDH-256 bits  112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+
+  * TLSV1_1 Cipher Suites:
+      Preferred:                       
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_RC4_128_SHA                          -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA               ECDH-256 bits  112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+
+  * TLSV1_2 Cipher Suites:
+      Preferred:                       
+        TLS_RSA_WITH_AES_256_CBC_SHA256                   -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+      Accepted:                        
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384             ECDH-256 bits  256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA                ECDH-256 bits  256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_256_CBC_SHA                      -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_256_CBC_SHA256                   -              256 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA                ECDH-256 bits  128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256             ECDH-256 bits  128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_128_CBC_SHA256                   -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_AES_128_CBC_SHA                      -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_RC4_128_SHA                          -              128 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA               ECDH-256 bits  112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+        TLS_RSA_WITH_3DES_EDE_CBC_SHA                     -              112 bits      HTTP 302 Found - https://www.telefonica.es/es/              
+
+  * Session Renegotiation:
+      Client-initiated Renegotiation:    VULNERABLE - Server honors client-initiated renegotiations
+      Secure Renegotiation:              OK - Supported
+
+  * Deflate Compression:
+                                         OK - Compression disabled
+
+  * OpenSSL Heartbleed:
+                                         OK - Not vulnerable to Heartbleed
+
+  * OpenSSL CCS Injection:
+                                         OK - Not vulnerable to OpenSSL CCS injection
+
+  * Session Resumption:
+      With Session IDs:                  OK - Supported (5 successful, 0 failed, 0 errors, 5 total attempts).
+      With TLS Tickets:                  NOT SUPPORTED - TLS ticket not assigned.
+
+  * SSLV3 Cipher Suites:
+      Server rejected all cipher suites.
+
+  * Downgrade Attacks:
+      TLS_FALLBACK_SCSV:                 OK - Supported
+
+  * SSLV2 Cipher Suites:
+      Server rejected all cipher suites.
+
+  * Certificate Basic Information:
+      SHA1 Fingerprint:                  4a22795afb0bee3d6c02530e5574a797031ab1d0
+      Common Name:                       www.telefonica.es
+      Issuer:                            GlobalSign Organization Validation CA - SHA256 - G2
+      Serial Number:                     5865A61D377E8CD08D536C1B
+      Not Before:                        Jul 11 14:36:02 2016 GMT
+      Not After:                         Jul 12 14:36:02 2018 GMT
+      Signature Algorithm:               sha256WithRSAEncryption
+      Public Key Algorithm:              rsaEncryption
+      Key Size:                          2048
+      Exponent:                          65537 (0x10001)
+      X509v3 Subject Alternative Name:   {'DNS': ['www.telefonica.es', 'telefonica.es']}
+
+  * Certificate - Trust:
+      Hostname Validation:               OK - Subject Alternative Name matches www.telefonica.es
+      Mozilla NSS CA Store (09/2016):    OK - Certificate is trusted
+      Microsoft CA Store (09/2016):      OK - Certificate is trusted
+      Java 7 CA Store (Update 79):       OK - Certificate is trusted
+      Apple CA Store (OS X 10.11.6):     OK - Certificate is trusted
+      AOSP CA Store (7.0.0 r1):          OK - Certificate is trusted
+      Received Chain:                    www.telefonica.es --> GlobalSign Organization Validation CA - SHA256 - G2
+      Verified Chain w/ Mozilla Store:   www.telefonica.es --> GlobalSign Organization Validation CA - SHA256 - G2 --> GlobalSign
+      Received Chain Contains Anchor:    OK - Anchor certificate not sent
+      Received Chain Order:              OK - Order is valid
+      Verified Chain contains SHA1:      OK - No SHA1-signed certificate in the verified certificate chain
+
+  * Certificate - OCSP Stapling:
+                                         NOT SUPPORTED - Server did not send back an OCSP response.
+
+
+
+ SCAN COMPLETED IN 2.42 S
+ ------------------------
+
+gerard@marcopolo:~$ 
+```
+
+Vemos con este escaneo que tienen una vulnerabilidad. La verdad es que no tengo ni ganas ni tiempo para explotarla, pero como suelo estar en el lado de los buenos, mi trabajo sería detectarla y corregirla. En ambos casos podréis encontrar amplia información con una rápida búsqueda por internet.
+
+Y con esto ya podemos anticiparnos a cualquier escaneo que nos puedan hacer a nuestros dominios, quedando como auténticos profesionales, y ahorrándonos burocracia en forma de comunicaciones con nuestro auditor.
