@@ -2,7 +2,7 @@ Title: Disparando acciones en respuesta a modificaciones en el sistema de ficher
 Slug: disparando-acciones-en-respuesta-a-modificaciones-en-el-sistema-de-fichero-con-incron
 Date: 2016-10-03 08:00
 Category: Sistemas
-Tags: 
+Tags: incron
 
 
 
