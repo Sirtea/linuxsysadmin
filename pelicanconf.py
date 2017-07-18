@@ -28,7 +28,7 @@ SOCIAL = (
     ('GitHub', 'https://github.com/sirtea'),
 )
 
-DEFAULT_PAGINATION = 5
+DEFAULT_PAGINATION = 10
 
 # Uncomment following line if you want document-relative URLs when developing
 #RELATIVE_URLS = True
