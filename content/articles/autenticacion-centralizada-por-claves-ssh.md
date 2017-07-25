@@ -2,7 +2,7 @@ Title: Autenticación centralizada por claves SSH
 Slug: autenticacion-centralizada-por-claves-ssh
 Date: 2017-07-17 10:00
 Category: Sistemas
-Tags: ssh / autenticación / password / passphrase / centralizado
+Tags: ssh, autenticación, password, passphrase, centralizado
 
 
 
