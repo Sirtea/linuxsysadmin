@@ -26,7 +26,7 @@ El uso de una instancia nueva nos viene muy bien, porque tenemos un índice y un
 
 * Índice -> <http://localhost:2368/>
 * Post -> <http://localhost:2368/welcome-to-ghost/>
-* 
+
 ## Un tema vacío
 
 Vamos a crear una carpeta local temporal con los ficheros requeridos, que luego vamos a comprimir en fichero *.zip* para poder cargarlo en la interfaz de administración. Una vez **Ghost** ya reconozca nuestro tema, no vamos a tener que reiniciar ningún proceso nunca.
