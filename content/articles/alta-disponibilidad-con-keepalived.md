@@ -430,4 +430,4 @@ root@gemini:~/playbooks/keepalived#
 
 En caso de haberse levantado antes *castor*, habría ejercido como *master* enseguida, y el levantamiento de *pollux* no habría provocado un *failover* nuevo (103 vs 100 y 103 vs 102, respectivamente).
 
-Y con esto ya podemos tener nuestros servicios y balanceadores tipo "ventanilla única" redundados y con alta disponibilidad. Cabe indicar que esto no es útil ni con los *bakcends* (el balanceador ya suele controlar si una de ellos está caído o no), ni con los *clusters* con tecnología de *clustering* propia (bases de datos, colas, ...).
+Y con esto ya podemos tener nuestros servicios y balanceadores tipo "ventanilla única" redundados y con alta disponibilidad. Cabe indicar que esto no es útil ni con los *backends* (el balanceador ya suele controlar si una de ellos está caído o no), ni con los *clusters* con tecnología de *clustering* propia (bases de datos, colas, ...).
