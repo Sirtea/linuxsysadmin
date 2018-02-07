@@ -11,3 +11,26 @@ p {
 li {
     text-align: justify;
 }
+
+dt {
+    text-indent: 4rem;
+    clear: left;
+    float: left;
+    width: 250px;
+    font-weight: bold;
+}
+
+table {
+    width: 90%;
+    margin: auto;
+    border-collapse: collapse;
+}
+
+table + table {
+    margin-top: 2em;
+}
+
+td, th {
+    text-align:center;
+    border: 1px solid #AAAAAA;
+}
