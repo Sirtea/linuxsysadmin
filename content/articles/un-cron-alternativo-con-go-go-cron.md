@@ -94,7 +94,7 @@ gerard@sirius:~/workspace$ ./go-cron -s "@every 1m30s" -- ./send_keepalive.sh
 2018/04/25 12:30:25 Opening port 18080 for health checking
 ```
 
-**AVISO**: La primera ejecución se hace cuando ha pasado el tiempo especificado tras levantar **go-cron**. Las siguientes lo hacen sin tener en cuenta el tiempo de ejecución del comando dado. En caso de ejecutar cada hora, y tardar el *script* 40 minutos, saltaría en siguiente en unos 20 minutos; en casos extremos, podríamos tener solapamiento de ejecuciones.
+**AVISO**: La primera ejecución se hace cuando ha pasado el tiempo especificado tras levantar **go-cron**. Las siguientes lo hacen sin tener en cuenta el tiempo de ejecución del comando dado. En caso de ejecutar cada hora, y tardar el *script* 40 minutos, saltaría el siguiente en unos 20 minutos tras la finalización del actual; en casos extremos, podríamos tener solapamiento de ejecuciones.
 
 ### El servicio de healthcheck
 
