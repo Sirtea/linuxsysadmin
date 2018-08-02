@@ -92,7 +92,7 @@ Para ello solo hay que crear un fichero para tal uso, con el tamaño deseado y p
 ```bash
 alpine:~$ sudo dd if=/dev/zero of=/swapfile bs=1M count=512
 ...
-alpine:~$ sudo chown 600 /swapfile
+alpine:~$ sudo chmod 600 /swapfile
 alpine:~$ sudo mkswap /swapfile
 ...
 alpine:~$
