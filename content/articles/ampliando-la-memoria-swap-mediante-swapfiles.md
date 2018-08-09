@@ -115,9 +115,6 @@ gerard@cloudserver:~$ sudo dd if=/dev/zero of=/swapfile2 bs=1M count=3072
 gerard@cloudserver:~$ sudo chown root:root /swapfile2
 gerard@cloudserver:~$ sudo chmod 600 /swapfile2
 gerard@cloudserver:~$ sudo swapon /swapfile2
-swapon: /swapfile2: fallo al obtener la cabecera de intercambio
-sin etiqueta, UUID=a35f5fdb-d0fe-4a8d-aecc-c03362128990
-gerard@cloudserver:~$ sudo swapon /swapfile2
 gerard@cloudserver:~$
 ```
 
