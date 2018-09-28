@@ -54,7 +54,7 @@ gerard@atlantis:~/workspace/miniserver$
 
 **NOTA**: No ponemos *scripts* de `finish` en los servicios porque no queremos hacer nada cuando acaben, más allá de su reinicio por parte de **s6**.
 
-**TRUCO**: Si la caída de un servicio es suficientemente grave como para querer para el contenedor, podéis poner `s6-svscanctl -t /etc/s6` en el script `finish` de ese servicio para parar **s6**.
+**TRUCO**: Si la caída de un servicio es suficientemente grave como para querer parar el contenedor, podéis poner `s6-svscanctl -t /etc/s6` en el script `finish` de ese servicio para parar **s6**.
 
 Lo importante de los *scripts* de `run` es que no acaben, lo que se interpreta como servicio acabado (y candidato a levantar de nuevo). Este paradigma no nos es nuevo en **docker**.
 
