@@ -105,9 +105,13 @@ STATIC_PATHS = [
     'extra/custom.css',
     'extra/CNAME',
     'extra/google85de17e42482bf61',
+    'extra/css_basic_skeleton',
+    'extra/css_basic_styled',
 ]
 EXTRA_PATH_METADATA = {
     'extra/custom.css': {'path': 'static/custom.css'},
     'extra/CNAME': {'path': 'CNAME'},
     'extra/google85de17e42482bf61': {'path': 'google85de17e42482bf61.html'},
+    'extra/css_basic_skeleton': {'path': '2018/10/trucos-simples-de-css-para-que-tu-pagina-se-vea-aceptable/css_basic_skeleton.html'},
+    'extra/css_basic_styled': {'path': '2018/10/trucos-simples-de-css-para-que-tu-pagina-se-vea-aceptable/css_basic_styled.html'},
 }
