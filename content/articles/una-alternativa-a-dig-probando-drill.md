@@ -1,6 +1,6 @@
 Title: Una alternativa a dig: probando drill
 Slug: una-alternativa-a-dig-probando-drill
-Date: 22-10-2018 10:00
+Date: 2018-10-22 10:00
 Category: Operaciones
 Tags: drill, dig, dns
 
