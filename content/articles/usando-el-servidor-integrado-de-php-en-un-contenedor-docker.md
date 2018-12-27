@@ -1,6 +1,6 @@
 Title: Usando el servidor integrado de PHP en un contenedor Docker
 Slug: usando-el-servidor-integrado-de-php-en-un-contenedor-docker
-Date: 2018-12-24 10:00
+Date: 2019-01-07 10:00
 Category: Sistemas
 Tags: docker, php
 

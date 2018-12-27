@@ -23,7 +23,7 @@ root@lxc:~#
 
 ## Montando el repositorio
 
-Un repositorio *Debian* no es mas que un servidor web sirviendo una estructura de ficheros con una forma concreta, que vamos a crear con **reprepro** y vamos a servir con **nginx**. Aís pues, los instalamos.
+Un repositorio *Debian* no es mas que un servidor web sirviendo una estructura de ficheros con una forma concreta, que vamos a crear con **reprepro** y vamos a servir con **nginx**. Así pues, los instalamos.
 
 ```bash
 root@repository:~# apt-get install reprepro nginx-light
