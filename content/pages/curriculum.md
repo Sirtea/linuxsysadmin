@@ -37,8 +37,15 @@ slug: curriculum
 ## Experiencia
 
 <dl>
+<dt>Empresa:</dt><dd>Meliá Hoteles / Brújula</dd>
+<dt>Periodo:</dt><dd>05/2018 - actualidad (consultor externo de Brújula)</dd>
+<dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, migración a Amazon cloud</dd>
+<dt>Tecnologías utilizadas:</dt><dd>Amazon, Redhat Linux, AIX, Ansible, Nginx, Tomcat, Git, Jenkins</dd>
+</dl>
+
+<dl>
 <dt>Empresa:</dt><dd>AXA Group Solutions / Amaris</dd>
-<dt>Periodo:</dt><dd>07/2016 - actualidad (consultor externo de Amaris)</dd>
+<dt>Periodo:</dt><dd>07/2016 - 05/2018 (consultor externo de Amaris)</dd>
 <dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, automatización de tareas, deploys</dd>
 <dt>Tecnologías utilizadas:</dt><dd>Ubuntu Linux, Docker, Ansible, HAproxy, Nginx, NodeJS, Jenkins</dd>
 </dl>
@@ -111,7 +118,7 @@ slug: curriculum
 
 <dl>
 <dt>Eventos</dt><dd>Seleccionado por el grupo Deutsche Telekom para participar en el evento TalentsInTouch2009</dd>
-<dt>Estado laboral</dt><dd>Actualmente trabajando en AXA Group Solutions a través de consultoría (Amaris)</dd>
+<dt>Estado laboral</dt><dd>Actualmente trabajando en Meliá Hoteles a través de consultoría (Brújula)</dd>
 <dt>Permiso de conducir</dt><dd>No tengo permiso de conducir</dd>
 </dl>
 
@@ -129,7 +136,7 @@ slug: curriculum
 
 | Lenguajes de programación | Nivel | Notas                                           |
 | ------------------------- | ----- | ----------------------------------------------- |
-| Python                    | Alto  | Scripting avanzado, Web (Bottle, Flask, Django) |
+| Python                    | Alto  | Scripting avanzado, Web (bottle, flask, django) |
 | Bash                      | Alto  | Scripting avanzado                              |
 | PHP                       | Alto  | MVC (codeigniter, cakephp) y templates (smarty) |
 | HTML/XHTML                | Medio | -                                               |
@@ -145,6 +152,8 @@ slug: curriculum
 | Nginx                       | Alto  | -     |
 | HAproxy                     | Medio | -     |
 | Tomcat                      | Medio | -     |
+| uWSGI                       | Medio | -     |
+| Gunicorn                    | Medio | -     |
 | LightTPD                    | Bajo  | -     |
 
 | Bases de datos | Nivel | Notas              |
