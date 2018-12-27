@@ -39,7 +39,7 @@ Para este fichero nos podemos guiar por la [documentación oficial](https://www.
 * **Obligatorios**:
     * Package
     * Version
-    * Architecture compilado los binarios
+    * Architecture
     * Maintainer
     * Description
 * **Opcionales**:
