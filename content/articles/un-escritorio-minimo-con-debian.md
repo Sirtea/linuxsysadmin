@@ -163,7 +163,7 @@ root@kobayashi-maru:~# reboot
 
 Iremos a parar a la pantalla de *login*, y con un usuario adecuado deberíamos ver nuestro escritorio, tal como se muestra.
 
-![Escritorio XFCE]({filename}/images/escritorio-xfce.jpg)
+![Escritorio XFCE]({static}/images/escritorio-xfce.jpg)
 
 Ahora es tarea del usuario tunear el escritorio a su gusto, con paneles, *plugins* y *wallpapers*.
 

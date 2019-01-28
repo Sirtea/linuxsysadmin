@@ -176,6 +176,6 @@ root@server:~#
 
 Si apuntamos un navegador al dominio configurado, y tras aceptar nuestro certificado autofirmado como excepción, deberíamos ver que se nos piden las credenciales en una ventana emergente.
 
-![Autenticación básica: credenciales]({filename}/images/autenticacion-basica-credenciales.png)
+![Autenticación básica: credenciales]({static}/images/autenticacion-basica-credenciales.png)
 
 Y con eso tenemos nuestro contenido protegido de los curiosos.

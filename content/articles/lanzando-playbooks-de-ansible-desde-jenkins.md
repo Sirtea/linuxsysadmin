@@ -158,7 +158,7 @@ La parte mas importante de nuestro despliegue de **Jenkins** son los *plugins*. 
 
 Y finalmente tenemos un **Jenkins** funcional aunque si ninguna tarea configurada.
 
-![Ansible desde Jenkins 01]({filename}/images/ansible_jenkins_01.jpg)
+![Ansible desde Jenkins 01]({static}/images/ansible_jenkins_01.jpg)
 
 ## El repositorio de playbooks
 
@@ -208,15 +208,15 @@ Vamos a crear una tarea que consista en lanzar el fichero *playbooks/ping_all.ym
 
 El primer paso consiste en obtener los *playbooks* del repositorio. Para ello rellenaremos el apartado "Source code management", eligiendo "Git" e indicando la *URL* del repositorio.
 
-![Ansible desde Jenkins 02]({filename}/images/ansible_jenkins_02.jpg)
+![Ansible desde Jenkins 02]({static}/images/ansible_jenkins_02.jpg)
 
 Lo siguiente es indicar un "Build step" que se "Invoke Ansible Playbook". Hay que indicar el *playbook* desde la carpeta pertinente, de forma relativa. Eso significa que en nuestro caso es *playbooks/ping_all.yml*. Adicionalmente vamos a indicar que el fichero de inventario es la carpeta *inventory*, que es lo que se le va a pasar a **Ansible**.
 
-![Ansible desde Jenkins 03]({filename}/images/ansible_jenkins_03.jpg)
+![Ansible desde Jenkins 03]({static}/images/ansible_jenkins_03.jpg)
 
 Le damos a guardar y ya tenemos nuestra tarea. Bastará con lanzar la tarea con "Build now" y esperar resultados, en "Console Output" de la ejecución en curso.
 
-![Ansible desde Jenkins 04]({filename}/images/ansible_jenkins_04.jpg)
+![Ansible desde Jenkins 04]({static}/images/ansible_jenkins_04.jpg)
 
 ## Creando una tarea con parámetros
 
@@ -224,16 +224,16 @@ Muchas de las tareas que hacemos son repetitivas. Cambian las versiones de códi
 
 Vamos a crear otra tarea, esta vez llamada "Ping Some". Va a ser idéntica a la otra, pero con el *playbook* llamado *ping_some.yml*. Vamos a marcar la casilla "This project is parameterized" en la casilla general y le añadiremos un parámetro, al que llamaremos "target" y va a ser un "Choice Parameter" con los valores "all", "group1" y "group2".
 
-![Ansible desde Jenkins 05]({filename}/images/ansible_jenkins_05.jpg)
+![Ansible desde Jenkins 05]({static}/images/ansible_jenkins_05.jpg)
 
 Vamos a los "Build steps" a poner ese parámetro al comando *ansible*. Tras dar al botón "Advanced..." podemos poner mas parámetros para **Ansible**. Esto nos permite poner "-e target=$target" para que el *playbook* reciba un parámetro *target* que contenga el valor del mismo parámetro en **Jenkins**.
 
-![Ansible desde Jenkins 06]({filename}/images/ansible_jenkins_06.jpg)
+![Ansible desde Jenkins 06]({static}/images/ansible_jenkins_06.jpg)
 
 Tras salvar la tarea, vemos que la opción de "Build" se ha convertido en "Build with Parameters", y podemos elegir entre los valores específicos.
 
-![Ansible desde Jenkins 07]({filename}/images/ansible_jenkins_07.jpg)
+![Ansible desde Jenkins 07]({static}/images/ansible_jenkins_07.jpg)
 
 Y con esto conseguimos pasar parámetros al *playbook*, que pueden ser texto libre, elecciones simples o valores fijos. Con un poco de imaginación, estos parámetros nos pueden ayudar mucho, en el sentido de no repetirnos.
 
-![Ansible desde Jenkins 08]({filename}/images/ansible_jenkins_08.jpg)
+![Ansible desde Jenkins 08]({static}/images/ansible_jenkins_08.jpg)

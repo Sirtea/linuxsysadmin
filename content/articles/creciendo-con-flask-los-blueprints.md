@@ -17,7 +17,7 @@ En este momento, nos va a interesar trocear en partes aquel fichero con todas nu
 
 Os pongo un pequeño ejemplo, con este programa de gestión de hoteles:
 
-![Programa modular]({filename}/images/programa_modular.gif)
+![Programa modular]({static}/images/programa_modular.gif)
 
 ¿Verdad que parece grande y descorazonador? **¡Divide y vencerás!**
 

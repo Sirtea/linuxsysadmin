@@ -261,4 +261,4 @@ Por ejemplo, la plantilla que se usa para la URL */tag/ghost* sería *tag-ghost.
 
 Ya tenéis todas las herramientas necesarias para escribir y para entender temas de **Ghost**. Con un poco de esfuerzo y ganas, os puede quedar un tema propio genial.
 
-En este punto, me voy a la interfaz de administración, y me descargo mi tema, a modo de *backup*. Si os interesa, os lo dejo [aquí]({filename}/downloads/minimal_theme.zip).
+En este punto, me voy a la interfaz de administración, y me descargo mi tema, a modo de *backup*. Si os interesa, os lo dejo [aquí]({static}/downloads/minimal_theme.zip).

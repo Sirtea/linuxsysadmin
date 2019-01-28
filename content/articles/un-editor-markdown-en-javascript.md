@@ -50,4 +50,4 @@ Por supuesto, los archivos *.css* y los *.js* se pueden servir localmente, previ
 
 Os pongo una imagen para ver como queda; posiblemente acabe integrado en un proyecto futuro.
 
-![Editor SimpleMDE]({filename}/images/editor_simpleMDE.jpg)
+![Editor SimpleMDE]({static}/images/editor_simpleMDE.jpg)

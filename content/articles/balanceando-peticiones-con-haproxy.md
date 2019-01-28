@@ -290,4 +290,4 @@ gerard@sirius:~$
 
 Y solo nos queda ver que la página de estadísticas funciona y nos resulta útil. Puesto que devuelve una página web completa, lo vamos a ver en un navegador cualquiera.
 
-![HAProxy Stats]({filename}/images/haproxy-stats.jpg)
+![HAProxy Stats]({static}/images/haproxy-stats.jpg)

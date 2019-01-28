@@ -16,7 +16,7 @@ En el paradigma *legacy* de tratar a los servidores, cuando un servidor se estro
 
 > In the old way of doing things, we treat our servers like pets, for example Bob the mail server. If Bob goes down, it’s all hands on deck. The CEO can’t get his email and it’s the end of the world. In the new way, servers are numbered, like cattle in a herd. For example, www001 to www100. When one server goes down, it’s taken out back, shot, and replaced on the line.
 
-![Pets vs cattle]({filename}/images/pets_vs_cattle.jpg)
+![Pets vs cattle]({static}/images/pets_vs_cattle.jpg)
 
 ## ¿Pero que son exactamente "mascotas" y "ganado"?
 

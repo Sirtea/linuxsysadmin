@@ -12,7 +12,7 @@ El principio de este *blog* era el de publicar artículos que sirvan como tutori
 
 Este dominio gratuito ha expirado y ahora cuesta dinero, concretamente más de la miseria que entra en concepto publicidad. Así pues, la única opción viable ha sido usar otro dominio, por supuesto, gratuito tambien.
 
-![Un haiku sobre problemas de DNS]({filename}/images/haiku_dns.jpg)
+![Un haiku sobre problemas de DNS]({static}/images/haiku_dns.jpg)
 
 Aunque era un riesgo que ya conocía, esto supone básicamente la pérdida de dos cosas, ambas importantes:
 
