@@ -30,7 +30,7 @@ Este contenedor nos ofrece la base de datos de control y una bonita interfaz de 
 
 Solo nos queda ver la interfaz de administración para comprobar que funciona, en <http://localhost:8080/>.
 
-![Rancher panel]({filename}/images/rancher-panel.png)
+![Rancher panel]({static}/images/rancher-panel.png)
 
 ### Hosts
 

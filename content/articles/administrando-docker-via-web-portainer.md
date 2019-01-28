@@ -62,7 +62,7 @@ gerard@aldebaran:~/docker/portainer$
 
 Tras poner por última vez la contraseña del usuario *admin* e indicar que queremos controlar la instancia local, ya tenemos la interfaz ejecutando.
 
-![Portainer dashboard]({filename}/images/portainer-dashboard.jpg)
+![Portainer dashboard]({static}/images/portainer-dashboard.jpg)
 
 En esta interfaz podremos lanzar todas las operaciones habituales cómodamente desde la web. Con ella podemos administrar las imágenes, los contenedores, las redes y los volúmenes.
 

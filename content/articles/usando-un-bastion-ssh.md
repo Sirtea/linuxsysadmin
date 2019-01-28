@@ -10,7 +10,7 @@ Hoy vamos a presentar un patrón de conectividad para acceder a un conjunto de m
 
 Vamos a suponer que tenemos un entorno con 4 máquinas, una de las cuales tiene el protocolo SSH abierto a una red menos confiable. Por supuesto, en casos así se recomienda encarecidamente no permitir la autenticación por claves, ya que os pueden acabar entrando usando ataques de fuerza bruta o de diccionario.
 
-![SSH bastion host]({filename}/images/ssh-bastion-host.png)
+![SSH bastion host]({static}/images/ssh-bastion-host.png)
 
 En nuestro caso vamos a llamar a la primera máquina como *bastion* y las otras tres como *server1*, *server2* y *server3* respectivamente. Todas ellas disponen de acceso por claves SSH y un usuario dedicado. No hace falta que ninguna de las máquinas tenga las mismas claves ni los mismos usuarios, pero hacerlo nos va a facilitar bastante la configuración SSH del cliente. En nuestro caso vamos a usar la misma clave para todos y el mismo usuario *jump*.
 

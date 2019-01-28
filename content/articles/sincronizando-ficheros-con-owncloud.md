@@ -46,7 +46,7 @@ gerard@sirius:~/docker/owncloud$
 
 Y solamente nos queda acceder al puerto expuesto, desde un navegador cualquiera, usando la URL que corresponda. En mi caso, accedo desde la máquina local, que es donde he levantado ambos contenedores; simplemente usamos <http://localhost/>.
 
-![Owncloud setup]({filename}/images/owncloud_setup.jpg)
+![Owncloud setup]({static}/images/owncloud_setup.jpg)
 
 Vemos que la primera vez que accedemos nos pide configurar algunas cosas. Rellenamos los campos con los valores mas apropiados, con un usuario de administrador y su contraseña, y los datos de conexión de la base de datos, con cuidado de elegir **mysql**. Usad los valores del *docker-compose.yml*.
 
@@ -57,6 +57,6 @@ Vemos que la primera vez que accedemos nos pide configurar algunas cosas. Rellen
 
 Si le damos a "Finalizar", no hay mas pasos a seguir; finalmente ya lo tenemos funcional.
 
-![Owncloud setup]({filename}/images/owncloud_panel.jpg)
+![Owncloud setup]({static}/images/owncloud_panel.jpg)
 
 Ahora podemos descargarnos cualquier cliente para sincronizar nuestros datos desde cualquier dispositivo, sea para escritorio, *android* o *iphone*. Solamente necesitamos la precaución de crear usuarios para garantizar la privacidad entre todos ellos.

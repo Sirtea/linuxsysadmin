@@ -80,6 +80,6 @@ gerard@telesto:~/docker/custom_ghost$
 
 Apuntamos nuestro navegador a la URL configurada, y ya tenemos un *blog* funcional. Queda para el propietario ir a la sección de administración para añadir contenido, cambiar los temas y lo que haga falta, cómodamente desde la web.
 
-![Ghost Blog]({filename}/images/ghost_blog.jpg)
+![Ghost Blog]({static}/images/ghost_blog.jpg)
 
 La parte "mala" es que cada instancia de **Ghost** es un proceso propio, que usa su propia dirección y su propio puerto. Si se quiere desplegar varios *blogs* en el mismo servidor, podemos usar un **nginx**, que los diferencie por el dominio solicitado mediante *virtualhosts*; luego hacemos un *proxy_pass* al puerto de verdad, y ya tenemos el servidor montado. Esto queda como material para otro artículo.

@@ -18,7 +18,7 @@ Los requisitos son bastante simples:
 
 Tras un poco de búsqueda por internet, acabé encontrando una muy interesante llamada [Vaultier](http://www.vaultier.org/). Como plus extra, se nos ofrece la aplicación como una imagen de **docker**, lo que me permite hacer una instalación de usar y tirar.
 
-![Panel de Vaultier]({filename}/images/vaultier.jpg)
+![Panel de Vaultier]({static}/images/vaultier.jpg)
 
 ## Instalación
 

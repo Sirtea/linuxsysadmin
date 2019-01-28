@@ -252,15 +252,15 @@ Vamos a acceder con un navegador a la parte de administración, para ver que fun
 
 El primer paso consiste en abrir el navegador con la URL adecuada, y nos tropezamos con la autenticación.
 
-![Auth basic]({filename}/images/entorno-escalable-auth-basic.jpg)
+![Auth basic]({static}/images/entorno-escalable-auth-basic.jpg)
 
 Tras pasar la autenticación podemos acceder a los formularios para añadir productos.
 
-![Admin form]({filename}/images/entorno-escalable-admin-form.jpg)
+![Admin form]({static}/images/entorno-escalable-admin-form.jpg)
 
 Tras añadir tres productos, vemos que ya se genera la lista, en formato web.
 
-![Admin list]({filename}/images/entorno-escalable-admin-list.jpg)
+![Admin list]({static}/images/entorno-escalable-admin-list.jpg)
 
 Con los datos introducidos podemos consumir la API, para comprobar que los datos que hemos introducido en la base de datos (mediante la aplicación de administración) están disponibles.
 

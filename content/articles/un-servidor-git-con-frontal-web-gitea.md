@@ -59,4 +59,4 @@ Cabe decir que la primera vez que entremos en la web habrá que configurar algun
 
 Os dejo una imagen que vale más que mil palabras.
 
-![Frontal de Gitea]({filename}/images/gitea.jpg)
+![Frontal de Gitea]({static}/images/gitea.jpg)

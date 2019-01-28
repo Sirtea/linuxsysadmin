@@ -53,7 +53,7 @@ Como punto a favor, el estándar JWT permite firmar con una sola clave, o usando
 
 Este es el caso de uso más simple: un solo servicio genera y consume el *token*. En este tipo de casos nos importa poco que se encripte y se desencripte con la misma clave, así que vamos a lo simple.
 
-![JWT de clave simétrica]({filename}/images/JWT_Symmetric_Key.png)
+![JWT de clave simétrica]({static}/images/JWT_Symmetric_Key.png)
 
 Como lo vamos a hacer en **python**, vamos a necesitar una librería que siga este estándar, por ejemplo, `PyJWT`:
 
@@ -141,7 +141,7 @@ Se trata de un caso un poco más complicado: un servicio genera el *token* y otr
 
 Este caso se utiliza en esquemas de *single sign on*, en donde un servicio de autenticación genera el *token*, indicando a qué aplicaciones tiene acceso un usuario. La responsabilidad de verificar el permiso recae en cada aplicación individual.
 
-![JWT de clave asimétrica]({filename}/images/JWT_Single_Sign_On.png)
+![JWT de clave asimétrica]({static}/images/JWT_Single_Sign_On.png)
 
 Vamos a asegurarnos que tenemos las librerías **python** necesarias:
 

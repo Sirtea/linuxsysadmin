@@ -14,7 +14,7 @@ En este artículo se pretende dar a conocer una de estas soluciones de acumulaci
 * **Logstash**: Es un agente que envía los *logs* de varias fuentes al **elastic search**.
 * **Kibana**: Es una interfaz gráfica que nos permite buscar *logs* y dibujar bonitas gráficas, partiendo de los datos del **elastic search**.
 
-![Esquema de un ELK]({filename}/images/the-elk-stack.jpg)
+![Esquema de un ELK]({static}/images/the-elk-stack.jpg)
 
 De esto se puede deducir que vamos a necesitar una instancia de cada tipo, a excepción de **logstash**, que debe ponerse en todos los servidores que recojan *logs*. Se podría poner, por ejemplo, el **elastic search** y el **kibana** en una misma máquina, dedicada solamente al consumo de los *logs* de todos los servidores productivos.
 
@@ -92,4 +92,4 @@ gerard@styx:~/docker/elk$
 
 Solo nos falta acceder a la interfaz del **Kibana** en <http://localhost:5601/> y disfrutar del resultado.
 
-![Frontend de Kibana]({filename}/images/kibana-frontend.jpg)
+![Frontend de Kibana]({static}/images/kibana-frontend.jpg)

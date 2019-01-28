@@ -12,7 +12,7 @@ En un mundo *agile* en donde los despliegues son el pan de cada semana, nos inte
 
 La idea de fondo es muy simple: tenemos dos entornos iguales llamados **blue** y **green**, precedidos con un *proxy* o un balanceador que hace fácil dirigir el tráfico hacia uno u otro. Esto significa que podemos modificar uno de los entornos en caliente, sabiendo que **no es producción**. Solamente cuando el entorno secundario funciona bien podemos dirigir el tráfico hacia él, que **se convierte en producción**.
 
-![Blue-green deployment]({filename}/images/blue-green_deployments.jpg)
+![Blue-green deployment]({static}/images/blue-green_deployments.jpg)
 
 En caso de un error catastrófico no detectado, basta con volver a dirigir el tráfico al entorno anterior, que todavía tenemos funcional. Si no hubieran errores, podremos reinstalar este entorno anterior, en vistas a que pase a ser producción en un futuro cercano. Los montajes más habituales ofrecen ambos entornos, sirviendo dos puntos de entrada: uno como entorno de producción y el otro como entorno de pruebas.
 

@@ -214,7 +214,7 @@ Ahora apuntemos el navegador a la **URL** del servidor web. Debemos aceptar el c
 
 Aún así, como no hemos presentado el certificado cliente, el servidor web nos impide el acceso, con una respuesta **HTTP 400**.
 
-![2 way SSL access denied]({filename}/images/2-way-ssl-access-denied.png)
+![2 way SSL access denied]({static}/images/2-way-ssl-access-denied.png)
 
 Ahora debemos importar el certificado *client.p12* en el navegador web. En el caso concreto de **Google Chrome**, se hace desde el siguiente menú:
 
@@ -222,6 +222,6 @@ Ahora debemos importar el certificado *client.p12* en el navegador web. En el ca
 
 Y ya podemos acceder a nuestro contenido protegido, previa selección del certificado a usar.
 
-![2 way SSL certificate]({filename}/images/2-way-ssl-certificate.png)
+![2 way SSL certificate]({static}/images/2-way-ssl-certificate.png)
 
 Y con esto ya tenemos montada la autenticación cliente mediante certificados.

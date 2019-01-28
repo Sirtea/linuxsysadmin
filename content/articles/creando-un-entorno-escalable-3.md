@@ -70,7 +70,7 @@ No os olvidéis de reiniciar el servicio *firehol*.
 
 Este punto se hace en los tres servidores que sirven aplicaciones (*backend1*, *backend2* y *backoffice*).
 
-Las aplicaciones de ejemplo que vamos a usar las podéis encontrar en [este enlace]({filename}/downloads/shop.tar.gz). Debo admitir que no son bonitas, pero para esta demostración, nos valen.
+Las aplicaciones de ejemplo que vamos a usar las podéis encontrar en [este enlace]({static}/downloads/shop.tar.gz). Debo admitir que no son bonitas, pero para esta demostración, nos valen.
 
 Descomprimimos el fichero comprimido con las dos aplicaciones.
 

@@ -8,7 +8,7 @@ Tags: mongodb, docker, sharding, cluster
 
 El otro día estaba revisando viejos artículos, y me tropecé con [uno anterior]({filename}/articles/mongodb-sharding-con-ansible.md). Este estaba montado con **ansible**, y se me pasó por la cabeza reescribirlo usando contenedores con **docker**. Así pues, vamos a montar exactamente el mismo *cluster*, pero con el cambio que la última revolución tecnológica nos aporta.
 
-![Sharded cluster]({filename}/images/sharding_arquitectura_logica.jpg)
+![Sharded cluster]({static}/images/sharding_arquitectura_logica.jpg)
 
 Aunque lo ideal sería desplegar todas las instancias en varias máquinas diferentes, voy a pasar; por comodidad, voy a desplegar todos los contenedores en una sola máquina mediante **docker-compose**. De esta forma puedo aprovechar las mismas imágenes sin una ocupación de disco elevada.
 

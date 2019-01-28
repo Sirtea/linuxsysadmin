@@ -18,7 +18,7 @@ Para empezar se ha decidido por un *cluster* de 3 *shards*, siendo cada uno de e
 
 Así pues, y tras elegir nombres para los *shards*, podemos pintar un esquema de nuestro *cluster*.
 
-![Arquitectura lógica]({filename}/images/sharding_arquitectura_logica.jpg)
+![Arquitectura lógica]({static}/images/sharding_arquitectura_logica.jpg)
 
 Para repartir los procesos entre las máquinas, hay dos reglas que hay que respetar a rajatabla:
 
@@ -27,13 +27,13 @@ Para repartir los procesos entre las máquinas, hay dos reglas que hay que respe
 
 El resto de procesos pueden compartir servidor con los de datos. Hay muchas formas de cumplir con las dos reglas, por ejemplo, la que vamos a montar:
 
-![Arquitectura física]({filename}/images/sharding_arquitectura_fisica.jpg)
+![Arquitectura física]({static}/images/sharding_arquitectura_fisica.jpg)
 
 ## Ansible al rescate
 
 Debido a la gran cantidad de procesos que hay que levantar, se ha decidido por automatizar su despliegue mediante **ansible**. El proceso es bastante similar a [otro de nuestros artículos]({filename}/articles/construyendo-una-replica-set-en-mongodb.md).
 
-Se ha utilizado el mecanismo de **roles** de **ansible**, para poder desplegar todos los procesos del mismo tipo; el detalle es que se han usado los parámetros en los **roles** para los cambios menores. Si queréis intentarlo o entender como funcionan los despliegues, podéis encontrar los **playbooks** [aquí]({filename}/downloads/sharding_playbooks.tar.gz).
+Se ha utilizado el mecanismo de **roles** de **ansible**, para poder desplegar todos los procesos del mismo tipo; el detalle es que se han usado los parámetros en los **roles** para los cambios menores. Si queréis intentarlo o entender como funcionan los despliegues, podéis encontrar los **playbooks** [aquí]({static}/downloads/sharding_playbooks.tar.gz).
 
 El fichero comprimido no incluye los binarios de **mongodb** para reducir tamaño, así que hay que añadirlos en las respectivas carpetas *files*. Tras descomprimir el fichero *.tar.gz* y poner los binarios ausentes, nos debería quedar algo como esto:
 

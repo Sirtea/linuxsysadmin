@@ -79,6 +79,6 @@ Por ejemplo, podemos crear el gráfico "Memory". Seleccionamos la base de datos 
 
 Insuficiente con este valor, creamos un *dashboard* llamado "Server". Le añadimos la visualización ya existente llamada "Memory" y porque no, creamos una visualización nueva "CPU" con dos valores en el campo "Extract by". Así de fácil.
 
-![Chronograf dashboard]({filename}/images/chronograf.jpg)
+![Chronograf dashboard]({static}/images/chronograf.jpg)
 
 Y con eso acabamos. Solo falta poner esto en un sitio visible y sacar nuestras conclusiones.

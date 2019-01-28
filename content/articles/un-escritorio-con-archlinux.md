@@ -220,7 +220,7 @@ Finalmente podemos reiniciar la máquina, y ver como nos queda de bonito.
 
 Si todo ha salido bien, nos queda un escritorio de esta apariencia, que tendremos que personalizar a nuestro gusto.
 
-![Escritorio XFCE]({filename}/images/escritorio-xfce-archlinux.jpg)
+![Escritorio XFCE]({static}/images/escritorio-xfce-archlinux.jpg)
 
 Y todo esto, con un consumo de recursos bastante escaso...
 

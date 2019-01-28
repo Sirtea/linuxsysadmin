@@ -90,7 +90,7 @@ Como estos paquetes no están en la *caché* del servidor, se han descargado de 
 
 Si revisamos la página de estadísticas de **apt-cacher-ng**, disponible en *http://aptcacher:3142/acng-report.html* podemos ver que se han descargado 4,78mb en 13 paquetes; todos son **miss** de la cache, es decir, se han ido a buscar al repositorio oficial.
 
-![Estadísticas web de apt-cacher]({filename}/images/apt-cacher-ng-1.jpg)
+![Estadísticas web de apt-cacher]({static}/images/apt-cacher-ng-1.jpg)
 
 Ahora vamos a instalar *python* en otro de los clientes:
 
@@ -116,6 +116,6 @@ Hemos elegido el paquete *python* para asegurar que ambas máquinas instalan lo 
 
 Podemos ver en la misma página de administración el resultado: ahora hay 13 **hits** adicionales, ya que los paquetes solicitados estaban en local.
 
-![Estadísticas web de apt-cacher]({filename}/images/apt-cacher-ng-2.jpg)
+![Estadísticas web de apt-cacher]({static}/images/apt-cacher-ng-2.jpg)
 
 De esta forma, si tenemos un elevado número de máquinas del mismo tipo, solo consumiremos el ancho de banda necesario para traerlos de internet **una sola vez**.

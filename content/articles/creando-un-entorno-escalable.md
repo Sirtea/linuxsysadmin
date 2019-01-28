@@ -19,7 +19,7 @@ En este tutorial se va a montar un entorno pequeño de estas características, s
 
 Esto es lo que propongo montar:
 
-![Entorno propuesto]({filename}/images/entorno_propuesto.png)
+![Entorno propuesto]({static}/images/entorno_propuesto.png)
 
 Para ello, vamos a crear las máquinas virtuales necesarias. En este caso, voy a usar mi servidor de **virtualización con LXC**, tal como lo monté en [este artículo]({filename}/articles/virtualizando-contenedores-lxc-tras-bridge-interno.md).
 
