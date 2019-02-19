@@ -1,6 +1,6 @@
 Title: Forzar rangos de IPs prohibidas para Docker
 Slug: forzar-rangos-de-ips-prohibidas-para-docker
-Date: 2019-02-04 10:00
+Date: 2019-02-19 19:00
 Category: Operaciones
 Tags: docker, proxy
 
