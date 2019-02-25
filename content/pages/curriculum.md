@@ -38,8 +38,8 @@ slug: curriculum
 
 <dl>
 <dt>Empresa:</dt><dd>Meliá Hoteles / Brújula</dd>
-<dt>Periodo:</dt><dd>05/2018 - actualidad (consultor externo de Brújula)</dd>
-<dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, migración a Amazon cloud</dd>
+<dt>Periodo:</dt><dd>05/2018 - 02/2019 (consultor externo de Brújula)</dd>
+<dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, migración a Amazon cloud, coordinación de equipos técnicos para resolución de incidencias y cambios</dd>
 <dt>Tecnologías utilizadas:</dt><dd>Amazon, Redhat Linux, AIX, Ansible, Nginx, Tomcat, Git, Jenkins</dd>
 </dl>
 
@@ -118,7 +118,7 @@ slug: curriculum
 
 <dl>
 <dt>Eventos</dt><dd>Seleccionado por el grupo Deutsche Telekom para participar en el evento TalentsInTouch2009</dd>
-<dt>Estado laboral</dt><dd>Actualmente trabajando en Meliá Hoteles a través de consultoría (Brújula)</dd>
+<dt>Estado laboral</dt><dd>Desempleado y buscando trabajo activamente</dd>
 <dt>Permiso de conducir</dt><dd>No tengo permiso de conducir</dd>
 </dl>
 
@@ -163,14 +163,15 @@ slug: curriculum
 | MySQL          | Medio | -                  |
 | Oracle         | Bajo  | -                  |
 
-| Otras tecnologías | Nivel | Notas                   |
-| ----------------- | ----- | ----------------------- |
-| Docker            | Alto  | -                       |
-| Ansible           | Alto  | -                       |
-| Nagios            | Alto  | Programación de plugins |
-| IPtables          | Alto  | -                       |
-| Jenkins           | Medio | -                       |
-| Fabric            | Medio | -                       |
-| Kibana            | Bajo  | -                       |
-| Splunk            | Bajo  | -                       |
-| Puppet            | Bajo  | -                       |
+| Otras tecnologías  | Nivel | Notas                   |
+| ------------------ | ----- | ----------------------- |
+| Docker             | Alto  | -                       |
+| Ansible            | Alto  | -                       |
+| Nagios             | Alto  | Programación de plugins |
+| IPtables           | Alto  | -                       |
+| Jenkins            | Medio | -                       |
+| Fabric             | Medio | -                       |
+| AWS EC2, RDS y EC2 | Bajo  | -                       |
+| Kibana             | Bajo  | -                       |
+| Splunk             | Bajo  | -                       |
+| Puppet             | Bajo  | -                       |
