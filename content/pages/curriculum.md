@@ -37,6 +37,13 @@ slug: curriculum
 ## Experiencia
 
 <dl>
+<dt>Empresa:</dt><dd>Jumbo Tours / SII Concatel</dd>
+<dt>Periodo:</dt><dd>04/2019 - actualidad (consultor externo de SII Concatel)</dd>
+<dt>Actividades realizadas:</dt><dd>&nbsp;</dd>
+<dt>Tecnologías utilizadas:</dt><dd>&nbsp;</dd>
+</dl>
+
+<dl>
 <dt>Empresa:</dt><dd>Meliá Hoteles / Brújula</dd>
 <dt>Periodo:</dt><dd>05/2018 - 02/2019 (consultor externo de Brújula)</dd>
 <dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, migración a Amazon cloud, coordinación de equipos técnicos para resolución de incidencias y cambios</dd>
@@ -106,11 +113,11 @@ slug: curriculum
 
 ## Idiomas
 
-| &nbsp;  | Hablado      | Escrito   | Leído     | Observaciones          |
-| ------- | ------------ | --------- | --------- | ---------------------- |
-| Español | Nativo       | Excelente | Excelente | -                      |
-| Catalán | Nativo       | Excelente | Excelente | Certificado de nivel C |
-| Inglés  | Conversación | Alto      | Alto      | -                      |
+| &nbsp;  | Hablado      | Escrito   | Leído     | Observaciones           |
+| ------- | ------------ | --------- | --------- | ----------------------- |
+| Español | Nativo       | Excelente | Excelente | -                       |
+| Catalán | Nativo       | Excelente | Excelente | Certificado de nivel C1 |
+| Inglés  | Conversación | Alto      | Alto      | -                       |
 
 ---
 
@@ -118,7 +125,7 @@ slug: curriculum
 
 <dl>
 <dt>Eventos</dt><dd>Seleccionado por el grupo Deutsche Telekom para participar en el evento TalentsInTouch2009</dd>
-<dt>Estado laboral</dt><dd>Desempleado y buscando trabajo activamente</dd>
+<dt>Estado laboral</dt><dd>Trabajando a jornada completa</dd>
 <dt>Permiso de conducir</dt><dd>No tengo permiso de conducir</dd>
 </dl>
 
