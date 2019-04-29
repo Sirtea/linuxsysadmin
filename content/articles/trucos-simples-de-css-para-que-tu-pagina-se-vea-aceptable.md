@@ -24,7 +24,7 @@ body { max-width: 800px; margin: auto }
 
 ## Cambiar la fuente del texto
 
-La fuente por defecto que llevan los navegadores es poco agradable a la vista; con cambiar la fuente es suficiente. Podemos poner una fuente propia, una de **Google Fonts** o simplemente usar una família para que el navegador utilize la que le venga en gana.
+La fuente por defecto que llevan los navegadores es poco agradable a la vista; con cambiar la fuente es suficiente. Podemos poner una fuente propia, una de **Google Fonts** o simplemente usar una família para que el navegador utilice la que le venga en gana.
 
 ```CSS
 body { font-family: sans-serif }
