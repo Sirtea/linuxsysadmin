@@ -1,4 +1,4 @@
-Title: Construyendo firewalls complejos de varias patas con shorewall
+Title: Construyendo firewalls complejos de varias patas con Shorewall
 Slug: construyendo-firewalls-complejos-de-varias-patas-con-shorewall
 Date: 2019-04-24 14:00
 Category: Sistemas
