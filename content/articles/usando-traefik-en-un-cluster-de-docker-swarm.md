@@ -34,7 +34,7 @@ Levantar el balanceador es tan fácil como poner un contenedor que ejecute la im
 
 Para poder leer la información del *cluster*, es condición necesaria que se ejecute en un *manager*. Ello lo podemos conseguir mediante las *constraints* de *placement*. Otra decisión de diseño es que voy a ejecutar un **traefik** en cada *manager* con `mode: global` y con las restricciones anteriores (aunque en este caso solo hay uno).
 
-También quiero quiero que el puerto 8080 de cada *manager* sea ese **traefik** concreto (`mode: host`), y no el balanceador *ingress* que viene por defecto. Por supuesto, el balanceador va a estar en la red de servicio antes creada, en donde también pondremos los contenedores de servicio.
+También quiero que el puerto 8080 de cada *manager* sea ese **traefik** concreto (`mode: host`), y no el balanceador *ingress* que viene por defecto. Por supuesto, el balanceador va a estar en la red de servicio antes creada, en donde también pondremos los contenedores de servicio.
 
 ```bash
 gerard@manager:~/traefik$ cat docker-compose.yml
