@@ -280,6 +280,22 @@ gerard@sirius:~/workspace/sharding$ diff mongod_aquila.conf mongod_cygnus.conf
 gerard@sirius:~/workspace/sharding$ 
 ```
 
+El proceso *mongos* necesita una configuración similar, con la excepción de que no necesita la directiva `storage` (porque no utiliza) y necesita el parámetro especial `sharding.configDB` que le indique donde encontrar al menos un nodo de la *replica set* que se usa para la configuración. Ya de paso, le ponemos el puerto 27017, que es el puerto por defecto y nos va a simplificar las cadenas de conexión futuras.
+
+```bash
+processManagement:
+  fork: false
+
+net:
+  bindIp: 0.0.0.0
+  port: 27017
+  unixDomainSocket:
+    enabled: false
+
+sharding:
+   configDB: config/config01:27019,config02:27019,config03:27019
+```
+
 Y con esto tenemos todo lo necesario para levantar los procesos, así que no lo demoramos más.
 
 ```bash
