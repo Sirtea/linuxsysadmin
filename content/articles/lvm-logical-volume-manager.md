@@ -160,7 +160,7 @@ root@server:~# pvs
 root@server:~# 
 ```
 
-Ya estamos en disposición de reclamar los 10 GB que necesitamos, asó que **extendemos** el *logical volume*.
+Ya estamos en disposición de reclamar los 10 GB que necesitamos, así que **extendemos** el *logical volume*.
 
 ```bash
 root@server:~# lvs
