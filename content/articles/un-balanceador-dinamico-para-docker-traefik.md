@@ -84,7 +84,7 @@ gerard@atlantis:~/workspace$
 
 Un punto interesante de mencionar es que **Traefik** viene con una configuración estándar, pero se puede modificar algunas cosas que afectan a los contenedores mediante *labels*.
 
-La más evidente es `traefik.enable`, que sobreescribe el comportamiente de no exponer por defecto los servicios; con ello evitamos que se expongan servicios que no deseamos hacer públicos (bases de datos, depliegues bue-green, otros servicios, ...).
+La más evidente es `traefik.enable`, que sobreescribe el comportamiente de no exponer por defecto los servicios; con ello evitamos que se expongan servicios que no deseamos hacer públicos (bases de datos, depliegues blue-green, otros servicios, ...).
 
 Otra *label* interesante es `traefik.frontend.rule` que básicamente indica que este contenedor es uno de los miembros del *pool* de balanceo cuando se pida el *host* indicado. Una *label* que podemos necesitar es `traefik.port`, que indica contra que puerto del contenedor hay que lanzar las peticiones; por defecto se pasan al puerto 80 (que es donde escucha la imagen elegida).
 
