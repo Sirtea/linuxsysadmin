@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ghost: Un motor para hacer blogs - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Ghost: Un motor para hacer blogs</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-11-21
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/ghost.html">ghost</a> / <a href="/tag/blog.html">blog</a>
+</p>
+
+<p>Hace tiempo que me recorre la idea de crear un motor genérico de <em>blogs</em>. Son varias las veces que he empezado alguno aprovechando los <em>frameworks</em>, especialmente de <strong>python</strong>. Todas ellas han acabado en la papelera por falta de ganas. Finalmente me di por vencido y decidí utilizar algo ya hecho.</p>
+
+<p>Prueba de mi pereza es este <em>blog</em>, que está hecho con <strong>Pelican</strong>, que es un generador de contenido estático, juntando un tema y un contenido. Como control de versiones usa <strong>git</strong> y está alojado en <strong>Github Pages</strong>. Para publicar hace falta crear el contenido, invocar algunos comandos para generar el contenido <strong>HTML</strong> y levantar un servidor local para ver los cambios. Todo muy <em>techie</em>.</p>
+
+<p>He seguido buscando para encontrar una solución con base de datos, que se rellene fácilmente mediante un formulario y que pueda utilizar cualquiera. Basta con mirar un poco por internet para ver que las soluciones con miles: desde los omnipresentes <strong>Wordpress</strong> hasta los todopoderosos <strong>Drupal</strong> y <strong>Joomla</strong>, pasando por cosas mas esotéricas.</p>
+
+<p>La solución la encontré hace un par de meses; era bonita, simple y tenía material de soporte suficiente, sin ser agobiante. Se trata de <a href="https://ghost.org/">Ghost</a>, encontrando su repositorio en <a href="https://github.com/TryGhost/Ghost">GitHub</a>.</p>
+
+<p>La instalación es también muy simple:</p>
+
+<ol>
+<li>Descargar la última versión de <strong>Ghost</strong>.</li>
+<li>Descomprimir el fichero comprimido en la carpeta en donde lo queramos.</li>
+<li>Instalar las dependencias con <em>npm install &ndash;production</em></li>
+<li>Levantar el servicio con <em>npm start</em> (desarrollo) o <em>npm start &ndash;production</em>.</li>
+</ol>
+
+<p>Y ya tenemos nuestro <em>blog</em> visible en <a href="http://localhost:2368/">http://localhost:2368/</a> con su interfaz de administración en <a href="http://localhost:2368/ghost/">http://localhost:2368/ghost/</a>. Estos valores pueden cambiarse en el fichero <em>config.js</em>.</p>
+
+<p>El problema de esta aproximación es que la versión de <strong>Ghost</strong>, de <strong>NPM</strong> y de <strong>NodeJS</strong> son demasiado importantes, exigiendo versiones elevadas que no están en los repositorios oficiales de la mayoría de distribuciones. Lo pude instalar en una <em>Ubuntu 16.04</em> y, aun así, el binario exigido <em>/usr/bin/node</em> no se llamaba así, sino que estaba en <em>/usr/bin/nodejs</em>. Esto se puede solucionar con un simple enlace simbólico, pero busca el error&hellip;</p>
+
+<p>Lo que realmente me llamó a probarlo es la facilidad adicional de tenerlo funcionando sin problemas, mediante una imágen de <strong>Docker</strong> prefabricada en <strong>DockerHub</strong>. De hecho la imagen es oficial, y la podéis encontrar en <a href="https://hub.docker.com/_/ghost/">https://hub.docker.com/_/ghost/</a>.</p>
+
+<p>Levantamos la imagen con el habitual y recomendado <em>docker run</em>:</p>
+
+<pre><code class="language-bash">gerard@janus:~$ docker run -d -p 2368:2368 ghost
+6a0d4ed51f2b7c04b7b0c54cac44256d12fe7fa999f548314858ea5838faae73
+gerard@janus:~$ 
+</code></pre>
+
+<p>Esto nos da un <strong>Ghost</strong> levantado en modo de <em>development</em>. Si queremos levantarlo en modo <em>production</em>, basta con añadir una variable de entorno <em>NODE_ENV=production</em>. Tal como escribo este artículo, la configuración por defecto para producción está incompleta: falta la directiva <em>paths</em> en la sección <em>production</em>, aunque la podéis copiar tal cual de la sección <em>development</em>. Las otras directivas las podéis editar según vuestras necesidades.</p>
+
+<p><strong>TRUCO</strong>: si usáis <strong>docker</strong>, no vale con poner una configuración adecuada en <em>/var/lib/ghost/config.js</em>, porque entonces el instalador detecta que ya hay cosas y no copia el resto de ficheros en <em>/usr/src/ghost/</em>. Vuestras configuraciones deberían reescribir el fichero <em>/usr/src/ghost/config.example.js</em>.</p>
+
+<pre><code class="language-bash">gerard@telesto:~/docker/custom_ghost$ cat Dockerfile 
+FROM ghost
+COPY config.js /usr/src/ghost/config.example.js
+gerard@telesto:~/docker/custom_ghost$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: la configuración de <strong>Ghost</strong> es un <em>script</em> en <strong>NodeJS</strong> y es capaz de leer las variables de entorno, por si queréis pasar algunas variables en <em>runtime</em>, sin construir varias imágenes.</p>
+
+<pre><code class="language-bash">gerard@telesto:~/docker/custom_ghost$ cat config.js 
+var path = require('path'),
+    config;
+
+config = {
+    production: {
+        url: process.env['GHOST_URL'],
+        mail: {},
+        database: {
+            client: 'sqlite3',
+            connection: {
+                filename: path.join(__dirname, '/content/data/ghost.db')
+            },
+            debug: false
+        },
+        server: {
+            host: '127.0.0.1',
+            port: '2368'
+        },
+        paths: {
+            contentPath: path.join(__dirname, '/content/')
+        }
+    }
+};
+
+module.exports = config;
+gerard@telesto:~/docker/custom_ghost$ 
+</code></pre>
+
+<p>Apuntamos nuestro navegador a la URL configurada, y ya tenemos un <em>blog</em> funcional. Queda para el propietario ir a la sección de administración para añadir contenido, cambiar los temas y lo que haga falta, cómodamente desde la web.</p>
+
+<p><img src="/images/ghost_blog.jpg" alt="Ghost Blog" /></p>
+
+<p>La parte &ldquo;mala&rdquo; es que cada instancia de <strong>Ghost</strong> es un proceso propio, que usa su propia dirección y su propio puerto. Si se quiere desplegar varios <em>blogs</em> en el mismo servidor, podemos usar un <strong>nginx</strong>, que los diferencie por el dominio solicitado mediante <em>virtualhosts</em>; luego hacemos un <em>proxy_pass</em> al puerto de verdad, y ya tenemos el servidor montado. Esto queda como material para otro artículo.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

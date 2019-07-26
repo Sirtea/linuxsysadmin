@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>MongoDB sharding con ansible - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>MongoDB sharding con ansible</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-05-02
+	<strong>Tiempo de lectura</strong>: 10 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/replica-set.html">replica set</a> / <a href="/tag/sharding.html">sharding</a> / <a href="/tag/ansible.html">ansible</a> / <a href="/tag/playbook.html">playbook</a> / <a href="/tag/systemd.html">systemd</a>
+</p>
+
+<p>Como ya vimos en un artículo anterior, los <em>replica sets</em> nos ofrecen alta disponibilidad para nuestros despliegues de <strong>mongodb</strong>. Sin embargo, algunas veces, necesitamos que nuestro <em>cluster</em> ofrezca alto rendimiento, y esto se consigue mediante <em>sharding</em>. Como no queremos renunciar a la alta disponibilidad, podemos aplicar ambas; hoy explicamos como.</p>
+
+<p>El mecanismo de <em>sharding</em> es bastante simple: tenemos nuestros datos repartidos entre uno o mas <em>shards</em>, que se van a repartir los datos del <em>cluster</em>. Para mantener un control de donde están los datos, también vamos a necesitar unos procesos especiales llamados <em>config servers</em>. Finalmente, habrá que poner algunos procesos <em>mongos</em> que son unos <em>proxies</em> al <em>cluster</em> y sirven para ocultar la complejidad del mismo.</p>
+
+<h2 id="visión-del-conjunto">Visión del conjunto</h2>
+
+<p>Hay que decir que el mecanismo de <em>sharding</em> permite poner y quitar <em>shards</em> a <em>posteriori</em>, igual que con los procesos <em>mongos</em>, pero para empezar vamos a necesitar una arquitectura inicial que es lo que vamos a montar.</p>
+
+<p>Para empezar se ha decidido por un <em>cluster</em> de 3 <em>shards</em>, siendo cada uno de ellos un <em>replica set</em> de dos nodos de datos y un árbitro cada uno. Usaremos la cantidad de <em>config servers</em> que se recomienda en la documentación oficial.</p>
+
+<p>Así pues, y tras elegir nombres para los <em>shards</em>, podemos pintar un esquema de nuestro <em>cluster</em>.</p>
+
+<p><img src="/images/sharding_arquitectura_logica.jpg" alt="Arquitectura lógica" /></p>
+
+<p>Para repartir los procesos entre las máquinas, hay dos reglas que hay que respetar a rajatabla:</p>
+
+<ul>
+<li>Los procesos de datos necesitan una máquina propia, para que no se disputen los recursos de disco y memoria.</li>
+<li>No hay que poner nunca dos o mas procesos de cada <em>shard</em>, ya que la no disponibilidad de la máquina supondría la pérdida de la mayoría de las <em>replica sets</em>.</li>
+</ul>
+
+<p>El resto de procesos pueden compartir servidor con los de datos. Hay muchas formas de cumplir con las dos reglas, por ejemplo, la que vamos a montar:</p>
+
+<p><img src="/images/sharding_arquitectura_fisica.jpg" alt="Arquitectura física" /></p>
+
+<h2 id="ansible-al-rescate">Ansible al rescate</h2>
+
+<p>Debido a la gran cantidad de procesos que hay que levantar, se ha decidido por automatizar su despliegue mediante <strong>ansible</strong>. El proceso es bastante similar a <a href="/2015/12/construyendo-una-replica-set-en-mongodb.html">otro de nuestros artículos</a>.</p>
+
+<p>Se ha utilizado el mecanismo de <strong>roles</strong> de <strong>ansible</strong>, para poder desplegar todos los procesos del mismo tipo; el detalle es que se han usado los parámetros en los <strong>roles</strong> para los cambios menores. Si queréis intentarlo o entender como funcionan los despliegues, podéis encontrar los <strong>playbooks</strong> <a href="/downloads/sharding_playbooks.tar.gz">aquí</a>.</p>
+
+<p>El fichero comprimido no incluye los binarios de <strong>mongodb</strong> para reducir tamaño, así que hay que añadirlos en las respectivas carpetas <em>files</em>. Tras descomprimir el fichero <em>.tar.gz</em> y poner los binarios ausentes, nos debería quedar algo como esto:</p>
+
+<pre><code class="language-bash">root@ansible:~# tree
+.
+├── aquila_shard.yaml
+├── clients.yaml
+├── config_servers.yaml
+├── cygnus_shard.yaml
+├── hosts.yaml
+├── lyra_shard.yaml
+├── mongos_servers.yaml
+└── roles
+    ├── client
+    │   ├── files
+    │   │   └── mongo
+    │   └── tasks
+    │       └── main.yaml
+    ├── config
+    │   ├── meta
+    │   │   └── main.yaml
+    │   ├── tasks
+    │   │   └── main.yaml
+    │   └── templates
+    │       ├── config.conf
+    │       └── config.service
+    ├── mongod
+    │   ├── files
+    │   │   └── mongod
+    │   └── tasks
+    │       └── main.yaml
+    ├── mongos
+    │   ├── files
+    │   │   └── mongos
+    │   ├── tasks
+    │   │   └── main.yaml
+    │   └── templates
+    │       ├── mongos.conf
+    │       └── mongos.service
+    └── shard
+        ├── meta
+        │   └── main.yaml
+        ├── tasks
+        │   └── main.yaml
+        └── templates
+            ├── shard.conf
+            └── shard.service
+
+19 directories, 23 files
+root@ansible:~# 
+</code></pre>
+
+<h2 id="preparación-de-las-máquinas">Preparación de las máquinas</h2>
+
+<p>De acuerdo con la arquitectura propuesta, vamos a necesitar 6 servidores para el <em>cluster</em>, que vamos a montar como contenedores LXC y, aunque no es lo ideal, nos vale como demostración. En la séptima máquina es donde tenemos las herramientas de configuración, en este caso, <strong>ansible</strong> y los <strong>playbooks</strong>.</p>
+
+<pre><code class="language-bash">root@lxc:~# lxc-ls -f
+NAME     STATE    IPV4        IPV6  AUTOSTART
+---------------------------------------------
+ansible  RUNNING  10.0.0.254  -     NO
+mongo01  RUNNING  10.0.0.2    -     NO
+mongo02  RUNNING  10.0.0.3    -     NO
+mongo03  RUNNING  10.0.0.4    -     NO
+mongo04  RUNNING  10.0.0.5    -     NO
+mongo05  RUNNING  10.0.0.6    -     NO
+mongo06  RUNNING  10.0.0.7    -     NO
+root@lxc:~#
+</code></pre>
+
+<p>Vamos a declarar todas las máquina usadas en el fichero <em>hosts</em> de <strong>ansible</strong>. Ya de paso, los vamos a catalogar en grupos, para que los <strong>playbooks</strong> se puedan lanzar a los grupos, indistintamente de los servidores que los formen.</p>
+
+<pre><code class="language-bash">root@ansible:~# cat ansible/etc/hosts
+[mongo_servers]
+10.0.0.2
+10.0.0.3
+10.0.0.4
+10.0.0.5
+10.0.0.6
+10.0.0.7
+
+[config_servers]
+10.0.0.2
+10.0.0.3
+10.0.0.4
+
+[aquila_shard_data]
+10.0.0.2
+10.0.0.5
+
+[aquila_shard_arbiters]
+10.0.0.6
+
+[lyra_shard_data]
+10.0.0.3
+10.0.0.6
+
+[lyra_shard_arbiters]
+10.0.0.7
+
+[cygnus_shard_data]
+10.0.0.4
+10.0.0.7
+
+[cygnus_shard_arbiters]
+10.0.0.5
+
+[mongos_servers]
+10.0.0.2
+
+[clients]
+10.0.0.2
+root@ansible:~#
+</code></pre>
+
+<p>Por comodidad, vamos a referirnos a las máquinas por su nombre, y a falta de un servidor DNS adecuado, vamos a rellenar sus ficheros <em>/etc/hosts</em>; para ello vamos a usar un <strong>playbook</strong> que se asegure que esas líneas están en el fichero.</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook hosts.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.2                   : ok=6    changed=6    unreachable=0    failed=0
+10.0.0.3                   : ok=6    changed=6    unreachable=0    failed=0
+10.0.0.4                   : ok=6    changed=6    unreachable=0    failed=0
+10.0.0.5                   : ok=6    changed=6    unreachable=0    failed=0
+10.0.0.6                   : ok=6    changed=6    unreachable=0    failed=0
+10.0.0.7                   : ok=6    changed=6    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<h2 id="los-config-servers">Los config servers</h2>
+
+<p>Los <em>config servers</em> son procesos <strong>mongod</strong> con una configuración concreta. El <strong>playbook</strong> se limita a crear una estructura en <em>/opt/mongodb/</em> asegurándose que hay el binario <strong>mongod</strong>, la configuración, la carpeta de datos y la <em>unit</em> de <strong>systemd</strong> activa.</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook config_servers.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.2                   : ok=7    changed=7    unreachable=0    failed=0
+10.0.0.3                   : ok=7    changed=7    unreachable=0    failed=0
+10.0.0.4                   : ok=7    changed=7    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<h2 id="un-acceso-al-cluster">Un acceso al cluster</h2>
+
+<p>Para poder configurar el <em>cluster</em> y para un uso futuro, hemos decidido poner un proceso <strong>mongos</strong> y el binario <strong>mongo</strong> para poder acceder al <em>mongo shell</em>. Se ha optado por separar los <strong>playbooks</strong>; así se podrá utilizar para desplegarlos por separado en futuras máquinas que los puedan usar.</p>
+
+<p>De hecho, la recomendación oficial es poner un <strong>mongos</strong> en cada <em>backend</em>, aunque no necesitan el binario <strong>mongo</strong> porque disponen de los <em>drivers</em> oficiales del lenguaje que utilicen.</p>
+
+<p>Empezaremos desplegando los procesos <strong>mongos</strong> en donde toque (de momento solo en el servidor <em>mongo01</em>). Este <strong>playbook</strong> se limita a poner el binario <strong>mongos</strong> y su respectiva <em>unit</em> para <strong>systemd</strong>.</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook mongos_servers.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.2                   : ok=6    changed=4    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<p>Para nuestra comodidad, también vamos a desplegar el <em>mongo shell</em>. Este <strong>playbook</strong> se limita a poner el binario <strong>mongo</strong> en su sitio.</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook clients.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.2                   : ok=3    changed=1    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<h2 id="los-procesos-de-los-shards">Los procesos de los shards</h2>
+
+<p>Tenemos 9 procesos de este tipo, así que los <strong>roles</strong> de <strong>ansible</strong> tienen un protagonismo especial. Los cambios entre los procesos son mínimos, y se pasan por parámetro para que el rol cree los ficheros necesarios a partir de una plantilla. El rol se encarga solamente de poner el binario <strong>mongod</strong> en <em>/opt/mongodb/bin</em>, crear la carpeta de datos y configurar el servicio como una <em>unit</em> de <strong>systemd</strong>.</p>
+
+<p>Se ha decidido separar los <em>shards</em> en diferentes <strong>playbooks</strong> para simplificar la creación de futuros nuevos <em>shards</em>; así pues, lanzamos el <strong>playbook</strong> para el primer <em>shard</em>:</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook aquila_shard.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.2                   : ok=7    changed=4    unreachable=0    failed=0
+10.0.0.5                   : ok=7    changed=7    unreachable=0    failed=0
+10.0.0.6                   : ok=7    changed=7    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<p>Acto seguido, lanzamos el <strong>playbook</strong> responsable de montar los procesos del segundo <em>shard</em>:</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook lyra_shard.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.3                   : ok=7    changed=4    unreachable=0    failed=0
+10.0.0.6                   : ok=7    changed=4    unreachable=0    failed=0
+10.0.0.7                   : ok=7    changed=7    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<p>Y finalmente, lanzamos el tercer <strong>playbook</strong> para desplegar los procesos del último <em>shard</em>:</p>
+
+<pre><code class="language-bash">root@ansible:~# ansible-playbook cygnus_shard.yaml
+
+...
+
+PLAY RECAP *********************************************************************
+10.0.0.4                   : ok=7    changed=4    unreachable=0    failed=0
+10.0.0.5                   : ok=7    changed=4    unreachable=0    failed=0
+10.0.0.7                   : ok=7    changed=4    unreachable=0    failed=0
+
+root@ansible:~#
+</code></pre>
+
+<h2 id="atando-los-replica-sets">Atando los replica sets</h2>
+
+<p>El paso anterior nos ha dejado todos los procesos en funcionamiento, pero no hemos iniciado los <em>replica sets</em>. Para que funcionen como tal, tenemos que configurarlos uno por uno como ya sabemos hacer, usando <em>rs.status()</em> para verificar que ha quedado todo como debe.</p>
+
+<p>Empezaremos con una máquina cualquiera del primer <em>shard</em>; la configuración se propagará al resto sin nuestra intervención.</p>
+
+<pre><code class="language-bash">root@mongo01:~# /opt/mongodb/bin/mongo --host 10.0.0.5 --port 27018
+MongoDB shell version: 3.2.5
+connecting to: 10.0.0.5:27018/test
+...
+&gt; config = {
+...     _id : &quot;aquila&quot;,
+...      members : [
+...          {_id : 0, host : &quot;mongo01:27018&quot;},
+...          {_id : 1, host : &quot;mongo04:27018&quot;},
+...          {_id : 2, host : &quot;mongo05:27020&quot;, arbiterOnly: true},
+...      ]
+... }
+...
+&gt; rs.initiate(config)
+{ &quot;ok&quot; : 1 }
+aquila:OTHER&gt; rs.status()
+...
+aquila:PRIMARY&gt; exit
+bye
+root@mongo01:~#
+</code></pre>
+
+<p>Seguimos con el segundo <em>shard</em>, entrando en una de sus máquinas y lanzando el comando de configuración.</p>
+
+<pre><code class="language-bash">root@mongo01:~# /opt/mongodb/bin/mongo --host 10.0.0.6 --port 27018
+MongoDB shell version: 3.2.5
+connecting to: 10.0.0.6:27018/test
+...
+&gt; config = {
+...     _id : &quot;lyra&quot;,
+...      members : [
+...          {_id : 0, host : &quot;mongo02:27018&quot;},
+...          {_id : 1, host : &quot;mongo05:27018&quot;},
+...          {_id : 2, host : &quot;mongo06:27020&quot;, arbiterOnly: true},
+...      ]
+... }
+...
+&gt; rs.initiate(config)
+{ &quot;ok&quot; : 1 }
+lyra:OTHER&gt; rs.status()
+...
+lyra:PRIMARY&gt; exit
+bye
+root@mongo01:~#
+</code></pre>
+
+<p>Y montamos el tercer <em>shard</em> desde una cualquiera de sus <em>replicas</em>.</p>
+
+<pre><code class="language-bash">root@mongo01:~# /opt/mongodb/bin/mongo --host 10.0.0.7 --port 27018
+MongoDB shell version: 3.2.5
+connecting to: 10.0.0.7:27018/test
+...
+&gt; config = {
+...     _id : &quot;cygnus&quot;,
+...      members : [
+...          {_id : 0, host : &quot;mongo03:27018&quot;},
+...          {_id : 1, host : &quot;mongo06:27018&quot;},
+...          {_id : 2, host : &quot;mongo04:27020&quot;, arbiterOnly: true},
+...      ]
+... }
+...
+&gt; rs.initiate(config)
+{ &quot;ok&quot; : 1 }
+cygnus:OTHER&gt; rs.status()
+...
+cygnus:PRIMARY&gt; exit
+bye
+root@mongo01:~#
+</code></pre>
+
+<h2 id="añadiendo-los-shards-al-cluster">Añadiendo los shards al cluster</h2>
+
+<p>Ahora tenemos un grupo de <em>config servers</em>, que forman un <em>cluster</em> de 0 <em>shards</em> (válido pero inútil, ya que no tenemos donde guardar los datos). También disponemos de 3 <em>replica sets</em> independientes, que se convertirán en los futuros <em>shards</em>. Solo falta asociar los <em>shards</em> al resto del <em>cluster</em>, mediante el comando <em>sh.addShard()</em>.</p>
+
+<p>Para ello entramos en un <strong>mongos</strong> desde donde lanzaremos los comandos. De hecho, solo tenemos uno, en <em>mongo01</em>. Puesto que está en la misma máquina que el cliente <strong>mongo</strong> y corre en el puerto estándar 27017, no hace falta especificar ni el <em>host</em> ni el puerto.</p>
+
+<pre><code class="language-bash">root@mongo01:~# /opt/mongodb/bin/mongo
+MongoDB shell version: 3.2.5
+connecting to: test
+...
+mongos&gt;
+</code></pre>
+
+<p>Veamos como está el cluster antes de añadir los <em>shards</em>:</p>
+
+<pre><code class="language-bash">mongos&gt; printShardingStatus()
+--- Sharding Status ---
+  sharding version: {
+        &quot;_id&quot; : 1,
+        &quot;minCompatibleVersion&quot; : 5,
+        &quot;currentVersion&quot; : 6,
+        &quot;clusterId&quot; : ObjectId(&quot;571dd47adbda7a5a80047a5d&quot;)
+}
+  shards:
+  active mongoses:
+        &quot;3.2.5&quot; : 1
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+
+mongos&gt;
+</code></pre>
+
+<p>Procedemos a lanzar el comando para añadir cada <em>shard</em>. Es interesante saber que el proceso <strong>mongos</strong> puede reconocer la forma de cada <em>replica set</em> a partir de cualquiera de sus procesos. Podemos dar la URL con una sola máquina, o con varias de ellas. Lo importante es que alguna de ellas esté levantada, para que el proceso <strong>mongos</strong> pueda descubrir el resto a partir de su configuración.</p>
+
+<pre><code class="language-bash">mongos&gt; sh.addShard('aquila/mongo01:27018')
+{ &quot;shardAdded&quot; : &quot;aquila&quot;, &quot;ok&quot; : 1 }
+mongos&gt; sh.addShard('lyra/mongo02:27018,mongo05:27018,mongo06:27020')
+{ &quot;shardAdded&quot; : &quot;lyra&quot;, &quot;ok&quot; : 1 }
+mongos&gt; sh.addShard('cygnus/mongo06:27018')
+{ &quot;shardAdded&quot; : &quot;cygnus&quot;, &quot;ok&quot; : 1 }
+mongos&gt;
+</code></pre>
+
+<p>Después de añadir los <em>shards</em>, podemos ver como queda el <em>cluster</em> con una sola consulta.</p>
+
+<pre><code class="language-bash">mongos&gt; printShardingStatus()
+--- Sharding Status ---
+  sharding version: {
+        &quot;_id&quot; : 1,
+        &quot;minCompatibleVersion&quot; : 5,
+        &quot;currentVersion&quot; : 6,
+        &quot;clusterId&quot; : ObjectId(&quot;571dd47adbda7a5a80047a5d&quot;)
+}
+  shards:
+        {  &quot;_id&quot; : &quot;aquila&quot;,  &quot;host&quot; : &quot;aquila/mongo01:27018,mongo04:27018&quot; }
+        {  &quot;_id&quot; : &quot;cygnus&quot;,  &quot;host&quot; : &quot;cygnus/mongo03:27018,mongo06:27018&quot; }
+        {  &quot;_id&quot; : &quot;lyra&quot;,  &quot;host&quot; : &quot;lyra/mongo02:27018,mongo05:27018&quot; }
+  active mongoses:
+        &quot;3.2.5&quot; : 1
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours:
+                No recent migrations
+  databases:
+
+mongos&gt;
+</code></pre>
+
+<p>Y como todo funciona como debe, salimos del <em>mongo shell</em> para evitar meter la pata.</p>
+
+<pre><code class="language-bash">mongos&gt; exit
+bye
+root@mongo01:~#
+</code></pre>
+
+<p>Y con esto, tenemos nuestro <em>cluster</em> listo y preparado para su uso.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

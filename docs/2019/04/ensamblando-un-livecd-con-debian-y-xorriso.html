@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ensamblando un livecd con Debian y xorriso - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Ensamblando un livecd con Debian y xorriso</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-04-05
+	<strong>Tiempo de lectura</strong>: 9 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/stretch.html">stretch</a> / <a href="/tag/zerofree.html">zerofree</a> / <a href="/tag/debootstrap.html">debootstrap</a> / <a href="/tag/squashfs.html">squashfs</a> / <a href="/tag/xorriso.html">xorriso</a> / <a href="/tag/isolinux.html">isolinux</a> / <a href="/tag/iso.html">iso</a> / <a href="/tag/livecd.html">livecd</a>
+</p>
+
+<p>Últimamente me he visto obligado a virtualizar en una máquina distinta de la habitual por un problema técnico; esto no sería un problema de no ser porque la arquitectura es de 32 bits. Eso me deja sin ninguna distribución prefabricada con la herramienta <code>zerofree</code> y me obliga a hacer una.</p>
+
+<p>Ya lo hice una vez, tal como muestro en <a href="/2015/12/creacion-de-un-livecd-con-debian.html">este otro artículo</a>, pero las herramientas han cambiado mucho y era necesario hacer un artículo nuevo actualizado. El cambio principal es la sustitución de <code>genisoimage</code> por <code>xorriso</code>; también actualizo la versión de <strong>Debian</strong> a <strong>stretch</strong>, aunque esto no cambia el proceso de creación del <em>livecd</em>.</p>
+
+<h2 id="preparación-del-entorno-de-trabajo">Preparación del entorno de trabajo</h2>
+
+<p>Empezamos instalando las herramientas necesarias:</p>
+
+<pre><code class="language-bash">gerard@builder:~$ sudo apt install debootstrap isolinux squashfs-tools xorriso
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias       
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes adicionales:
+  libburn4 libisoburn1 libisofs6 libjte1 liblzo2-2 syslinux-common
+Paquetes sugeridos:
+  jigit cdck
+Se instalarán los siguientes paquetes NUEVOS:
+  debootstrap isolinux libburn4 libisoburn1 libisofs6 libjte1 liblzo2-2 squashfs-tools
+  syslinux-common xorriso
+0 actualizados, 10 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 2.715 kB de archivos.
+Se utilizarán 7.072 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+gerard@builder:~$ 
+</code></pre>
+
+<p>Para tener el entorno estructurado, vamos a crear una carpeta contenedora y vamos a trabajar desde la misma.</p>
+
+<pre><code class="language-bash">gerard@builder:~$ mkdir live_boot
+gerard@builder:~$ cd live_boot/
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>En esta carpeta vamos a acumular otras subcarpetas:</p>
+
+<ul>
+<li><code>image</code> &rarr; Esta carpeta es la que utiliza <code>xorriso</code> para montar la imagen iso, y tiene dos subcarpetas:
+
+<ul>
+<li><code>image/isolinux</code> &rarr; Carpeta con la configuración del <code>bootloader</code> <strong>isolinux</strong> y los módulos que pueda necesitar</li>
+<li><code>image/live</code> &rarr; Carpeta que alberga el <em>kernel</em>, el <em>initrd</em> y el sistema de ficheros del sistema <em>live</em> en formato <strong>squashfs</strong></li>
+</ul></li>
+<li><code>chroot</code> &rarr; Carpeta en donde vamos a hacer el <code>debootstrap</code> del sistema de ficheros del sistema <em>live</em>, antes de comprimirlo con <strong>squashfs</strong></li>
+</ul>
+
+<p>Vamos a empezar por crear la estructura necesaria para la imagen. Sin embargo, no vamos a crear la carpeta <code>chroot</code>, ya que se va a crear con el mismo comando <code>debootstrap</code>.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo mkdir -p image/{live,isolinux}
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<h2 id="preparación-del-bootloader">Preparación del bootloader</h2>
+
+<p>Esta es la parte más fácil y rápida del proceso; la hacemos cuanto antes y nos la quitamos de encima. Si en un futuro recreamos el sistema <em>live</em>, seguramente no vamos a tener que cambiar esto, e incluso nos puede servir para un sistema <em>live</em> completamente distinto.</p>
+
+<p>La parte de los módulos no ocupa demasiado (no llega a 1 mb); personalmente prefiero copiarlos todos y que no falten.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo cp /usr/lib/ISOLINUX/isolinux.bin image/isolinux/
+gerard@builder:~/live_boot$ sudo cp /usr/lib/syslinux/modules/bios/* image/isolinux/
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>El <em>bootloader</em> necesita un fichero de configuración para definir el menú de entrada, y <strong>isolinux</strong> no es la excepción. Pongo uno sencillo y bastante genérico:</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ cat image/isolinux/isolinux.cfg 
+UI menu.c32
+
+prompt 0
+menu title Debian Zerofree
+
+timeout 30
+
+label Debian Live
+menu label ^Debian Live
+menu default
+kernel /live/vmlinuz
+append initrd=/live/initrd boot=live
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Y eso es todo.</p>
+
+<h2 id="el-sistema-de-ficheros-raíz">El sistema de ficheros raíz</h2>
+
+<p>La forma oficial de crear un sistema raíz <strong>Debian</strong> es utilizar <strong>debootstrap</strong>. Para minimizar el tamaño del sistema de ficheros (y por lo tanto, del <em>livecd</em>), he optado por utilizar la variante <em>minbase</em> que limita los paquetes que entiende como &ldquo;sistema base&rdquo;; el resto tendrán que entrar como dependencias de lo que instalemos. Este comando va a crear el sistema base en la carpeta <code>chroot</code>, que ya indicábamos al principio del artículo.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo debootstrap --variant=minbase stretch chroot
+I: Retrieving InRelease 
+I: Retrieving Release 
+I: Retrieving Release.gpg 
+I: Checking Release signature
+I: Valid Release signature (key id 067E3C456BAE240ACEE88F6FEF0F382A1A7B6500)
+I: Retrieving Packages 
+I: Validating Packages 
+...
+I: Base system installed successfully.
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Para acabar de configurar el sistema base, vamos a entrar en la jaula creada y para ello necesitamos montar los sistemas de ficheros del sistema:</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo mount -o bind /proc/ chroot/proc/
+gerard@builder:~/live_boot$ sudo mount -o bind /sys/ chroot/sys/
+gerard@builder:~/live_boot$ sudo mount -o bind /dev/ chroot/dev/
+gerard@builder:~/live_boot$ sudo mount -o bind /dev/pts/ chroot/dev/pts/
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Usamos el comando <code>chroot</code> para entrar en la jaula, que está en la carpeta del mismo nombre:</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo chroot chroot/
+root@builder:/# 
+</code></pre>
+
+<p><strong>AVISO</strong>: Hasta nuevo aviso, todos los comandos se ejecutan dentro de la jaula.</p>
+
+<p>Vamos a habilitar al usuario <code>root</code> asignándole una contraseña. Esto nos permitirá acceder al sistema usando este usuario. Lo recomendable sería un usuario normal, tal vez con permisos de <code>sudo</code>; en este caso voy a saltarme esta práctica.</p>
+
+<pre><code class="language-bash">root@builder:/# passwd
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+root@builder:/# 
+</code></pre>
+
+<p>Modificamos la configuración relativa al nombre del sistema <em>live</em> para que le quede un nombre apropiado.</p>
+
+<pre><code class="language-bash">root@builder:/# echo &quot;zerofree&quot; &gt; /etc/hostname
+root@builder:/# 
+</code></pre>
+
+<p>Para que el sistema <em>live</em> pueda arrancar, vamos a necesitar algunos paquetes más: un <em>kernel</em>, los <em>scripts</em> para hacer un <em>live boot</em> y el paquete <code>systemd-sysv</code> que nos va a proveer del binario necesario <code>/sbin/init</code>, que es el que se ejecuta al acabar de cargar el <em>kernel</em>.</p>
+
+<pre><code class="language-bash">root@builder:/# apt install linux-image-686 live-boot systemd-sysv
+Reading package lists... Done
+Building dependency tree... Done
+...  
+Do you want to continue? [Y/n] y
+...
+update-initramfs: Generating /boot/initrd.img-4.9.0-8-686
+live-boot: core filesystems devices utils udev blockdev dns.
+root@builder:/# 
+</code></pre>
+
+<p>También voy a instalar las herramientas que motivaron la creación del <em>livecd</em>, que en este caso es <strong>zerofree</strong>.</p>
+
+<pre><code class="language-bash">root@builder:/# apt install zerofree
+...
+root@builder:/# 
+</code></pre>
+
+<p>Para reducir aún más el tamaño del sistema de ficheros hacemos algunas limpiezas, como por ejemplo de listados de paquetes y paquetes descargados. Aquí se podría borrar mucho más, pero nuevamente voy a lo fácil y seguro.</p>
+
+<pre><code class="language-bash">root@builder:/# cat /dev/null &gt; /etc/apt/sources.list
+root@builder:/# apt update
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+All packages are up to date.
+root@builder:/# 
+</code></pre>
+
+<pre><code class="language-bash">root@builder:/# apt clean
+root@builder:/# 
+</code></pre>
+
+<p>Como ya no tenemos nada más que hacer en la jaula, salimos de la misma:</p>
+
+<pre><code class="language-bash">root@builder:/# exit
+exit
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p><strong>AVISO</strong>: Todos los comandos que siguen se ejecutan fuera de la jaula.</p>
+
+<p>Desmontamos los sistemas de ficheros del sistema, porque la jaula no los necesita y no queremos que queden ocupando espacio cuando comprimamos el sistema de ficheros.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo umount chroot/dev/pts/
+gerard@builder:~/live_boot$ sudo umount chroot/dev/
+gerard@builder:~/live_boot$ sudo umount chroot/sys/
+gerard@builder:~/live_boot$ sudo umount chroot/proc/
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Si se necesita modificar alguna configuración a <em>posteriori</em>, no siempre es necesario entrar de nuevo en la jaula; basta con modificar el fichero, relativo a la carpeta de la jaula. En mi caso, me olvidé de modificar el <code>.bash_history</code>, y poner una lista de comandos me permite recuperarlos con las flechas direccionales; esto es muy cómodo cuando vas a lanzar los mismos comandos una y otra vez.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo cat chroot/root/.bash_history
+zerofree /dev/sda1
+poweroff
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Y con esto nos queda el sistema de ficheros. Es interesante guardar la carpeta <code>chroot</code> después de comprimir el sistema de ficheros (aunque no se use), ya que si algo no está a nuestro gusto podemos rectificarlo y comprimir de nuevo, reduciendo el tiempo considerablemente.</p>
+
+<h2 id="ensamblando-la-imagen-iso">Ensamblando la imagen .iso</h2>
+
+<p>Llegados a este punto, solo necesitamos rellenar la carpeta <code>image/live</code>, puesto que <code>image/isolinux</code> ya tiene lo que necesitamos. Esta carpeta solo necesita 3 ficheros:</p>
+
+<ul>
+<li>El <em>kernel</em></li>
+<li>El <em>initrd</em></li>
+<li>El sistema de ficheros comprimido</li>
+</ul>
+
+<p>Los dos primeros están instalados en la jaula, porque pusimos la imagen de <em>kernel</em> que nos pareció adecuada; simplemente nos los copiamos.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo cp chroot/boot/vmlinuz-4.9.0-8-686 image/live/vmlinuz
+gerard@builder:~/live_boot$ sudo cp chroot/boot/initrd.img-4.9.0-8-686 image/live/initrd
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>El sistema de ficheros comprimido tampoco tiene mucho más problema; solo hay que tener en cuenta que <strong>isolinux</strong> no puede leer el <em>kernel</em> del fichero comprimido. Esto nos obliga a poner el <em>kernel</em> fuera del sistema comprimido (esto es el paso anterior), y nos permite excluirlo del fichero comprimido.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo mksquashfs chroot image/live/filesystem.squashfs -e boot
+Parallel mksquashfs: Using 1 processor
+Creating 4.0 filesystem on image/live/filesystem.squashfs, block size 131072.
+...
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Si lo hemos hecho bien, nos va a quedar una estructura similar a esta (excluyo la carpeta <code>chroot</code> por legibilidad, ya que no se usa para nada de ahora en adelante):</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ tree -Ih chroot
+.
+└── [4.0K]  image
+    ├── [4.0K]  isolinux
+    │   ├── [1.6K]  cat.c32
+    │   ├── [ 24K]  chain.c32
+    │   ├── [1.2K]  cmd.c32
+    │   ├── [3.6K]  cmenu.c32
+    │   ├── [1.5K]  config.c32
+    │   ├── [4.1K]  cptime.c32
+    │   ├── [4.4K]  cpu.c32
+    │   ├── [1.7K]  cpuid.c32
+    │   ├── [2.7K]  cpuidtest.c32
+    │   ├── [1.6K]  debug.c32
+    │   ├── [4.0K]  dhcp.c32
+    │   ├── [2.0K]  disk.c32
+    │   ├── [8.4K]  dmi.c32
+    │   ├── [ 12K]  dmitest.c32
+    │   ├── [3.2K]  elf.c32
+    │   ├── [2.7K]  ethersel.c32
+    │   ├── [ 10K]  gfxboot.c32
+    │   ├── [1.6K]  gpxecmd.c32
+    │   ├── [161K]  hdt.c32
+    │   ├── [3.6K]  hexdump.c32
+    │   ├── [1.8K]  host.c32
+    │   ├── [1.7K]  ifcpu64.c32
+    │   ├── [4.0K]  ifcpu.c32
+    │   ├── [4.2K]  ifmemdsk.c32
+    │   ├── [1.9K]  ifplop.c32
+    │   ├── [ 40K]  isolinux.bin
+    │   ├── [ 175]  isolinux.cfg
+    │   ├── [1.6K]  kbdmap.c32
+    │   ├── [4.8K]  kontron_wdt.c32
+    │   ├── [114K]  ldlinux.c32
+    │   ├── [5.0K]  lfs.c32
+    │   ├── [178K]  libcom32.c32
+    │   ├── [ 65K]  libgpl.c32
+    │   ├── [ 99K]  liblua.c32
+    │   ├── [ 24K]  libmenu.c32
+    │   ├── [ 23K]  libutil.c32
+    │   ├── [4.6K]  linux.c32
+    │   ├── [2.9K]  ls.c32
+    │   ├── [6.7K]  lua.c32
+    │   ├── [10.0K]  mboot.c32
+    │   ├── [2.4K]  meminfo.c32
+    │   ├── [ 26K]  menu.c32
+    │   ├── [3.3K]  pci.c32
+    │   ├── [3.4K]  pcitest.c32
+    │   ├── [2.9K]  pmload.c32
+    │   ├── [1.6K]  poweroff.c32
+    │   ├── [3.1K]  prdhcp.c32
+    │   ├── [1.5K]  pwd.c32
+    │   ├── [ 12K]  pxechn.c32
+    │   ├── [1.3K]  reboot.c32
+    │   ├── [ 13K]  rosh.c32
+    │   ├── [1.6K]  sanboot.c32
+    │   ├── [3.1K]  sdi.c32
+    │   ├── [ 15K]  sysdump.c32
+    │   ├── [7.4K]  syslinux.c32
+    │   ├── [3.0K]  vesa.c32
+    │   ├── [2.1K]  vesainfo.c32
+    │   ├── [ 26K]  vesamenu.c32
+    │   ├── [1.8K]  vpdtest.c32
+    │   ├── [2.4K]  whichsys.c32
+    │   └── [3.5K]  zzjson.c32
+    └── [4.0K]  live
+        ├── [111M]  filesystem.squashfs
+        ├── [ 18M]  initrd
+        └── [3.4M]  vmlinuz
+
+3 directories, 64 files
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Si es así, lo tenemos todo; solo hace falta lanzar <strong>xorriso</strong> para que nos lo empaquete todo en un fichero <code>.iso</code>:</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ sudo xorriso -as mkisofs -r -J -joliet-long -l -cache-inodes -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin -partition_offset 16 -A &quot;Debian Live&quot; -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o debian-zerofree.iso image
+xorriso 1.4.6 : RockRidge filesystem manipulator, libburnia project.
+
+Drive current: -outdev 'stdio:debian-zerofree.iso'
+Media current: stdio file, overwriteable
+Media status : is blank
+Media summary: 0 sessions, 0 data blocks, 0 data, 6676m free
+xorriso : NOTE : -as mkisofs: Ignored option '-cache-inodes'
+Added to ISO image: directory '/'='/home/gerard/live_boot/image'
+xorriso : UPDATE : 66 files added in 1 seconds
+xorriso : UPDATE : 66 files added in 1 seconds
+xorriso : NOTE : Copying to System Area: 432 bytes from file '/usr/lib/ISOLINUX/isohdpfx.bin'
+libisofs: NOTE : Aligned image size to cylinder size by 245 blocks
+...  
+ISO image produced: 69120 sectors
+Written to medium : 69120 sectors at LBA 0
+Writing to 'stdio:debian-zerofree.iso' completed successfully.
+
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Y con esto deberíamos tener el fichero generado en la misma carpeta.</p>
+
+<pre><code class="language-bash">gerard@builder:~/live_boot$ ls -lh *.iso
+-rw-r--r-- 1 root root 135M mar 26 20:18 debian-zerofree.iso
+gerard@builder:~/live_boot$ 
+</code></pre>
+
+<p>Si no nos convence el resultado, bastaría con modificar la jaula a nuestro gusto, reempaquetar el sistema de ficheros, copiar el <em>kernel</em> y el <em>initrd</em> si han cambiado, y relanzar <strong>xorriso</strong>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

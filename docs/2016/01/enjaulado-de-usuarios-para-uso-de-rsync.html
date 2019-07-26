@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Enjaulado de usuarios para uso de rsync - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Enjaulado de usuarios para uso de rsync</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-01-04
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/rsync.html">rsync</a> / <a href="/tag/rssh.html">rssh</a> / <a href="/tag/ssh.html">ssh</a> / <a href="/tag/ldd.html">ldd</a> / <a href="/tag/jaula.html">jaula</a>
+</p>
+
+<p>Todos nos hemos encontrado alguna vez con una web, sea en <em>HTML</em> o en <em>PHP</em>, que se compone de centenares o miles de ficheros, y que hay que ir actualizando cada vez que cambian unos pocos ficheros. En estos casos la capacidad incremental de la herramienta <strong>rsync</strong> puede ayudarnos mucho.</p>
+
+<p>Sin embargo, la herramienta <strong>rsync</strong> funciona por el puerto de <em>SSH</em>, y dar acceso al mismo es un problema desde el punto de vista de la seguridad del sistema. Vamos a crear una jaula para los usuarios que lo necesiten, y vamos a limitar los comandos que puede utilizar, de forma que solo pueda hacer <strong>rsync</strong>.</p>
+
+<p>Para poder continuar, necesitamos las 2 herramientas que se van a usar: <strong>rsync</strong> y <strong>rssh</strong>.</p>
+
+<pre><code class="language-bash">root@webserver:~# apt-get install rssh rsync
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias       
+Leyendo la información de estado... Hecho
+...
+Se instalarán los siguientes paquetes NUEVOS:
+  libpopt0 rssh rsync
+0 actualizados, 3 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 505 kB de archivos.
+Se utilizarán 962 kB de espacio de disco adicional después de esta operación.
+...
+root@webserver:~# 
+</code></pre>
+
+<h2 id="preparación-del-sistema-de-enjaulado">Preparación del sistema de enjaulado</h2>
+
+<p>Como decisión de diseño, he decidido que voy a enjaular todos los usuarios que pertenezcan a un grupo, al que llamaremos <em>restricted</em>.</p>
+
+<pre><code class="language-bash">root@webserver:~# groupadd restricted
+root@webserver:~# 
+</code></pre>
+
+<p>Ahora vamos a configurar el demonio <strong>SSH</strong> para que todos los usuarios del grupo <em>restricted</em> queden enjaulados en <em>/srv/jails/</em>, en una carpeta por usuario. La directiva <em>X11Forwarding</em> y <em>AllowTcpForwarding</em> son restricciones adicionales y no son necesarias.</p>
+
+<pre><code class="language-bash">root@webserver:~# cat /etc/ssh/sshd_config 
+...
+Match group restricted
+	ChrootDirectory /srv/jails/%u
+	X11Forwarding no
+	AllowTcpForwarding no
+root@webserver:~# 
+</code></pre>
+
+<p>Y reiniciamos el demonio para que se apliquen las modificaciones en la configuración.</p>
+
+<pre><code class="language-bash">root@webserver:~# service ssh restart
+root@webserver:~# 
+</code></pre>
+
+<h2 id="creando-una-jaula-para-el-primer-usuario">Creando una jaula para el primer usuario</h2>
+
+<p>Para tener un usuario enjaulado, necesitamos un usuario, en este caso, el usuario <em>web</em>. Le vamos a poner <em>rssh</em> como shell, su carpeta personal como <em>/</em> y le asignamos el grupo <em>restricted</em> para que quede enjaulado.</p>
+
+<pre><code class="language-bash">root@webserver:~# useradd -d / -s /usr/bin/rssh -G restricted web
+root@webserver:~# 
+</code></pre>
+
+<p>Para que el usuario <em>web</em> pueda entrar en esta máquina, necesita una contraseña. Alternativamente, podríamos haber montado una autenticación por claves <em>SSH</em>.</p>
+
+<pre><code class="language-bash">root@webserver:~# passwd web
+Introduzca la nueva contraseña de UNIX: 
+Vuelva a escribir la nueva contraseña de UNIX: 
+passwd: contraseña actualizada correctamente
+root@webserver:~# 
+</code></pre>
+
+<p>Y ahora vamos a crearle una estructura de carpetas muy básica en donde deberá estar su jaula. Puesto que se trata del usuario <em>web</em>, la carpeta de la jaula (la que el usuario verá como <em>/</em>) va a ser <em>/srv/jails/web/</em>.</p>
+
+<p><strong>IMPORTANTE</strong>: Esta carpeta y todas las de la ruta deben perteneces al usuario <em>root</em> y tener permisos de escritura solo por el <em>owner</em>; de otra manera, el <em>SSH</em> falla al enjaular.</p>
+
+<pre><code class="language-bash">root@webserver:~# mkdir -p /srv/jails/web/{usr/bin,etc,lib}
+root@webserver:~# 
+</code></pre>
+
+<p>Para limitar que el usuario solo pueda hacer <em>rsync</em> vamos a necesitar la ayuda de <em>rssh</em>; así pues, vamos a poner ambos binarios en la jaula.</p>
+
+<pre><code class="language-bash">root@webserver:~# cp /usr/bin/rssh /srv/jails/web/usr/bin/
+root@webserver:~# cp /usr/bin/rsync /srv/jails/web/usr/bin/
+root@webserver:~# 
+</code></pre>
+
+<p>Estos dos comandos son binarios <em>linkados</em> dinámicamente que necesitan librerías. Vamos a buscarlos con el comando <strong>ldd</strong>.</p>
+
+<pre><code class="language-bash">root@webserver:~# ldd /usr/bin/rssh 
+	linux-gate.so.1 (0xb7789000)
+	libc.so.6 =&gt; /lib/i386-linux-gnu/libc.so.6 (0xb760a000)
+	/lib/ld-linux.so.2 (0xb778c000)
+root@webserver:~# ldd /usr/bin/rsync 
+	linux-gate.so.1 (0xb7741000)
+	libattr.so.1 =&gt; /lib/i386-linux-gnu/libattr.so.1 (0xb76a3000)
+	libacl.so.1 =&gt; /lib/i386-linux-gnu/libacl.so.1 (0xb7699000)
+	libpopt.so.0 =&gt; /lib/i386-linux-gnu/libpopt.so.0 (0xb768a000)
+	libc.so.6 =&gt; /lib/i386-linux-gnu/libc.so.6 (0xb7519000)
+	/lib/ld-linux.so.2 (0xb7744000)
+root@webserver:~# 
+</code></pre>
+
+<p>Y las copiamos en la carpeta <em>lib</em> de la jaula.</p>
+
+<pre><code class="language-bash">root@webserver:~# cp /lib/ld-linux.so.2 /srv/jails/web/lib/
+root@webserver:~# cp /lib/i386-linux-gnu/libc.so.6 /srv/jails/web/lib/
+root@webserver:~# cp /lib/i386-linux-gnu/libattr.so.1 /srv/jails/web/lib/
+root@webserver:~# cp /lib/i386-linux-gnu/libacl.so.1 /srv/jails/web/lib/
+root@webserver:~# cp /lib/i386-linux-gnu/libpopt.so.0 /srv/jails/web/lib/
+root@webserver:~# 
+</code></pre>
+
+<p>Voy a quitar los permisos de ejecución de la librería <em>libc</em> porque no lo necesita.</p>
+
+<pre><code class="language-bash">root@webserver:~# chmod 644 /srv/jails/web/lib/libc.so.6 
+root@webserver:~# 
+</code></pre>
+
+<p>Ahora que tenemos las librerías en la jaula, volvemos a mirar que otras librerías puedan necesitar con <strong>ldd</strong>, para evitar dejarnos ninguna.</p>
+
+<pre><code class="language-bash">root@webserver:~# ldd /srv/jails/web/lib/*
+/srv/jails/web/lib/ld-linux.so.2:
+	statically linked
+/srv/jails/web/lib/libacl.so.1:
+	linux-gate.so.1 (0xb77b3000)
+	libattr.so.1 =&gt; /lib/i386-linux-gnu/libattr.so.1 (0xb779e000)
+	libc.so.6 =&gt; /lib/i386-linux-gnu/libc.so.6 (0xb762d000)
+	/lib/ld-linux.so.2 (0xb77b6000)
+/srv/jails/web/lib/libattr.so.1:
+	linux-gate.so.1 (0xb7756000)
+	libc.so.6 =&gt; /lib/i386-linux-gnu/libc.so.6 (0xb75da000)
+	/lib/ld-linux.so.2 (0xb7759000)
+/srv/jails/web/lib/libc.so.6:
+	/lib/ld-linux.so.2 (0xb779f000)
+	linux-gate.so.1 (0xb779c000)
+/srv/jails/web/lib/libpopt.so.0:
+	linux-gate.so.1 (0xb7782000)
+	libc.so.6 =&gt; /lib/i386-linux-gnu/libc.so.6 (0xb75fe000)
+	/lib/ld-linux.so.2 (0xb7785000)
+root@webserver:~# 
+</code></pre>
+
+<p>Y como no han entrado de nuevas, hemos acabado con esto. Ahora vamos a copiar la configuración de <strong>rssh</strong>.</p>
+
+<pre><code class="language-bash">root@webserver:~# cp /etc/rssh.conf /srv/jails/web/etc/
+root@webserver:~# 
+</code></pre>
+
+<p>Vamos a añadir la directiva <em>allowrsync</em> ya que, por defecto, no se permite nada:</p>
+
+<p><strong>ANTES</strong>:</p>
+
+<pre><code class="language-bash">root@webserver:~# grep allowrsync /srv/jails/web/etc/rssh.conf 
+#allowrsync
+root@webserver:~# 
+</code></pre>
+
+<p><strong>DESPUES</strong>:</p>
+
+<pre><code class="language-bash">root@webserver:~# grep allowrsync /srv/jails/web/etc/rssh.conf 
+allowrsync
+root@webserver:~# 
+</code></pre>
+
+<p>Como estamos esperando que el usuario <em>web</em> deje sus cosas en una carpeta <em>www</em>, vamos a crearla, ya que va a ser la única en la que pueda copiar sus cosas.</p>
+
+<pre><code class="language-bash">root@webserver:~# mkdir /srv/jails/web/www
+root@webserver:~# 
+</code></pre>
+
+<p>Y le damos permisos necesarios para que escriba en ella; por ejemplo, le damos la propiedad de la carpeta.</p>
+
+<pre><code class="language-bash">root@webserver:~# chown web:web /srv/jails/web/www/
+root@webserver:~# 
+</code></pre>
+
+<p>Y con esto queda completa la jaula. Como demostración, muestro la salida del comando <strong>tree</strong>:</p>
+
+<pre><code class="language-bash">root@webserver:~# tree /srv/jails/web/
+/srv/jails/web/
+├── etc
+│   └── rssh.conf
+├── lib
+│   ├── ld-linux.so.2
+│   ├── libacl.so.1
+│   ├── libattr.so.1
+│   ├── libc.so.6
+│   └── libpopt.so.0
+├── usr
+│   └── bin
+│       ├── rssh
+│       └── rsync
+└── www
+
+5 directories, 8 files
+root@webserver:~# 
+</code></pre>
+
+<h2 id="uso-de-la-jaula">Uso de la jaula</h2>
+
+<p>Supongamos que tenemos un proyecto web en una máquina <em>developer</em>, por ejemplo:</p>
+
+<pre><code class="language-bash">gerard@developer:~$ tree web/
+web/
+└── index.html
+
+0 directories, 1 file
+gerard@developer:~$ 
+</code></pre>
+
+<p>Intentamos entrar por <em>SSH</em> y vemos que falla:</p>
+
+<pre><code class="language-bash">gerard@developer:~$ ssh web@10.0.0.2
+web@10.0.0.2's password: 
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Wed Dec 30 21:12:44 2015 from 10.0.0.3
+
+This account is restricted by rssh.
+Allowed commands: rsync 
+
+If you believe this is in error, please contact your system administrator.
+
+Connection to 10.0.0.2 closed.
+gerard@developer:~$ 
+</code></pre>
+
+<p>Vamos a usar <em>rsync</em> para sincronizar este proyecto con el servidor que acabamos de montar. Para eso, la máquina cliente necesita tener instalado el paquete <strong>rsync</strong>.</p>
+
+<pre><code class="language-bash">gerard@developer:~$ rsync -rvzc --delete web/ web@10.0.0.2:/www
+web@10.0.0.2's password: 
+sending incremental file list
+index.html
+
+sent 139 bytes  received 35 bytes  49.71 bytes/sec
+total size is 12  speedup is 0.07
+gerard@developer:~$ 
+</code></pre>
+
+<p>Si repetimos el comando, vemos que la lista de ficheros no incluye el <em>index.html</em>, porque no ha cambiado respecto a lo que tenemos en el servidor, así que no lo manda.</p>
+
+<pre><code class="language-bash">gerard@developer:~$ rsync -rvzc --delete web/ web@10.0.0.2:/www
+web@10.0.0.2's password: 
+sending incremental file list
+
+sent 83 bytes  received 12 bytes  7.60 bytes/sec
+total size is 12  speedup is 0.13
+gerard@developer:~$ 
+</code></pre>
+
+<p>los <em>flags</em> elegidos son <strong>-r</strong> (recursivo), <strong>-v</strong> (verbose), <strong>-z</strong> (comprimido), <strong>-c</strong> (diferenciar por <em>checksum</em>) y <strong>&ndash;delete</strong> (para borrar fichero que estén en el servidor y no deban).</p>
+
+<p><strong>IMPORTANTE</strong>: la carpeta origen acaba con <em>/</em>. Esa es la diferencia entre copiar el contenido de la carpeta y copiar la carpeta misma.</p>
+
+<p>Analizamos el resultado y vemos que lo hemos copiado en <em>/www/</em>, siempre desde el punto de vista de la jaula.</p>
+
+<pre><code class="language-bash">root@webserver:~# ls /www
+ls: no se puede acceder a /www: No existe el fichero o el directorio
+root@webserver:~# tree /srv/jails/web/
+/srv/jails/web/
+├── etc
+│   └── rssh.conf
+├── lib
+│   ├── ld-linux.so.2
+│   ├── libacl.so.1
+│   ├── libattr.so.1
+│   ├── libc.so.6
+│   └── libpopt.so.0
+├── usr
+│   └── bin
+│       ├── rssh
+│       └── rsync
+└── www
+    └── index.html
+
+5 directories, 9 files
+root@webserver:~# 
+</code></pre>
+
+<p>Y con esto está todo hecho. Solo falta instalar el servidor web, pero eso lo dejo pendiente.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

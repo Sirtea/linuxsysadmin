@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>ansible - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: ansible</h1>
+
+<h2 class="article"><a href="/2017/02/alta-disponibilidad-con-keepalived.html">Alta disponibilidad con Keepalived</a></h2>
+<p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
+<p><a class="article" href="/2017/02/alta-disponibilidad-con-keepalived.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Lanzando playbooks de Ansible desde Jenkins</a></h2>
+<p>Somos muchos los amantes del terminal para ejecutar nuestras tareas, sea con <strong>Ansible</strong> o con otras herramientas. A veces nos puede convenir dotar la herramienta de un entorno gráfico o web para que lo hagan otras personas. Aunque ya existe como producto <strong>Ansible Tower</strong>, su precio es prohibitivo para muchos.</p>
+<p><a class="article" href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/08/creando-roles-con-ansible.html">Creando roles con ansible</a></h2>
+<p>Ya vimos que es muy fácil crear varias máquinas iguales con <strong>ansible</strong>. A veces nos puede interesar disponer de recetas y decidir en un <em>playbook</em> general cuales de ellas ponemos en cada servidor. Una receta podría añadir un servidor de aplicaciones mientras que otra podría habilitarnos una bases de datos.</p>
+<p><a class="article" href="/2016/08/creando-roles-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/08/encriptando-datos-sensibles-con-ansible.html">Encriptando datos sensibles con Ansible</a></h2>
+<p>Si usamos <strong>ansible</strong> para configurar otras máquinas tenemos pleno poder para acceder a otras, sea mediante claves SSH o por accesos remotos normales. En este último caso, conviene aplicar un poco de seguridad para evitar que un posible intruso acceda libremente. Para esto podemos encriptar la información sensible con <strong>ansible-vault</strong>.</p>
+<p><a class="article" href="/2016/08/encriptando-datos-sensibles-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/balanceando-peticiones-con-haproxy.html">Balanceando peticiones con HAProxy</a></h2>
+<p>Cuando tenemos un entorno grande o con previsiones de crecimiento, nos interesa poder poner a trabajar varios servidores similares. En casos así nos hace falta un <strong>balanceador de carga</strong>, que actúa como un agente de tráfico, dirigiendo las peticiones que él mismo recibe a los diferentes servidores, por ejemplo, <strong>haproxy</strong>.</p>
+<p><a class="article" href="/2016/06/balanceando-peticiones-con-haproxy.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/controlando-contenedores-docker-con-ansible.html">Controlando contenedores docker con ansible</a></h2>
+<p>La facilidad de levantar un contenedor <strong>docker</strong> nos lleva a la pregunta del millón: ¿es posible usar <strong>docker</strong> para crear contenedores de usar y tirar para probar otras tecnologías? La respuesta es que sí, y para demostrarlo, vamos a generar un entorno minimalista en contenedores <strong>docker</strong>, desplegados mediante <strong>ansible</strong> <em>playbooks</em>.</p>
+<p><a class="article" href="/2016/06/controlando-contenedores-docker-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/algunas-ideas-sueltas-sobre-ansible.html">Algunas ideas sueltas sobre Ansible</a></h2>
+<p>En un <a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">artículo anterior</a> vimos qué era <strong>Ansible</strong> y como instalarlo, dejando su funcionamiento para el lector; Hay miles de tutoriales por internet, y muchos son mejores de los que pueda poner aquí. Sin embargo, hay algunas ideas que no son fáciles de ver juntas, así que aquí las dejo.</p>
+<p><a class="article" href="/2016/05/algunas-ideas-sueltas-sobre-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/mongodb-sharding-con-ansible.html">MongoDB sharding con ansible</a></h2>
+<p>Como ya vimos en un artículo anterior, los <em>replica sets</em> nos ofrecen alta disponibilidad para nuestros despliegues de <strong>mongodb</strong>. Sin embargo, algunas veces, necesitamos que nuestro <em>cluster</em> ofrezca alto rendimiento, y esto se consigue mediante <em>sharding</em>. Como no queremos renunciar a la alta disponibilidad, podemos aplicar ambas; hoy explicamos como.</p>
+<p><a class="article" href="/2016/05/mongodb-sharding-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Instalando ansible para gestionar servidores</a></h2>
+<p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
+<p><a class="article" href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/ansible.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

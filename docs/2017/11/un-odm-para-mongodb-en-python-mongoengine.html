@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un ODM para mongodb en python: mongoengine - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un ODM para mongodb en python: mongoengine</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-11-27
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/mongoengine.html">mongoengine</a> / <a href="/tag/odm.html">odm</a>
+</p>
+
+<p>Aquellos que hemos usado <strong>mongodb</strong> desde <strong>python</strong>, ya conocemos las virtudes de <strong>pymongo</strong>. Sin embargo, este lenguaje es orientado a objetos, y trabajar con ellos hace nuestro código más simple y más legible. <strong>Mongoengine</strong> es un ODM, una librería que se encarga de convertir objetos en documentos <strong>mongodb</strong> y viceversa.</p>
+
+<p>ODM son las siglas para <em>object to document mapper</em>, y es el equivalente a un ORM (<em>object to relational mapper</em>). La diferencia entre ambos conceptos es que los datos van a parar a la base de datos como un documento en contraposición a una base de datos relacional.</p>
+
+<p>El objetivo de la librería es convertir nuestros modelos en objetos de <strong>python</strong> de forma declarativa. Toda la magia del acceso a la base de datos se hace de forma automática.</p>
+
+<p>Este ODM está realmente bien hecho; soporta tipos de campos, herencia de clases, referencias a otros documentos e incluso listas en sus campos. Todo ello creando los índices necesarios para los accesos habituales, y la posibilidad de declarar otros índices que creamos necesarios.</p>
+
+<h2 id="declaración-de-los-modelos">Declaración de los modelos</h2>
+
+<p>Veamos un ejemplo, con un subconjunto de los datos de un <em>blog</em> estándar. Para ello, el primer paso es declarar nuestros modelos:</p>
+
+<pre><code class="language-bash">(.venv) gerard@sirius:~/projects/mongoengine$ cat models.py 
+import mongoengine
+
+
+def connect(url):
+    mongoengine.connect(host=url)
+
+
+class Author(mongoengine.Document):
+    name = mongoengine.StringField()
+    meta = {'collection': 'authors'}
+
+
+class Page(mongoengine.Document):
+    title = mongoengine.StringField()
+    content = mongoengine.StringField()
+    meta = {'collection': 'pages', 'allow_inheritance': True}
+
+
+class Post(Page):
+    author = mongoengine.ReferenceField(
+        'Author',
+        reverse_delete_rule=mongoengine.CASCADE
+    )
+    date = mongoengine.DateTimeField()
+    tags = mongoengine.ListField(mongoengine.StringField())
+(.venv) gerard@sirius:~/projects/mongoengine$ 
+</code></pre>
+
+<p>Habéis visto algunas de las funcionalidades más interesantes?</p>
+
+<ul>
+<li>Subclases mediante terminología <strong>python</strong> habitual.</li>
+<li>Varios tipos de datos para los campos.</li>
+<li>Referencias a otros objetos que se cargan de forma <em>lazy</em>, es decir, cuando se accede al campo se lanza una nueva consulta.</li>
+<li>Reglas de tratamiento automático de referencias para objetos eliminados.</li>
+<li>Campos tipo lista, con tipología de los elementos de la misma. En el ejemplo son campos tipo <code>StringField</code> pero podrían ser cualquiera, como por ejemplo <code>ReferenceField</code>.</li>
+</ul>
+
+<h2 id="uso-de-nuestros-modelos">Uso de nuestros modelos</h2>
+
+<p>Para crear nuestros objetos, basta hacerlo como se haría en <strong>python</strong> normal. Solo hay que tener en cuenta que los cambios no acabarán en la base de datos hasta que invoquemos el método <code>save</code> del objeto tipo <code>Document</code>.</p>
+
+<pre><code class="language-bash">(.venv) gerard@sirius:~/projects/mongoengine$ cat carga.py 
+#!/usr/bin/env python
+
+from models import Author, Page, Post, connect
+from datetime import datetime
+
+connect('mongodb://localhost:27017/test')
+
+Page(title='About', content='blah').save()
+a = Author(name='Gerard').save()
+Post(title='Hello world', content='lorem ipsum', author=a,
+     date=datetime.utcnow(), tags=['hello', 'world']).save()
+(.venv) gerard@sirius:~/projects/mongoengine$ ./carga.py 
+(.venv) gerard@sirius:~/projects/mongoengine$ 
+</code></pre>
+
+<p>Y el resultado es un esquema de base de datos bastante limpio, y sin ningún tipo de <em>overhead</em>. Solo hay que cargar con un campo adicional para diferenciar el tipo de objeto en el caso de herencia.</p>
+
+<pre><code class="language-bash">&gt; use test
+switched to db test
+&gt; show collections
+authors
+pages
+&gt; db.authors.find().pretty()
+{ &quot;_id&quot; : ObjectId(&quot;59b1a4bb093f961b0aa6ed00&quot;), &quot;name&quot; : &quot;Gerard&quot; }
+&gt; db.pages.find().pretty()
+{
+	&quot;_id&quot; : ObjectId(&quot;59b1a4bb093f961b0aa6ecff&quot;),
+	&quot;_cls&quot; : &quot;Page&quot;,
+	&quot;title&quot; : &quot;About&quot;,
+	&quot;content&quot; : &quot;blah&quot;
+}
+{
+	&quot;_id&quot; : ObjectId(&quot;59b1a4bc093f961b0aa6ed01&quot;),
+	&quot;_cls&quot; : &quot;Page.Post&quot;,
+	&quot;title&quot; : &quot;Hello world&quot;,
+	&quot;content&quot; : &quot;lorem ipsum&quot;,
+	&quot;author&quot; : ObjectId(&quot;59b1a4bb093f961b0aa6ed00&quot;),
+	&quot;date&quot; : ISODate(&quot;2017-09-07T19:57:47.993Z&quot;),
+	&quot;tags&quot; : [
+		&quot;hello&quot;,
+		&quot;world&quot;
+	]
+}
+&gt; 
+</code></pre>
+
+<p>Consultar los objetos de la base de datos requiere encontrarlos primero, con el método <code>Document.objects</code>. Esto nos puede traer un cursor de objetos o podemos invocar el método <code>first</code> para traer uno solo.</p>
+
+<pre><code class="language-bash">(.venv) gerard@sirius:~/projects/mongoengine$ cat consulta.py 
+#!/usr/bin/env python
+
+from models import Author, Post, connect
+
+connect('mongodb://localhost:27017/test')
+
+a = Author.objects(name='Gerard').first()
+print 'Author:', a.name
+for post in Post.objects(author=a):
+    print '* Post:', post.title
+    print '  Tags:', ', '.join(post.tags)
+(.venv) gerard@sirius:~/projects/mongoengine$ 
+</code></pre>
+
+<p>Podemos ver que buscamos un autor por su nombre, asumiendo que el primero nos vale. Una vez tenemos el autor podemos encontrar sus posts y escribir algunos datos en la salida estándar.</p>
+
+<p>Ejecutamos y vemos que el resultado es el esperado:</p>
+
+<pre><code class="language-bash">(.venv) gerard@sirius:~/projects/mongoengine$ ./consulta.py 
+Author: Gerard
+* Post: Hello world
+  Tags: hello, world
+(.venv) gerard@sirius:~/projects/mongoengine$ 
+</code></pre>
+
+<p>Para modificar los objetos, tenemos que consultarlos, modificar el objeto e invocar de nuevo el método <code>save</code>. De la misma manera, para borrarlo necesitamos el objeto en <strong>python</strong> e invocar a continuación el método <code>delete</code>.</p>
+
+<h2 id="conclusión">Conclusión</h2>
+
+<p>Sin duda esta librería es una gran ayuda para hacer un gran desarrollo. Estoy seguro que va a servirme para mi siguiente proyecto personal.</p>
+
+<p>Hay muchas más cosas que se pueden hacer con este ODM; simplemente tenemos que ahondar en <a href="http://docs.mongoengine.org/apireference.html">la documentación</a>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

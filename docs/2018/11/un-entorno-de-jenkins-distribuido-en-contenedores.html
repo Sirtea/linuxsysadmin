@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un entorno de jenkins distribuido en contenedores - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un entorno de jenkins distribuido en contenedores</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-11-12
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/jenkins.html">jenkins</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/master.html">master</a> / <a href="/tag/slave.html">slave</a>
+</p>
+
+<p>Estaba yo el otro día intentando montar un <strong>jenkins</strong> con acceso al binario de <strong>docker</strong> y <strong>python</strong>. Como no quería instalar <strong>jenkins</strong>, me limité a extender la imagen <a href="https://hub.docker.com/r/jenkins/jenkins/">jenkins/jenkins</a> para dotarlo de las herramientas necesarias, como <a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">ya hicimos con ansible</a> que, aunque funciona, no es ni elegante ni escalable.</p>
+
+<p>El resultado es una imagen que hace demasiadas cosas, no es modular y un cambio requiere la recreación de la herramienta completa. Así que se me ocurrió otra forma de hacer las cosas, teniendo en cuenta que la herramienta funciona en modo <em>master/slave</em>. Básicamente se trata de dejar al <strong>jenkins</strong> como <em>master</em> y delegar los <em>jobs</em> a otros contenedores con las herramientas necesarias.</p>
+
+<p>Para estos <em>workers</em> solo necesitamos un contenedor con <strong>SSH</strong> y <strong>Java</strong>. El resto de herramientas serían las necesarias para lanzar los comandos que conforman nuestro <em>job</em>. Veamos un ejemplo.</p>
+
+<h2 id="el-master-jenkins">El master: Jenkins</h2>
+
+<p>Lo primero que necesitamos es que el <strong>jenkins</strong> y sus <em>slaves</em> estén en la misma red; el <em>master</em> va a empujar los comandos a los <em>slaves</em> mediante <strong>SSH</strong>. Crearemos una red tipo &ldquo;bridge&rdquo; de usuario, que nos garantiza que los contenedores resuelvan DNS por su nombre.</p>
+
+<p>Normalmente dejaría que lo hiciera <strong>docker-compose</strong>, pero pretendo separar el entorno en varios <em>docker-compose.yml</em> para poder actualizar los <em>workers</em> según su tipo. En caso de utilizar <strong>docker swarm</strong>, podríamos usar una red <em>overlay</em> para que sea irrelevante en las comunicaciones el nodo de <em>swarm</em> en el que estén desplegados.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ docker network create jenkins
+898c8a3b77761ac4a886d0a7a2546bfc475fc3ae1280cf1ddc37a55b2057c084
+gerard@atlantis:~$
+</code></pre>
+
+<p>Sobre esta red solamente necesitamos levantar el <strong>jenkins</strong> usando la imagen <code>jenkins/jenkins</code>, en la versión y sistema operativo deseado. Solamente vamos a usar un volúmen para mantener las configuraciones de forma persistente, y vamos a publicar el puerto de <strong>jenkins</strong> para su uso por parte de otras máquinas de nuestra red.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/jenkins$ cat docker-compose.yml
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins:alpine
+    container_name: jenkins
+    hostname: jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks:
+      jenkins: {}
+    ports:
+      - &quot;8080:8080&quot;
+volumes:
+  jenkins_home:
+networks:
+  jenkins:
+    external: true
+gerard@atlantis:~/workspace/jenkins$
+</code></pre>
+
+<p>Levantamos el <strong>jenkins</strong> con <code>docker-compose up -d</code> y nos vamos a su panel de trabajo en <a href="http://atlantis:8080/">http://atlantis:8080/</a>. La primera vez nos va a hacer varias preguntas para crear el usuario de administración y demás; esto es un <strong>jenkins</strong> normal.</p>
+
+<h2 id="unos-slaves-de-ejemplo">Unos slaves de ejemplo</h2>
+
+<p>Los <em>slaves</em> son solamente máquinas con <strong>SSH</strong> y <strong>Java</strong> instalados; por supuesto, para entrar por <strong>SSH</strong>, <strong>jenkins</strong> va a necesitar un usuario y una contraseña Para no levantar más máquinas virtuales, vamos a crear estos <em>slaves</em> como contenedores <strong>docker</strong>, con un usuario y <em>password</em> configurables (por si hubiera que cambiarlos en un futuro).</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/base_worker$ cat Dockerfile
+FROM alpine:3.8
+RUN apk add --no-cache openssh openjdk8-jre
+COPY start.sh /
+CMD [&quot;/start.sh&quot;]
+gerard@atlantis:~/workspace/base_worker$
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/base_worker$ cat start.sh
+#!/bin/sh
+
+for key in rsa ecdsa ed25519; do
+    test -e /etc/ssh/ssh_host_${key}_key || ssh-keygen -t ${key} -N &quot;&quot; -f /etc/ssh/ssh_host_${key}_key -q
+done
+
+if [ -n &quot;${SSH_USER}&quot; ]; then
+    adduser -D ${SSH_USER}
+    echo &quot;${SSH_USER}:${SSH_PASSWORD}&quot; | chpasswd
+fi
+
+exec /usr/sbin/sshd -D -e
+gerard@atlantis:~/workspace/base_worker$
+</code></pre>
+
+<p>Construimos la imagen y le damos el <em>tag</em> <code>worker:base</code>. Lo vamos a utilizar tal cual, pero una estrategia interesante sería extender esta imagen para añadir lo que se pueda necesitar. Eso daría pie a varios contenedores con diferentes herramientas de compilación; cada <em>job</em> de <strong>jenkins</strong> se configurará para usar las que puedan satisfacer sus comandos de construcción.</p>
+
+<p>Levantar dos instancias de estos <em>workers</em> no entraña ninguna dificultad; lo importante es el <code>container_name</code>, que es el nombre de DNS de la máquina dentro de la red <code>jenkins</code>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/workers$ cat docker-compose.yml
+version: '3'
+services:
+  worker01:
+    image: worker:base
+    build: ../base_worker
+    container_name: worker01
+    hostname: worker01
+    environment:
+      SSH_USER: jenkins
+      SSH_PASSWORD: s3cr3t
+    networks:
+      jenkins: {}
+  worker02:
+    image: worker:base
+    build: ../base_worker
+    container_name: worker02
+    hostname: worker02
+    environment:
+      SSH_USER: jenkins
+      SSH_PASSWORD: s3cr3t
+    networks:
+      jenkins: {}
+networks:
+  jenkins:
+    external: true
+gerard@atlantis:~/workspace/workers$
+</code></pre>
+
+<p>De nuevo, levantamos ls <em>workers</em> con <code>docker-compose up -d</code> y ya los tenemos listos para ser usados.</p>
+
+<h2 id="configurando-jenkins-con-los-nuevos-slaves">Configurando Jenkins con los nuevos slaves</h2>
+
+<p>Para que <strong>jenkins</strong> pueda controlar <em>slaves</em> por <strong>SSH</strong>, se necesita instalar el <strong>SSH Slaves plugin</strong>:</p>
+
+<blockquote>
+<p>Administrar Jenkins &gt; Administrar Plugins &gt; Todos los plugins</p>
+</blockquote>
+
+<p>Reiniciamos el <strong>jenkins</strong> y ya tenemos todo lo necesario para seguir.</p>
+
+<p>Ahora se necesita configurar los nuevos nodos para que <strong>jenkins</strong> los pueda monitorizar y controlar:</p>
+
+<blockquote>
+<p>Administrar Jenkins &gt; Administrar Nodos &gt; Nuevo nodo</p>
+</blockquote>
+
+<p>Aquí solo hay que dar un nombre para identificarlo, el tipo &ldquo;Permanent Agent&rdquo; y el botón &ldquo;OK&rdquo;. En la siguiente pantalla hay que rellenar la carpeta de trabajo, el nombre del equipo y las credenciales SSH. Tras guardar, solo queda esperar que el agente esté <em>online</em> en la siguiente pantalla.</p>
+
+<p><strong>TRUCO</strong>: Cuidado con la &ldquo;Host Key Verification Strategy&rdquo;, que suele dar problemas de acceso por SSH. Yo suelo poner &ldquo;Non verifying Verification Strategy&rdquo;.</p>
+
+<p>Al configurar cada proyecto, podremos elegir ejecutar en nodos concretos, con la opción &ldquo;Restringir dónde se puede ejecutar este proyecto.&rdquo;. Esto nos permite elegir los nodos que puedan cumplir con nuestro <em>build</em>; por ejemplo elegir un nodo con <strong>docker</strong> para hacer un <code>docker build</code> y un <code>docker push</code>.</p>
+
+<p>Con la imagen de <em>slave</em> que hemos utilizado tenemos <strong>Java JRE</strong> y los binarios propios de un <strong>Alpine Linux</strong> básico, así que no esperéis mucho más&hellip;</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

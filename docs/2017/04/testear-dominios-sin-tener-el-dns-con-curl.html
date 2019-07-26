@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Testear dominios sin tener el DNS con curl - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Testear dominios sin tener el DNS con curl</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-04-17
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/curl.html">curl</a> / <a href="/tag/dns.html">dns</a>
+</p>
+
+<p>En mi trabajo, los problemas llegan sin previo aviso. De repente, alguien te pone en aviso que su aplicación web está caída y es inaccesible. Se trata de un problema de resolución DNS, pero queremos probarlo para estar seguros de que solo es ese el problema y no es general.</p>
+
+<p>Lo primero que nos viene a la cabeza es montar un servidor DNS local e intentar acceder de nuevo, pero es mucho trabajo. Luego nos acordamos del fichero <em>/etc/hosts</em>, pero no siempre es posible editarlo. Sin embargo, el comando <strong>curl</strong> nos ofrece una opción para suplantar un dominio con la dirección IP que queramos.</p>
+
+<h2 id="preparación">Preparación</h2>
+
+<p>Vamos a crear un servidor web con contenido irrelevante solo para ver una demostración de como funciona esta opción. Para ello empezaremos instalando un servidor web cualquiera. Ya sabéis que me gusta mucho el <strong>nginx</strong>&hellip;</p>
+
+<pre><code class="language-bash">root@helium:~# apt-get install -y nginx-light
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+The following extra packages will be installed:
+  nginx-common
+Suggested packages:
+  fcgiwrap nginx-doc ssl-cert
+The following NEW packages will be installed:
+  nginx-common nginx-light
+0 upgraded, 2 newly installed, 0 to remove and 2 not upgraded.
+Need to get 421 kB of archives.
+After this operation, 1020 kB of additional disk space will be used.
+...
+root@helium:~# 
+</code></pre>
+
+<p>Vamos a eliminar el <em>site</em> que viene por defecto porque es un ejemplo y no es relevante.</p>
+
+<pre><code class="language-bash">root@helium:~# unlink /etc/nginx/sites-enabled/default 
+root@helium:~# 
+</code></pre>
+
+<p>Crearemos una carpeta para alojar el contenido web. Según la <a href="https://es.wikipedia.org/wiki/Filesystem_Hierarchy_Standard">FHS</a>, lo correcto es usar <em>/srv/www</em>, que no viene en una distribución <strong>Debian</strong> por defecto.</p>
+
+<pre><code class="language-bash">root@helium:~# mkdir /srv/www
+root@helium:~# 
+</code></pre>
+
+<p>Ponemos una página web cualquiera, solo para ver si llegamos o no a nuestro servidor.</p>
+
+<pre><code class="language-bash">root@helium:~# echo &quot;Hello World&quot; &gt; /srv/www/index.html
+root@helium:~# 
+</code></pre>
+
+<p>Y vamos a crear un <em>site</em> para que nuestro <strong>nginx</strong> sepa lo que tiene que servir:</p>
+
+<pre><code class="language-bash">root@helium:~# cat /etc/nginx/sites-enabled/example 
+server {
+	listen 80;
+	server_name _;
+	root /srv/www;
+	index index.html;
+}
+root@helium:~# 
+</code></pre>
+
+<p>Recargamos o reiniciamos el servidor web para que use la nueva configuración y listo.</p>
+
+<pre><code class="language-bash">root@helium:~# service nginx reload
+[ ok ] Reloading nginx configuration: nginx.
+root@helium:~# 
+</code></pre>
+
+<p>Ahora tenemos un servidor web normal y corriente en nuestro entorno.</p>
+
+<h2 id="funcionamiento">Funcionamiento</h2>
+
+<p>Vamos ha hacer una petición a nuestro dominio. Voy a usar esta misma web por comodidad, pero si tenéis un dominio que no funciona por culpa del DNS, también lo podéis comprobar ahí.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~$ curl -s http://www.linuxsysadmin.tk/ | grep '&lt;title&gt;'
+    &lt;title&gt;Linux Sysadmin&lt;/title&gt;
+gerard@aldebaran:~$ 
+</code></pre>
+
+<p>Magnífico; esta es la web. Vamos ahora a pedirle a <strong>curl</strong> que resuelva las peticiones a este mismo dominio y puerto 80 usando la dirección de nuestro servidor, con la opción <em>&ndash;resolve</em>. Más información en las páginas <strong>man</strong>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~$ curl -s --resolve www.linuxsysadmin.tk:80:172.18.0.2 http://www.linuxsysadmin.tk/
+Hello World
+gerard@aldebaran:~$ 
+</code></pre>
+
+<p>Y con esto vemos que este comando ha pasado olímpicamente de lo que le decía el DNS y ha lanzado la petición a nuestro servidor, cuya dirección IP es 172.18.0.2, que es el que hemos preparado más arriba.</p>
+
+<p>Y con este truco tan simple pudimos comprobar que el problema era solo de DNS, ya que si lo evitamos con <strong>curl</strong>, el resto funcionaba a la perfección.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

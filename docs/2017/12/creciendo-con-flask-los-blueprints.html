@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Creciendo con Flask: los blueprints - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Creciendo con Flask: los blueprints</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-12-11
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/framework.html">framework</a> / <a href="/tag/microframework.html">microframework</a> / <a href="/tag/flask.html">flask</a> / <a href="/tag/blueprints.html">blueprints</a>
+</p>
+
+<p>Ya estuvimos hablando del <em>microframework</em> <strong>Flask</strong>, pero no profundizamos en su funcionalidad más avanzada: los <strong>blueprints</strong>, que son una agrupación de vistas, plantillas y contenido estático similar a las aplicaciones de <strong>django</strong>. Solamente por esta funcionalidad queda justificado el uso de este <em>framework</em> para proyectos de tamaños medio o grande.</p>
+
+<p>Lo primero que tenemos que ver es la necesidad de utilizar <strong>blueprints</strong>. A medida que nuestra aplicación crece, el código lo hace también. Esto suele hacer código fuente grande e inmantenible. Invariablemente, veremos que nuestra aplicación es una amalgama de partes.</p>
+
+<p>En este momento, nos va a interesar trocear en partes aquel fichero con todas nuestras vistas. Y la herramienta para hacer esto son los <strong>blueprints</strong>, ya sea para partir la aplicación <em>a posteriori</em> o queremos empezar haciéndolo bien desde el principio.</p>
+
+<h2 id="divide-y-vencerás">Divide y vencerás</h2>
+
+<p>Os pongo un pequeño ejemplo, con este programa de gestión de hoteles:</p>
+
+<p><img src="/images/programa_modular.gif" alt="Programa modular" /></p>
+
+<p>¿Verdad que parece grande y descorazonador? <strong>¡Divide y vencerás!</strong></p>
+
+<p>Si lo troceamos adecuadamente, tenemos varios problemas menores, e incluso podemos poner a trabajar en ellos a un equipo grande, por separado. Incluso podemos añadir más módulos en un futuro; quien sabe, incluso podemos hacerlo genérico suficiente para que los hoteles activen solamente las partes que más falta les hagan.</p>
+
+<p>Ese es el modelo de negocio de SAP&hellip;</p>
+
+<h2 id="un-caso-de-uso-de-ejemplo">Un caso de uso de ejemplo</h2>
+
+<p>Supongamos que una empresa nos paga para hacer una web corporativa, con, de momento, las siguientes opciones:</p>
+
+<ul>
+<li>Una página principal para actuar como su <em>landing page</em></li>
+<li>Algunas páginas menores, como por ejemplo el apartado legal o la presentación de la empresa, con contenido fijo</li>
+<li>Un boletín informativo con sus últimas noticias, a modo de rueda de prensa y con una maquetación diferente</li>
+</ul>
+
+<p>Y cual es nuestra estratégia? <strong>¡Divide y vencerás!</strong></p>
+
+<p>Hagamos nuestra aplicación, a base de estas mismas 3 partes:</p>
+
+<ul>
+<li>Una vista normal para la <em>landing page</em></li>
+<li>Un <strong>blueprint</strong> para las páginas menores</li>
+<li>Un <strong>blueprint</strong> para las noticias</li>
+</ul>
+
+<h2 id="implementación">Implementación</h2>
+
+<p>Vamos a empezar con una aplicación vacía, solo con la página principal. A partir de ahí vamos a registrar las páginas menores y, finalmente, el módulo de notícias.</p>
+
+<p>Para simplificar, no vamos a gestionar la capa de persistencia ni un panel de administración; esto queda como ejercicio al lector. Si os interesa mucho, y como veremos en un artículo posterior, podemos utilizar un <strong>blueprint</strong> prefabricado para ello.</p>
+
+<h3 id="la-página-principal">La página principal</h3>
+
+<p>Vamos a evitar el uso de <strong>blueprints</strong>, solo para demostrar que es posible mezclar vistas normales con <strong>blueprints</strong>. No hay ningún misterio en esto: una vista, una plantilla y un estilo.</p>
+
+<p>Así quedaría nuestro proyecto con el primero de los puntos solucionados:</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ tree
+.
+├── static
+│   └── style.css
+├── templates
+│   ├── layout.html
+│   └── main.html
+├── app.py
+├── requirements.txt
+└── server.sh
+
+2 directories, 6 files
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>La vista solo renderiza la plantilla que nos interesa, aunque hay la complejidad añadida de que utiliza herencia.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat app.py
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def main_page():
+    return render_template('main.html')
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>Finalmente tenemos las plantillas y algún <em>asset</em> estático.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat templates/layout.html
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+&lt;head&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;/static/style.css&quot; /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+{% block content %}{% endblock %}
+&lt;/body&gt;
+&lt;/html&gt;
+(.venv) gerard@atlantis:~/projects/myapp$ cat templates/main.html
+{% extends &quot;layout.html&quot; %}
+
+{% block content %}
+    &lt;h1&gt;Main page&lt;/h1&gt;
+{% endblock %}
+(.venv) gerard@atlantis:~/projects/myapp$ cat static/style.css
+html { background-color: cyan }
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<h3 id="las-páginas-secundarias">Las páginas secundarias</h3>
+
+<p>Vamos a crear una carpeta para contener los recursos del <strong>blueprint</strong>. Como el <strong>blueprint</strong> debe ser importado y registrado por la aplicación, vamos a convertirlo en un módulo de <strong>python</strong> añadiendo un fichero <em>__init__.py</em>, que de paso servirá para contener el código del <strong>blueprint</strong>.</p>
+
+<p>Nótese la aparición de la nueva carpeta <em>pages/</em>:</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ tree
+.
+├── pages
+│   ├── templates
+│   │   ├── about.html
+│   │   └── legal.html
+│   └── __init__.py
+├── static
+│   └── style.css
+├── templates
+│   ├── layout.html
+│   └── main.html
+├── app.py
+├── requirements.txt
+└── server.sh
+
+4 directories, 9 files
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>El funcionamiento es el mismo: regitramos vistas que renderizan plantillas y poco más. La parte interesante es que estas vistas se encapsulan en un objeto <em>Blueprint</em> que luego será registrado en la aplicación base.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat pages/__init__.py
+from flask import Blueprint, render_template
+
+pages = Blueprint('pages', __name__, template_folder='templates')
+
+@pages.route('/about')
+def about_page():
+    return render_template('about.html')
+
+@pages.route('/legal')
+def legal_page():
+    return render_template('legal.html')
+(.venv) gerard@atlantis:~/projects/myapp$ cat pages/templates/about.html
+{% extends &quot;layout.html&quot; %}
+
+{% block content %}
+    &lt;h1&gt;About page&lt;/h1&gt;
+{% endblock %}
+(.venv) gerard@atlantis:~/projects/myapp$ cat pages/templates/legal.html
+{% extends &quot;layout.html&quot; %}
+
+{% block content %}
+    &lt;h1&gt;Legal page&lt;/h1&gt;
+{% endblock %}
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>Con esto tenemos el <strong>blueprint</strong>, que va a haber que registrar en nuestra aplicación para que esta añada sus rutas a una ruta base, que en este caso, no está declarada. Esto hará que se registren en <em>/</em>.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat app.py
+from flask import Flask, render_template
+from pages import pages
+
+app = Flask(__name__)
+
+@app.route('/')
+def main_page():
+    return render_template('main.html')
+
+app.register_blueprint(pages)
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>De esta forma tendremos dos nuevas URLs en la aplicación:</p>
+
+<ul>
+<li><a href="http://localhost:8080/about">http://localhost:8080/about</a></li>
+<li><a href="http://localhost:8080/legal">http://localhost:8080/legal</a></li>
+</ul>
+
+<p>Es interesante ver que hay dos nuevas plantillas en el <strong>blueprint</strong>, pero la plantilla base y la hoja de estilos siguen siendo las de la aplicación principal. Los ficheros del <strong>blueprint</strong> tienen preferencia sobre el resto, pero no los eclipsan; los anteriores quedan disponibles por si no se sobreescribieran.</p>
+
+<h3 id="el-módulo-de-notícias">El módulo de notícias</h3>
+
+<p>Este módulo es prácticamente igual al anterior, con dos sutiles diferencias:</p>
+
+<ul>
+<li>Usaremos otra plantilla base y otra hoja de estilos</li>
+<li>Nuestras rutas van a ir prefijadas por <em>/news/</em></li>
+</ul>
+
+<p>La primera parte es tan simple como poner los nuevos ficheros para que no utilice los originales como plan B. La segunda se consigue declarando las rutas sin el prefijo y montando el <strong>blueprint</strong> con un prefijo en la aplicación original. Esto nos da cierta capacidad de recolocar un conjunto de URLs.</p>
+
+<p>De nuevo, hacemos aparecer una carpeta nueva. Como las dos carpetas <em>templates/</em> se &ldquo;fusionan&rdquo; a ojos del cargador, me he visto obligado a esconder el segundo <em>layout.html</em> en una carpeta, para evitar colisiones de nombres.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ tree
+.
+├── news
+│   ├── static
+│   │   └── style.css
+│   ├── templates
+│   │   └── news
+│   │       ├── latest.html
+│   │       └── layout.html
+│   └── __init__.py
+├── pages
+│   ├── templates
+│   │   ├── about.html
+│   │   └── legal.html
+│   └── __init__.py
+├── static
+│   └── style.css
+├── templates
+│   ├── layout.html
+│   └── main.html
+├── app.py
+├── requirements.txt
+└── server.sh
+
+8 directories, 13 files
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>La aplicación ya es repetitiva; se pone solamente por tener el ejemplo completo. Es importante ver que se ha utilizado el <em>helper</em> <strong>url_for</strong> para no calcular el <em>path</em> del fichero de estilos. Pido perdón por la chapuza de no usar una base de datos, y poner las noticias en el código.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat news/__init__.py
+from flask import Blueprint, render_template
+
+news = Blueprint('news', __name__, template_folder='templates', static_folder='static')
+
+@news.route('/latest')
+def latest_news():
+    data = {
+        'news': ['lorem', 'ipsum'],
+    }
+    return render_template('news/latest.html', **data)
+(.venv) gerard@atlantis:~/projects/myapp$ cat news/templates/news/layout.html
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+&lt;head&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;{{ url_for('.static', filename='style.css') }}&quot; /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+{% block content %}{% endblock %}
+&lt;p&gt;&lt;small&gt;News app&lt;/small&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+(.venv) gerard@atlantis:~/projects/myapp$ cat news/templates/news/latest.html
+{% extends &quot;news/layout.html&quot; %}
+
+{% block content %}
+    &lt;h1&gt;Latest news&lt;/h1&gt;
+    &lt;ul&gt;
+{% for new in news %}
+        &lt;li&gt;{{ new }}&lt;/li&gt;
+{% endfor %}
+    &lt;/ul&gt;
+{% endblock %}
+(.venv) gerard@atlantis:~/projects/myapp$ cat news/static/style.css
+html { background-color: red }
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<p>El punto interesante es que quremos mapear el <strong>blueprint</strong>. Eso significa que la URL <em>/latest</em> del <strong>blueprint</strong> tiene que utilizar un prefijo, para que lo veamos en <em>/news/latest</em>. Es ahora, en el momento de registrar el <strong>blueprint</strong>, cuando podemos especificar que todas sus URLs cuelguen de un prefijo adicional.</p>
+
+<pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat app.py
+from flask import Flask, render_template
+from pages import pages
+from news import news
+
+app = Flask(__name__)
+
+@app.route('/')
+def main_page():
+    return render_template('main.html')
+
+app.register_blueprint(pages)
+app.register_blueprint(news, url_prefix='/news')
+(.venv) gerard@atlantis:~/projects/myapp$
+</code></pre>
+
+<h2 id="reflexiones">Reflexiones</h2>
+
+<p>¿Os habéis fijado lo fácil que seria adoptar el módulo de noticias para otra aplicación?</p>
+
+<p>Solo necesitamos tener un repositorio de <strong>blueprints</strong> listo para ser usado en proyectos nuevos. Si se piensan bien nuestros <strong>blueprints</strong> serán <strong>reusables</strong>. Algunos de ellos incluso se podrían convertir en <strong>extensiones</strong>, pero eso es otra historia.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

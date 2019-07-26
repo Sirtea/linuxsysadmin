@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Autenticación centralizada por claves SSH - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Autenticación centralizada por claves SSH</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-07-17
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/ssh.html">ssh</a> / <a href="/tag/autenticacion.html">autenticación</a> / <a href="/tag/password.html">password</a> / <a href="/tag/passphrase.html">passphrase</a> / <a href="/tag/centralizado.html">centralizado</a>
+</p>
+
+<p>Ya vimos en <a href="/2016/05/autenticacion-ssh-por-claves.html">un artículo anterior</a> como autenticar las sesiones <strong>SSH</strong> mediante claves locales en la máquina. Sin embargo, esto no es práctico cuando tenemos muchos servidores, y hay que replicar esas claves en todos ellos. Hoy vamos a ver como usar un <em>script</em> que pueda sacar las claves dinámicamente.</p>
+
+<p>Empezamos teniendo un servidor con el servicio <strong>SSH</strong> levantado; vamos a crear un usuario <em>guest</em> en él para que pueda abrir una sesión en él.</p>
+
+<h2 id="estado-inicial">Estado inicial</h2>
+
+<pre><code class="language-bash">root@sshserver:~# adduser guest
+Adding user `guest' ...
+Adding new group `guest' (1000) ...
+Adding new user `guest' (1000) with group `guest' ...
+Creating home directory `/home/guest' ...
+Copying files from `/etc/skel' ...
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+Changing the user information for guest
+Enter the new value, or press ENTER for the default
+	Full Name []: 
+	Room Number []: 
+	Work Phone []: 
+	Home Phone []: 
+	Other []: 
+Is the information correct? [Y/n] y
+root@sshserver:~# 
+</code></pre>
+
+<p>Por supuesto, este usuario pueden entrar con su contraseña sin problemas.</p>
+
+<pre><code>gerard@sirius:~/docker/ssh$ ssh guest@sshserver
+guest@sshserver's password: 
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+guest@sshserver:~$ 
+</code></pre>
+
+<h2 id="el-script">El script</h2>
+
+<p>La idea es que necesitamos un <em>script</em> que reciba como primer parámetro el usuario del que queremos las claves, y este <em>script</em> nos va a dar una salida con el mismo formato que pondríamos en el <em>authorized_keys</em>. Eso significa que podemos devolver 0, 1 o mas líneas, con una clave pública por línea.</p>
+
+<p>No es importante de donde saque este <em>script</em> la información; puede ser de un campo LDAP, de una base de datos, o de una llamada a un <em>webservice</em>. Para evitar complicaciones innecesarias, para este artículo y a modo de ejemplo, vamos a poner los valores en el mismo <em>script</em>. Echad un poco de imaginación si lo reproducís.</p>
+
+<p>Supongamos que queremos entrar con el usuario <em>guest</em>, y disponemos en la máquina inicial la clave privada <em>id_rsa</em>, habiendo generado una clave pública correspondiente. Creamos un <em>script</em> que nos vuelque esta clave si el usuario solicitado es <em>guest</em>, siempre con permisos de ejecución.</p>
+
+<pre><code class="language-bash">root@sshserver:~# cat /usr/bin/authorized_keys_by_user.sh 
+#!/bin/bash
+
+if [ &quot;$1&quot; == &quot;guest&quot; ]; then
+    echo &quot;ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9heqwqgv+O9aekeCpETDR/6BdTQWDOrSlNN/tnZeZZa8/qjf0JEF4r8jSA/MquPQog1tpOXM0XUEY9YWNphARAmZ/gV1IiNJZmqQJSb2pk2/nQLq9nCqWoHBgKHKINUKfgmsiopGz9IjnZw5BBZKrloE9ZU0oApduxnVUTl/G71OWH/SdCbef08zvwVvLxv3zAWEKSnRvnSn5Q/FkRNb4Qe09po8ePgMqpZWKUvEpAntOvokI7uid300mmZjiUL8EMbJo4oJ3ONOnDbH8FNKEmGI4q2UK5HbDIUm8SJcmyJXvoo6xabApkc2AcM7X2tXRd8wiYS0p7YjLVMcIJ/NR gerard@sirius&quot;
+fi
+root@sshserver:~# chmod 755 /usr/bin/authorized_keys_by_user.sh 
+root@sshserver:~# 
+</code></pre>
+
+<p>Podemos comprobar que nos da la clave pública para el usuario <em>guest</em> y ninguna para otros usuarios.</p>
+
+<pre><code class="language-bash">root@sshserver:~# /usr/bin/authorized_keys_by_user.sh guest
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9heqwqgv+O9aekeCpETDR/6BdTQWDOrSlNN/tnZeZZa8/qjf0JEF4r8jSA/MquPQog1tpOXM0XUEY9YWNphARAmZ/gV1IiNJZmqQJSb2pk2/nQLq9nCqWoHBgKHKINUKfgmsiopGz9IjnZw5BBZKrloE9ZU0oApduxnVUTl/G71OWH/SdCbef08zvwVvLxv3zAWEKSnRvnSn5Q/FkRNb4Qe09po8ePgMqpZWKUvEpAntOvokI7uid300mmZjiUL8EMbJo4oJ3ONOnDbH8FNKEmGI4q2UK5HbDIUm8SJcmyJXvoo6xabApkc2AcM7X2tXRd8wiYS0p7YjLVMcIJ/NR gerard@sirius
+root@sshserver:~# /usr/bin/authorized_keys_by_user.sh other
+root@sshserver:~# 
+</code></pre>
+
+<p>En este caso hemos puesto una sola clave, pero podrían haber sido varias, igual que cuando usamos el fichero <em>authorized_keys</em>.</p>
+
+<h2 id="configuración-ssh">Configuración SSH</h2>
+
+<p>Por una limitación del servicio <strong>SSH</strong>, es necesario que tanto el <em>script</em> como todas las carpetas en el <em>path</em>, pertenezcan al usuario <em>root</em> y que solo este tenga permisos de escritura. Aunque nos saldría un mensaje de error en el <em>log</em> del <strong>SSH</strong>, cuesta poco de comprobarlo antes.</p>
+
+<pre><code class="language-bash">root@sshserver:~# for folder in / /usr /usr/bin /usr/bin/authorized_keys_by_user.sh; do stat --printf &quot;%U:%G\t%A %n\n&quot; $folder; done
+root:root	drwxr-xr-x /
+root:root	drwxr-xr-x /usr
+root:root	drwxr-xr-x /usr/bin
+root:root	-rwxr-xr-x /usr/bin/authorized_keys_by_user.sh
+root@sshserver:~# 
+</code></pre>
+
+<p>El truco consiste en indicar dos directivas al demonio <strong>SSH</strong>, para que sepa que debe ejecutar este <em>script</em> para sacar el <em>authorized_keys</em> de cada usuario.</p>
+
+<pre><code>root@sshserver:~# tail -2 /etc/ssh/sshd_config 
+AuthorizedKeysCommand /usr/bin/authorized_keys_by_user.sh
+AuthorizedKeysCommandUser nobody
+root@sshserver:~# 
+</code></pre>
+
+<p>Recargamos la configuración del demonio <strong>SSH</strong>, para que relea la configuración nueva que acabamos de poner.</p>
+
+<pre><code class="language-bash">root@sshserver:~# service ssh reload
+Reloading OpenBSD Secure Shell server's configuration: sshd.
+root@sshserver:~# 
+</code></pre>
+
+<p>Y solo nos queda comprobar que podemos entrar con el usuario <em>guest</em> usando la clave privada. En este ejemplo no se indica porque la clave <em>.ssh/id_rsa</em> es ofrecida por defecto, y es la parte privada de la clave que pusimos en el <em>script</em> remoto.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/ssh$ ssh guest@sshserver
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+Last login: Thu Jul 21 08:39:21 2016 from 172.20.0.1
+guest@sshserver:~$ 
+</code></pre>
+
+<p>A partir de aquí, podéis modificar el <em>script</em> remoto para que saque la información de las claves de algún sitio centralizado (LDAP, base de datos, <em>webservice</em>, &hellip;).</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

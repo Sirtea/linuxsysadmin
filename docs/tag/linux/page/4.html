@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>linux - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: linux</h1>
+
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-3.html">Creando un entorno escalable (III)</a></h2>
+<p>En el artículo anterior de esta serie montamos el cluster de la base de datos que íbamos a necesitar para las aplicaciones que conformaban este entorno de ejemplo. Ahora que tenemos la base de datos, falta poner los servidores de aplicaciones que sirven nuestras aplicaciones y que usan el cluster.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-3.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-2.html">Creando un entorno escalable (II)</a></h2>
+<p>Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un <em>cluster</em> de bases de datos; será <strong>mongodb</strong> porque la aplicación lo requiere y usará la topología de un <strong>replica set</strong>.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-2.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/creando-un-entorno-escalable.html">Creando un entorno escalable (I)</a></h2>
+<p>Mucha gente tiene un servidor único para alojar páginas web dinámicas, por ejemplo con <strong>PHP</strong> y con <strong>MySQL</strong>. Sin embargo, a veces esto puede resultar insuficiente; nos puede interesar tener un entorno de bajas especificaciones y de bajo coste, pero preparado crecer al mismo ritmo que lo hacen los usuarios.</p>
+<p><a class="article" href="/2016/02/creando-un-entorno-escalable.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Restringiendo accesos mediante certificados de cliente</a></h2>
+<p>De vez en cuando, tenemos algún contenido web o una API que necesita un control de acceso superior. El método mas eficaz del que disponemos hoy en día es la autenticación con certificados SSL cliente, en donde es el cliente el que debe ofrecer un certificado que el servidor validará.</p>
+<p><a class="article" href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/haciendo-snapshots-con-lvm.html">Haciendo snapshots con LVM</a></h2>
+<p>Una de las funcionalidades mas implementadas en los sistemas de ficheros de nueva generación es la capacidad de hacer <em>snapshots point-in-time</em>. Sin embargo, no tenemos que renunciar a la estabilidad de los sistemas de ficheros tradicionales como <strong>ext4</strong>; otras veces no es posible por requisitos del servicio que debe usarlo.</p>
+<p><a class="article" href="/2016/02/haciendo-snapshots-con-lvm.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/restringiendo-accesos-web-mediante-autenticacion-basica.html">Restringiendo accesos web mediante autenticación básica</a></h2>
+<p>Algunas veces nos encontramos con la necesidad de restringir el acceso a algunos recursos web. Normalmente se suele implementar algún sistema de <em>login</em>, <em>cookies</em> o <em>sesiones</em>; no obstante, esta opción no siempre nos es posible, y tenemos que proteger esos recursos usando los mecanismos que nos ofrezca el servidor web.</p>
+<p><a class="article" href="/2016/02/restringiendo-accesos-web-mediante-autenticacion-basica.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/un-proxy-dns-con-dnsmasq.html">Un proxy DNS con dnsmasq</a></h2>
+<p>A veces nos puede interesar disponer de una servidor <strong>DNS</strong> para nombrar las máquinas de nuestra red privada, sin la complejidad de <strong>BIND</strong>. Otras, queremos acelerar el acceso a internet desde nuestra red; es interesante ver el tiempo que se pierde en la resolución <strong>DNS</strong>. Para eso disponemos de <strong>dnsmasq</strong>.</p>
+<p><a class="article" href="/2016/02/un-proxy-dns-con-dnsmasq.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/creando-una-jaula-centos.html">Creando una jaula CentOS</a></h2>
+<p>Algunas veces nos puede interesar levantar procesos o demonios en entornos controlados, por ejemplo en una jaula, o para crear un contenedor. Otras veces, por comodidad o conocimiento, nos puede interesar cambiar la distribución, por ejemplo, servicios <em>CentOS</em> en un servidor <em>Ubuntu</em>. Hoy vamos a construir una jaula con <em>CentOS</em>.</p>
+<p><a class="article" href="/2016/01/creando-una-jaula-centos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/lvm-logical-volume-manager.html">LVM: logical volume manager</a></h2>
+<p>Cuando eres un usuario medio no te complicas; particionas tu disco, a menudo usando un sistema de particionado guiado e instalas tu sistema operativo favorito. El problema es cuando las particiones se te quedan cortas. Para estos casos, se inventó una tecnología llamada <em>logical volume manager</em>, usando sus siglas: <strong>LVM</strong>.</p>
+<p><a class="article" href="/2016/01/lvm-logical-volume-manager.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/un-repositorio-de-debian-con-reprepro.html">Un repositorio de Debian con reprepro</a></h2>
+<p>Una de las grandes facilidades que nos ofrece una distribución de Linux es su sistema de gestor de paquetes. Los paquetes oficiales nos simplifican la instalación y mantenimiento de paquetes; sin embargo, podemos sacar provecho del sistema de paquetes para uso personal, para automatizar instalaciones y actualizaciones que queramos hacer.</p>
+<p><a class="article" href="/2016/01/un-repositorio-de-debian-con-reprepro.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/linux.html">&laquo;&laquo;</a>
+	<a href="/tag/linux/page/3.html">&laquo;</a>
+	<a href="/tag/linux.html">1</a>
+	<a href="/tag/linux/page/2.html">2</a>
+	<a href="/tag/linux/page/3.html">3</a>
+	<a class="active" href="/tag/linux/page/4.html">4</a>
+	<a href="/tag/linux/page/5.html">5</a>
+	<a href="/tag/linux/page/6.html">6</a>
+	<a href="/tag/linux/page/5.html">&raquo;</a>
+	<a href="/tag/linux/page/6.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Empaquetando ficheros .deb - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Empaquetando ficheros .deb</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-12-28
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/ubuntu.html">ubuntu</a> / <a href="/tag/paquete.html">paquete</a> / <a href="/tag/deb.html">deb</a>
+</p>
+
+<p>Una de las grandes ventajas de <em>linux</em> es su sistema de paquetes. Con ellos es posible instalar de forma fácil un paquete de forma fácil y confiable. Hoy vamos a hacer un paquete <em>.deb</em> como ejemplo que instale un <em>script</em> cualquiera en la carpeta <em>/usr/bin/</em> para su uso cotidiano.</p>
+
+<p>Por limpieza, vamos a crear una carpeta temporal para hacer el empaquetado, desde donde vamos a ejecutar todo el resto del procedimiento.</p>
+
+<pre><code class="language-bash">root@packager:~# mkdir workspace
+root@packager:~# cd workspace/
+root@packager:~/workspace# 
+</code></pre>
+
+<h2 id="preparación-de-la-estructura-del-paquete">Preparación de la estructura del paquete</h2>
+
+<p>Vamos a poner el <em>script</em> que queramos empaquetar, respetando al estructura que tendrá una vez se instale el paquete. También le damos los permisos que va a tener una vez instalado.</p>
+
+<pre><code class="language-bash">root@packager:~/workspace# mkdir -p usr/bin
+root@packager:~/workspace# cat usr/bin/welcome
+#!/bin/bash
+
+echo 'Hello world!'
+root@packager:~/workspace# chmod 755 usr/bin/welcome
+root@packager:~/workspace# 
+</code></pre>
+
+<h2 id="empaquetado-de-la-carpeta-de-trabajo">Empaquetado de la carpeta de trabajo</h2>
+
+<p>Antes de empaquetar de acuerdo a las políticas de los paquetes <em>.deb</em>, sea en <em>Debian</em> o en <em>Ubuntu</em>, se requiere de una carpeta <strong>DEBIAN</strong> con un fichero <strong>control</strong>, que va a contener los metadatos del paquete.</p>
+
+<p>Para este fichero nos podemos guiar por la <a href="https://www.debian.org/doc/debian-policy/ch-controlfields.html">documentación oficial</a>. Como vamos a hacer un paquete mínimo, vamos a poner solamente los campos obligatorios y uno de los opcionales, que indicarán las necesidades de nuestro script:</p>
+
+<ul>
+<li><strong>Obligatorios</strong>:
+
+<ul>
+<li>Package</li>
+<li>Version</li>
+<li>Architecture</li>
+<li>Maintainer</li>
+<li>Description</li>
+</ul></li>
+<li><strong>Opcionales</strong>:
+
+<ul>
+<li>Depends</li>
+</ul></li>
+</ul>
+
+<p>Para que el <em>script</em> pueda funcionar, hay que localizar todo aquello que pueda necesitar, y añadirlo al paquete o declarar los paquetes de los que dependa, para que se puedan instalar automáticamente si no estuvieran en el sistema destino.</p>
+
+<p>Concretamente, este <em>script</em> necesita dos comandos para funcionar: <strong>bash</strong> y <strong>echo</strong>. Vamos a localizarlos a ver de que paquete provienen. La idea es que nuestro paquete va a necesitar todos los paquetes que contengan los comandos necesarios, sin necesidad de incorporarlos.</p>
+
+<pre><code class="language-bash">root@packager:~/workspace# which bash
+/bin/bash
+root@packager:~/workspace# dpkg -S /bin/bash
+bash: /bin/bash
+root@packager:~/workspace# which echo
+/bin/echo
+root@packager:~/workspace# dpkg -S /bin/echo 
+coreutils: /bin/echo
+root@packager:~/workspace# 
+</code></pre>
+
+<p>De ahí deducimos que necesitamos los paquetes <strong>bash</strong> y <strong>coreutils</strong>, que aunque suelen venir de serie, vale la pena declararlos por si no fuera el caso. Esto es lo que va en el campo <strong>Depends</strong>.</p>
+
+<p>Reuniendo estos datos, podemos crear el fichero <strong>control</strong>, por ejemplo, como este:</p>
+
+<pre><code class="language-bash">root@packager:~/workspace# mkdir -p DEBIAN
+root@packager:~/workspace# cat DEBIAN/control 
+Package: welcome
+Version: 1.0-1
+Architecture: all
+Maintainer: Linux Sysadmin
+Description: A fancy shell script
+ To demonstrate how to package a .deb file
+Depends: bash, coreutils
+root@packager:~/workspace# 
+</code></pre>
+
+<p>Adicionalmente, la carpeta <strong>DEBIAN</strong> puede contener otros <em>scripts</em>, como por ejemplo, <strong>preinst</strong>, <strong>postinst</strong>, <strong>prerm</strong> y <strong>postrm</strong>, que podrían, por ejemplo, crear los usuarios necesarios.</p>
+
+<p>Como último paso, vamos a invocar el comando <strong>dpkg-deb</strong> para empaquetar la carpeta de trabajo.</p>
+
+<pre><code class="language-bash">root@packager:~/workspace# cd ..
+root@packager:~# dpkg-deb --build workspace/ welcome_1.0-1_all.deb
+dpkg-deb: construyendo el paquete `welcome' en `welcome_1.0-1_all.deb'.
+root@packager:~# 
+</code></pre>
+
+<h2 id="comprobación-de-que-el-paquete-funciona">Comprobación de que el paquete funciona</h2>
+
+<p>Vamos a comprobar que el paquete no está instalado, por ejemplo buscando el <em>script</em> que hemos empaquetado:</p>
+
+<pre><code class="language-bash">root@packager:~# which welcome
+root@packager:~# welcome 
+bash: /usr/bin/welcome: No existe el fichero o el directorio
+root@packager:~# 
+</code></pre>
+
+<p>Efectivamente, no lo está; ahora se trata de invocar <strong>dpkg</strong> para instalar nuestro paquete.</p>
+
+<pre><code class="language-bash">root@packager:~# dpkg -i welcome_1.0-1_all.deb 
+Seleccionando el paquete welcome previamente no seleccionado.
+(Leyendo la base de datos ... 9984 ficheros o directorios instalados actualmente.)
+Preparando para desempaquetar welcome_1.0-1_all.deb ...
+Desempaquetando welcome (1.0-1) ...
+Configurando welcome (1.0-1) ...
+root@packager:~# 
+</code></pre>
+
+<p>Y finalmente, verificamos que tenemos nuestro <em>script</em> en <em>/usr/bin/</em> como esperábamos:</p>
+
+<pre><code class="language-bash">root@packager:~# which welcome
+/usr/bin/welcome
+root@packager:~# welcome
+Hello world!
+root@packager:~# 
+</code></pre>
+
+<p>Y con esto tenemos nuestro paquete que podemos poner a buen recaudo.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

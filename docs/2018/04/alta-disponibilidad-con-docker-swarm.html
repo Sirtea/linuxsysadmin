@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Alta disponibilidad con Docker Swarm - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Alta disponibilidad con Docker Swarm</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-04-09
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/cluster.html">cluster</a> / <a href="/tag/alta-disponibilidad.html">alta disponibilidad</a>
+</p>
+
+<p>He visto muchos artículos por internet que hacen maravillas para tener un <em>cluster</em> de <strong>Docker Swarm</strong> funcional. Puede que en versiones anteriores fuera así, pero cada vez se ha simplificado más el <em>setup</em> para alinearse con la filosofía de la simplicidad, frente a otras soluciones más completas, pero más complejas.</p>
+
+<p>Hoy vamos a mostrar como conseguir alta disponibilidad en un <em>cluster</em> de <strong>docker swarm</strong>, de forma que si se cae un <em>manager</em>, otro asume su lugar y reestructura los servicios para continuar cumpliendo las especificaciones indicadas.</p>
+
+<p>Para hacerlo, vamos a disponer de 5 máquinas, todas con <strong>Docker</strong> instalado, siendo irrelevante el sistema operativo, incluso mezclado:</p>
+
+<ul>
+<li><strong>swarm1</strong> &rarr; 10.0.0.2 (será un <em>manager</em>)</li>
+<li><strong>swarm2</strong> &rarr; 10.0.0.3 (será un <em>manager</em>)</li>
+<li><strong>swarm3</strong> &rarr; 10.0.0.4 (será un <em>manager</em>)</li>
+<li><strong>swarm4</strong> &rarr; 10.0.0.5 (será un <em>worker</em>)</li>
+<li><strong>swarm5</strong> &rarr; 10.0.0.6 (será un <em>worker</em>)</li>
+</ul>
+
+<p>Es importante recalcar que el <em>cluster</em> se rige por un protocolo de <em>gossip</em> tipo <strong>Raft</strong>, lo que significa que necesita que más de la mitad de los <em>managers</em> estén funcionales, con lo que un número impar de ellos es lo ideal; pondremos 3 para este ejemplo.</p>
+
+<h2 id="creación-del-cluster">Creación del cluster</h2>
+
+<p>Como todo <em>cluster</em> de <strong>Docker Swarm</strong>, empezamos inicializando un solo nodo, que va a ser el <em>manager</em> y de paso, el <em>leader</em> (el <em>manager</em> que manda).</p>
+
+<pre><code class="language-bash">gerard@swarm1:~$ docker swarm init
+Swarm initialized: current node (t2x1d9ep99ff5o7ggf0f7dgzh) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-avftdi8c5t7l4y59zcjq4k6r4 10.0.0.2:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+
+gerard@swarm1:~$
+</code></pre>
+
+<p>Podemos comprobar que ya tenemos un <em>cluster</em> con un solo nodo, que es <em>manager</em> y <em>leader</em>.</p>
+
+<pre><code class="language-bash">gerard@swarm1:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+t2x1d9ep99ff5o7ggf0f7dgzh *   swarm1              Ready               Active              Leader
+gerard@swarm1:~$
+</code></pre>
+
+<p>Para añadir nodos, solo hace falta hacer un <code>docker swarm join</code>, y su rol va a depender del <em>token</em> con el que nos unamos. El comando <code>docker swarm init</code> ya nos indicó el <em>token</em> para un <em>worker</em> y como sacar el <em>token</em> para un <em>manager</em>. Saquemos los dos de nuevo:</p>
+
+<pre><code class="language-bash">gerard@swarm1:~$ docker swarm join-token manager
+To add a manager to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-agq9fp4a86ahs8ll7oa2z56j7 10.0.0.2:2377
+
+gerard@swarm1:~$ docker swarm join-token worker
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-avftdi8c5t7l4y59zcjq4k6r4 10.0.0.2:2377
+
+gerard@swarm1:~$
+</code></pre>
+
+<p>Solo necesitamos entrar en cada uno de los nodos y lanzar el comando suministrado. En este caso vamos a lanzar el comando para crear un <em>manager</em> en <strong>swarm2</strong> y <strong>swarm3</strong>, mientras que haremos <em>workers</em> de <strong>swarm4</strong> y <strong>swarm5</strong>.</p>
+
+<pre><code class="language-bash">gerard@swarm2:~$ docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-agq9fp4a86ahs8ll7oa2z56j7 10.0.0.2:2377
+This node joined a swarm as a manager.
+gerard@swarm2:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@swarm3:~$ docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-agq9fp4a86ahs8ll7oa2z56j7 10.0.0.2:2377
+This node joined a swarm as a manager.
+gerard@swarm3:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@swarm4:~$ docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-avftdi8c5t7l4y59zcjq4k6r4 10.0.0.2:2377
+This node joined a swarm as a worker.
+gerard@swarm4:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@swarm5:~$ docker swarm join --token SWMTKN-1-221kzb5ajbg3p9cu7cnxj0zp8fper4dbnzn9ntjkjxrs0mamoz-avftdi8c5t7l4y59zcjq4k6r4 10.0.0.2:2377
+This node joined a swarm as a worker.
+gerard@swarm5:~$
+</code></pre>
+
+<p>Y con esto tenemos el <em>cluster</em> completo:</p>
+
+<pre><code class="language-bash">gerard@swarm1:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+t2x1d9ep99ff5o7ggf0f7dgzh *   swarm1              Ready               Active              Leader
+p8td0udza1chfy3ehb01wkm7p     swarm2              Ready               Active              Reachable
+st9wv2k1fdmocam3dpmnas20c     swarm3              Ready               Active              Reachable
+0t7m80of6t0nwo8zwn7vupwix     swarm4              Ready               Active
+8sl99fhp1hnc3bt620fxdnn6y     swarm5              Ready               Active
+gerard@swarm1:~$
+</code></pre>
+
+<p>Es importante recalcar que, aunque hay 3 <em>managers</em>, solo uno es <em>leader</em>, y es el que lleva la voz cantante del <em>cluster</em>.</p>
+
+<h2 id="pruebas-de-alta-disponibilidad">Pruebas de alta disponibilidad</h2>
+
+<p>Ya vimos en <a href="/2017/11/uso-basico-de-un-cluster-docker-swarm.html">otro artículo</a> que en caso de caída de un <em>worker</em>, el <em>manager</em> se encarga de recolocar los contenedores para seguir ofreciendo el servicio. Así que nos vamos a limitar a tirar <em>managers</em>, que es lo que era vulnerable en el <em>cluster</em> anterior.</p>
+
+<p>Empezaremos tirando <strong>swarm1</strong> que es un <em>manager</em> y un <em>leader</em>; esto es lo que queda:</p>
+
+<pre><code class="language-bash">gerard@swarm2:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+t2x1d9ep99ff5o7ggf0f7dgzh     swarm1              Unknown             Active              Unreachable
+p8td0udza1chfy3ehb01wkm7p *   swarm2              Ready               Active              Reachable
+st9wv2k1fdmocam3dpmnas20c     swarm3              Ready               Active              Leader
+0t7m80of6t0nwo8zwn7vupwix     swarm4              Ready               Active
+8sl99fhp1hnc3bt620fxdnn6y     swarm5              Ready               Active
+gerard@swarm2:~$
+</code></pre>
+
+<p>Sin sorpresas, <strong>swarm1</strong> es dado por <em>unreachable</em> y no pasa nada, más allá de elegir otro <em>leader</em> para que siga manteniendo el estado del <em>cluster</em>.</p>
+
+<p>Intentemos ahora quitar otro de los <em>managers</em>, lo que haría que solo quedara uno:</p>
+
+<pre><code class="language-bash">gerard@swarm3:~$ docker swarm leave
+Error response from daemon: You are attempting to leave the swarm on a node that is participating as a manager. Removing this node leaves 1 managers out of 3. Without a Raft quorum your swarm will be inaccessible. The only way to restore a swarm that has lost consensus is to reinitialize it with `--force-new-cluster`. Use `--force` to suppress this message.
+gerard@swarm3:~$
+</code></pre>
+
+<p>Eso no nos lo deja hacer, ya que entonces no tendríamos <em>quorum</em> y meteríamos la pata a lo grande. Eso es lo mismo que va a pasar si apagamos el servidor.</p>
+
+<p>Para tener <em>quorum</em> con 3 <em>managers</em>, necesitamos que <strong>más de la mitad</strong> estén funcionales; esto nos obliga a mantener más de 1.5 funcionales, dos en este caso. Si hay previsiones de que se caigan o se paren más, habría que tener más <em>managers</em>, para que la tolerancia a nodos caídos fuera superior.</p>
+
+<ul>
+<li><strong>1 manager</strong> &rarr; quorum &gt; 0.5, necesitamos = 1, tolerancia = 0</li>
+<li><strong>2 managers</strong> &rarr; quorum &gt; 1, necesitamos = 2, tolerancia = 0</li>
+<li><strong>3 managers</strong> &rarr; quorum &gt; 1.5, necesitamos = 2, tolerancia = 1</li>
+<li><strong>5 managers</strong> &rarr; quorum &gt; 2.5, necesitamos = 3, tolerancia = 2</li>
+</ul>
+
+<p>Solo nos queda ver que en caso de recuperación del nodo <strong>swarm1</strong>, el <em>cluster</em> lo reconoce y todo vuelve a la normalidad, excepto que no se desbanca al nuevo <em>leader</em>.</p>
+
+<pre><code class="language-bash">gerard@swarm2:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+t2x1d9ep99ff5o7ggf0f7dgzh     swarm1              Ready               Active              Reachable
+p8td0udza1chfy3ehb01wkm7p *   swarm2              Ready               Active              Reachable
+st9wv2k1fdmocam3dpmnas20c     swarm3              Ready               Active              Leader
+0t7m80of6t0nwo8zwn7vupwix     swarm4              Ready               Active
+8sl99fhp1hnc3bt620fxdnn6y     swarm5              Ready               Active
+gerard@swarm2:~$
+</code></pre>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

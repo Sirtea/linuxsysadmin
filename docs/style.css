@@ -1,0 +1,52 @@
+/* General layout */
+body { max-width: 1000px; margin: 1rem auto 2rem }
+body { font-family: sans-serif }
+
+/* Top menu */
+.menu { background-color: #111111; overflow: hidden; line-height: 3rem }
+.menu a { text-decoration: none; color: #FFFFFF; padding: 1rem }
+.menu a:hover { background-color: #000000 }
+.menu a.important { font-weight: bold }
+.menu .right { float: right }
+
+/* Archives style */
+.archives time { color: #777777 }
+.archives a { text-decoration: none; color: #000000 }
+.archives a:hover { text-decoration: underline }
+.archives { margin: 0rem }
+
+/* Headline style */
+.headline { margin-bottom: 2rem }
+.headline strong:first-child { margin-left: 0rem}
+.headline strong { margin-left: 1rem}
+
+/* Pagination style */
+.pagination { overflow: hidden; line-height: 2rem; display: table; margin: auto }
+.pagination a { text-decoration: none; color: #000000; padding: 0.5rem }
+.pagination a:hover { background-color: #000000; color: #FFFFFF }
+.pagination a.active { font-weight: bold }
+
+/* Article list style */
+h2.article { border-bottom: none }
+.article a { text-decoration: none }
+.article a:hover { text-decoration: underline }
+a.article { background-color: #000000; color: #FFFFFF; font-size: small; padding: 0.25rem 0.5rem; text-decoration: none }
+
+/* Footer style */
+.footer { text-align: center; margin-top: 2rem; border-top: 1px solid #CCCCCC; line-height: 3rem }
+
+/* Solo aplica a /curriculum.html */
+dt { text-indent: 4rem; clear: left; float: left; width: 250px; font-weight: bold }
+table { width: 90%; margin: auto; border-collapse: collapse }
+table + table { margin-top: 2em }
+td, th { text-align: center; border: 1px solid #AAAAAA }
+
+/* Body style */
+h1, h2, h3, h4 { border-bottom: 0.1rem #000000 solid }
+h1 { margin-bottom: 3rem }
+p { text-align: justify; line-height: 1.5rem }
+a { color: #000000; text-decoration: underline }
+img { display: block; margin: auto; border: 2px solid #000000 }
+hr { border: 0rem; border-top: 1px solid #CCCCCC }
+li { text-align: justify }
+pre { background-color: #000000; color: #FFFFFF; padding: 1rem }

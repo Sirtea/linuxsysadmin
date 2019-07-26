@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>nginx - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: nginx</h1>
+
+<h2 class="article"><a href="/2019/07/exponiendo-docker-por-tcp-de-forma-controlada.html">Exponiendo Docker por TCP de forma controlada</a></h2>
+<p>Tengo un usuario que es muy cómodo; él solo consiguió una excepción de seguridad para poder abrir el puerto TCP de <strong>docker</strong> de un servidor concreto, para chafardear cómodamente desde su máquina. A pesar de mis reticencias, cumplí con lo que se me pedía, y no tardamos mucho en lamentarlo.</p>
+<p><a class="article" href="/2019/07/exponiendo-docker-por-tcp-de-forma-controlada.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/07/simplificando-paginas-estaticas-con-server-side-includes.html">Simplificando páginas estáticas con Server Side Includes</a></h2>
+<p>Los <em>Server Side Includes</em> (SSI) son una extensión de algunos servidores web que nos permiten hacer manipulaciones en el fichero HTML servido de forma fácil. Esto nos permite, por ejemplo, incluir <em>snippets</em> de código en nuestras páginas estáticas, lo que contribuye en el principio <strong>Dont Repeat Yourself</strong>, sin contenido duplicado.</p>
+<p><a class="article" href="/2019/07/simplificando-paginas-estaticas-con-server-side-includes.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/09/un-contenedor-multiservicio-con-docker-y-s6.html">Un contenedor multiservicio con docker y s6</a></h2>
+<p>Lo he vuelto a hacer: a pesar de que es una antipráctica de <strong>docker</strong>, me veo tentado a ejecutar varios servicios en mis contenedores. Solo lo hago cuando estos servicios tienen un objetivo común, como servir PHP (nginx/php-fpm); para ello necesitamos un gestor de procesos. Hoy hablaremos de <strong>s6</strong>.</p>
+<p><a class="article" href="/2018/09/un-contenedor-multiservicio-con-docker-y-s6.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/redirecciones-a-nivel-de-nginx.html">Redirecciones a nivel de nginx</a></h2>
+<p>No son pocas las veces que queremos hacer una redirección de algunos de nuestros dominios a otros. Puede que queramos añadir el clásico <code>www</code> delante del dominio, o tal vez queramos forzar el uso de <code>https</code>. Hacer copias de nuestro dominio no es viable, pero podemos usar redirecciones fijas 301.</p>
+<p><a class="article" href="/2017/11/redirecciones-a-nivel-de-nginx.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/07/desactivando-nuestras-apis-con-un-frontal-nginx.html">Desactivando nuestras APIs con un frontal nginx</a></h2>
+<p>El otro día recibí una petición algo atípica en mi trabajo: querían activar y desactivar en un único punto centralizado cada una de las varias APIs que tenemos. Se trata de poner un <strong>nginx</strong> frontal que gestione los <em>virtualhosts</em> existentes y haga <em>proxy_pass</em> o no en función de un <em>flag</em>.</p>
+<p><a class="article" href="/2017/07/desactivando-nuestras-apis-con-un-frontal-nginx.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/06/logs-en-formato-json-en-nginx.html">Logs en formato JSON en Nginx</a></h2>
+<p>Vimos en un artículo anterior como trabajar con herramientas para agregar los <em>logs</em> en un mismo servidor, para su consulta. Algunos formatos de <em>logs</em> necesitan complejas formas de <em>parseado</em> para que puedan servir de base para nuestra consulta, y en el caso de <strong>logstash</strong> nos conviene un formato <strong>JSON</strong> válido.</p>
+<p><a class="article" href="/2017/06/logs-en-formato-json-en-nginx.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Un entorno web estático con nginx, rsync y docker</a></h2>
+<p>Hemos hablado de generar nuestro contenido HTML estático con otras herramientas, y finalmente ha llegado la hora de servirlo. Normalmente, los ficheros que cambian tal y como vamos generando páginas son pocos y nos interesa copiarlo de forma remota, pero no podemos hacerlo con <strong>docker</strong> porque hacen falta dos servicios.</p>
+<p><a class="article" href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-4.html">Creando un entorno escalable (IV)</a></h2>
+<p>Acabamos el artículo anterior de esta serie con las aplicaciones corriendo en sus respectivas máquinas. En este artículo vamos a poner una fachada a todo el sistema, mediante un <em>proxy HTTP</em> que haga las funciones de terminación <em>SSL</em> y de <em>balanceador</em>, exponiendo todo el sistema en una sola dirección IP.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-4.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Restringiendo accesos mediante certificados de cliente</a></h2>
+<p>De vez en cuando, tenemos algún contenido web o una API que necesita un control de acceso superior. El método mas eficaz del que disponemos hoy en día es la autenticación con certificados SSL cliente, en donde es el cliente el que debe ofrecer un certificado que el servidor validará.</p>
+<p><a class="article" href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/restringiendo-accesos-web-mediante-autenticacion-basica.html">Restringiendo accesos web mediante autenticación básica</a></h2>
+<p>Algunas veces nos encontramos con la necesidad de restringir el acceso a algunos recursos web. Normalmente se suele implementar algún sistema de <em>login</em>, <em>cookies</em> o <em>sesiones</em>; no obstante, esta opción no siempre nos es posible, y tenemos que proteger esos recursos usando los mecanismos que nos ofrezca el servidor web.</p>
+<p><a class="article" href="/2016/02/restringiendo-accesos-web-mediante-autenticacion-basica.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/nginx.html">1</a>
+	<a href="/tag/nginx/page/2.html">2</a>
+	<a href="/tag/nginx/page/2.html">&raquo;</a>
+	<a href="/tag/nginx/page/2.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

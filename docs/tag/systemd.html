@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: systemd</h1>
+
+<h2 class="article"><a href="/2018/02/configurando-servidores-con-first-time-boot-scripts.html">Configurando servidores con first time boot scripts</a></h2>
+<p>Configurar servidores desde cero es una tarea muy pesada, una fuente de errores innecesaria y hace nuestros servidores difícilmente reproducibles. Los <em>setups</em> más básicos son siempre los mismos, y podemos configurar nuestros servidores para que ejecuten un <em>script</em> la primera vez que se (re)inicien, a falta de mejores herramientas.</p>
+<p><a class="article" href="/2018/02/configurando-servidores-con-first-time-boot-scripts.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Levantando túneles SSH con systemd</a></h2>
+<p>Ya vimos en un <a href="/2016/10/creando-tuneles-con-ssh.html">artículo anterior</a> como levantar túneles <strong>SSH</strong> para llegar a través del protocolo <strong>SSH</strong>, a destinos que no están alcanzables normalmente. Esto está muy bien para aplicaciones puntuales, pero si tenemos que usar esos túneles una temporada, y deseamos que se mantengan levantados, ya es mas difícil.</p>
+<p><a class="article" href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/mongodb-sharding-con-ansible.html">MongoDB sharding con ansible</a></h2>
+<p>Como ya vimos en un artículo anterior, los <em>replica sets</em> nos ofrecen alta disponibilidad para nuestros despliegues de <strong>mongodb</strong>. Sin embargo, algunas veces, necesitamos que nuestro <em>cluster</em> ofrezca alto rendimiento, y esto se consigue mediante <em>sharding</em>. Como no queremos renunciar a la alta disponibilidad, podemos aplicar ambas; hoy explicamos como.</p>
+<p><a class="article" href="/2016/05/mongodb-sharding-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-2.html">Creando un entorno escalable (II)</a></h2>
+<p>Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un <em>cluster</em> de bases de datos; será <strong>mongodb</strong> porque la aplicación lo requiere y usará la topología de un <strong>replica set</strong>.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-2.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/construyendo-una-replica-set-en-mongodb.html">Construyendo una replica set en mongodb</a></h2>
+<p>Muchas veces nos interesa obtener alta disponibilidad en los servicios que gestionamos. No hay nada mas desagradable que una llamada a las tantas de la noche porque se ha caído un nodo de una base de datos y no damos servicio. Para eso <em>mongodb</em> nos ofrece el mecanismo de replicación.</p>
+<p><a class="article" href="/2015/12/construyendo-una-replica-set-en-mongodb.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/escribiendo-units-en-systemd.html">Escribiendo units en systemd</a></h2>
+<p>Cuando se anunció <em>systemd</em> me llamó la atención que además de las funciones estándares de otros sistemas de <em>init</em> (por ejemplo <em>sysvinit</em>), también se ofrecían otras funcionalidades normalmente delegadas a otros procesos, como por ejemplo, la posibilidad de reiniciar procesos automáticamente o de lanzar procesos temporales al estilo de <em>cron</em>.</p>
+<p><a class="article" href="/2015/11/escribiendo-units-en-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/restart-automatico-de-servicios-con-systemd.html">Restart automático de servicios con systemd</a></h2>
+<p>Cuando estamos gestionando un servidor, es posible que se caiga alguno de sus servicios. Esto es especialmente molesto cuando nos interesa tener un <em>uptime</em> elevado. Para conseguirlo, se han utilizado diferentes maneras, desde poner personas a monitorizar en modo 24x7 hasta herramientas auxiliares como gestores tipo <em>runit</em>, <em>supervisor</em> o <em>monit</em>.</p>
+<p><a class="article" href="/2015/11/restart-automatico-de-servicios-con-systemd.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/systemd.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Usando SSH en nuestros scripts python mediante paramiko - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Usando SSH en nuestros scripts python mediante paramiko</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-01-23
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/ssh.html">ssh</a> / <a href="/tag/python.html">python</a> / <a href="/tag/paramiko.html">paramiko</a> / <a href="/tag/script.html">script</a>
+</p>
+
+<p>Es muy útil lanzar comandos <strong>SSH</strong> desde un <em>script</em> de <strong>bash</strong>. Sin embargo, los <em>scripts</em> en <strong>bash</strong> se vuelve ilegibles rápidamente, y no nos ofrece el poderío de la librería <strong>python</strong>. No es de extrañar que herramientas como <strong>ansible</strong> o <strong>fabric</strong> estén escritas en <strong>python</strong>, usando una librería llamada <strong>paramiko</strong>.</p>
+
+<p>Una vez en el terreno de <strong>python</strong>, disponemos de todas las opciones que tenemos habitualmente en el lenguaje, como por ejemplo, el módulo de expresiones regulares para <em>parsear</em> la salida. Estos <em>scripts</em> quedan muy pequeños, legibles y limpios.</p>
+
+<p>En este artículo vamos a explicar como instalar y usar <strong>paramiko</strong>, con un ejemplo simple. El resto quedará a la imaginación de los lectores.</p>
+
+<h2 id="instalando-la-librería-en-un-virtualenv">Instalando la librería en un virtualenv</h2>
+
+<p>Vamos a hacernos con el control de <em>root</em>, de forma interactiva o mediante <strong>sudo</strong> para instalar las herramientas básicas para utilizar <em>virtualenvs</em>.</p>
+
+<pre><code class="language-bash">root@desktop:~# apt-get install python-virtualenv  
+...
+root@desktop:~# 
+</code></pre>
+
+<p>Como adelanto, el comando <strong>pip</strong> se va a ir quejando porque no dispone de un compilador y de ciertas librerías para construir las librerías de las que <strong>paramiko</strong> depende. Podéis ir instalando estas librerías a medida que las vaya pidiendo, o por comodidad, las instalamos ahora de golpe.</p>
+
+<pre><code class="language-bash">root@desktop:~# apt-get install gcc python-dev libssl-dev libffi-dev
+...  
+root@desktop:~# 
+</code></pre>
+
+<p>Y ya con las dependencias cumplidas, volvemos a utilizar un usuario sin privilegios, por seguridad. Vamos a crear un <em>virtualenv</em> en una localización arbitraria.</p>
+
+<pre><code class="language-bash">gerard@desktop:~/ssl$ virtualenv env
+Running virtualenv with interpreter /usr/bin/python2
+New python executable in env/bin/python2
+Also creating executable in env/bin/python
+Installing setuptools, pip...done.
+gerard@desktop:~/ssl$ 
+</code></pre>
+
+<p>Activamos el <em>virtualenv</em>, para asegurar que la instalación de <strong>paramiko</strong> se hace en el mismo, y así no ensuciamos el sistema con nuestras librerías propias.</p>
+
+<pre><code class="language-bash">gerard@desktop:~/ssl$ . env/bin/activate
+(env)gerard@desktop:~/ssl$ 
+</code></pre>
+
+<p>Instalar la librería es tan fácil como utilizar <strong>pip</strong> o <strong>easy_install</strong> para instalarla. Como <strong>pip</strong> es el futuro de las herramientas <strong>python</strong>, vamos con este comando. Este se va a bajar todos los paquetes y va a construir las librerías auxiliares; es un proceso con mucha salida, pero tarda poco.</p>
+
+<pre><code class="language-bash">(env)gerard@desktop:~/ssl$ pip install paramiko
+...  
+Successfully installed paramiko pyasn1 cryptography idna six setuptools enum34 ipaddress cffi pycparser
+Cleaning up...
+(env)gerard@desktop:~/ssl$ 
+</code></pre>
+
+<p>A partir de aquí, solo queda hacer un script que satisfaga nuestras necesidades.</p>
+
+<h2 id="un-script-de-ejemplo">Un script de ejemplo</h2>
+
+<p>Vamos a suponer que tenemos un servidor llamado <em>server</em>, con un usuario <em>gerard</em> con permiso para hacer <strong>sudo</strong>. Vamos a lanzar tres comandos por <strong>SSH</strong>, que nos van a indicar su <em>hostname</em> y el usuario con el que ejecutamos los comandos, con y sin <strong>sudo</strong>.</p>
+
+<p>Siguiendo <a href="http://docs.paramiko.org/en/2.1/">la documentación</a>, rápidamente sacamos un <em>script</em> mínimo. Para poder reutilizarlo en futuras aventuras, vamos a separar la lógica de ejecutar un comando del resto, mediante una función.</p>
+
+<pre><code class="language-bash">(env)gerard@desktop:~/ssl$ cat test.py 
+#!/usr/bin/env python
+
+import paramiko
+
+def execute_command(command, host, user, password, sudo=False):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(host, username=user, password=password, timeout=2)
+    if sudo:
+        stdin, stdout, stderr = client.exec_command('sudo -S ' + command)
+        stdin.write(password + '\n')
+    else:
+        stdin, stdout, stderr = client.exec_command(command)
+    output = stdout.read()
+    client.close()
+    return output
+
+HOST = '172.17.0.2'
+USER = 'gerard'
+PASSWORD = 's3cr3t'
+
+print 'Remote hostname:', execute_command('hostname', HOST, USER, PASSWORD),
+print 'Remote user:', execute_command('whoami', HOST, USER, PASSWORD),
+print 'Remote user after sudo:', execute_command('whoami', HOST, USER, PASSWORD, sudo=True),
+(env)gerard@desktop:~/ssl$ 
+</code></pre>
+
+<p>Solo nos queda ejecutar para comprobar que funciona como debe:</p>
+
+<pre><code class="language-bash">(env)gerard@desktop:~/ssl$ ./test.py 
+Remote hostname: server
+Remote user: gerard
+Remote user after sudo: root
+(env)gerard@desktop:~/ssl$ 
+</code></pre>
+
+<p>En un <em>script</em> real, posiblemente habríamos sacado información mas útil, y habríamos <em>parseado</em> la salida para no mostrar nada que no nos aporte valor. De momento, nos basta con obtener la salida y mostrarla.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

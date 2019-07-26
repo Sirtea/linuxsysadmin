@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Escribiendo bots para Telegram - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Escribiendo bots para Telegram</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-08-08
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/telegram.html">telegram</a> / <a href="/tag/bots.html">bots</a> / <a href="/tag/python.html">python</a>
+</p>
+
+<p>Aunque no está muy extendido, <strong>Telegram</strong> es un magnífico cliente de mensajería instantánea. Tiene varios puntos a favor, como por ejemplo seguridad, rapidez y su condición de <em>libre</em>. Lo que no se conoce tanto es que dispone de una <em>API</em> para crear <em>bots</em> que pueden responder automáticamente a sus usuarios.</p>
+
+<p>La variedad de usos que se dan mediante estos <em>bots</em> es muy variada. Personalmente he visto juegos, asistentes virtuales e incluso lo he usado para tener a mano las alarmas de un entorno de producción.</p>
+
+<h2 id="el-token">El token</h2>
+
+<p>Nuestro <em>bot</em> es un ente propio, que tiene un <em>token</em> de autenticación, de forma que solamente el que posea el <em>token</em> pude responder como si fuera el <em>bot</em>.</p>
+
+<p>Para conseguir el <em>token</em> tenemos que iniciar una conversación con <strong>@BotFather</strong>, que es el <em>bot</em> que gobierna al resto. La interfaz es muy simple, y vale la pena de explorar; de momento me limito a resumir los comandos necesarios:</p>
+
+<ol>
+<li>Iniciamos una conversación con <strong>BotFather</strong> mediante el comando <em>/start</em>.</li>
+<li>Le indicamos que queremos un nuevo <em>bot</em> mediante el comando <em>/newbot</em>.</li>
+<li>Le damos un nombre y un <em>username</em>, tal como nos lo pide.</li>
+<li>El último paso es anotar el <em>token</em> que nos ofrece <strong>BotFather</strong>.</li>
+</ol>
+
+<p>Esto es todo lo que necesitamos para empezar a responder mensajes. Las conversaciones con el <em>bot</em> se pueden iniciar buscando al <em>bot</em> por su nombre o su <em>username</em>. Obviamente, no tenemos nada todavía que responda a los <em>chats</em> que se hagan a este nuevo <em>bot</em>.</p>
+
+<p>Hay dos formas de responder a este <em>bot</em>:</p>
+
+<ul>
+<li>Lo podemos configurar para que llame directamente a un <em>endpoint</em> protegido con <em>HTTPS</em> (requiere un certificado válido no autofirmado).</li>
+<li>Podemos tener un programa preguntando por nuevos mensajes periódicamente.</li>
+</ul>
+
+<p>Como no tengo un servidor <em>HTTPS</em> con certificado adecuado, vamos a ir por la segunda opción.</p>
+
+<h2 id="el-script-de-respuesta">El script de respuesta</h2>
+
+<p>Vamos a escribir el <em>script</em> en <strong>python</strong> por su simplicidad y facilidad. Realmente se podría hacer con cualquier lenguaje, ya que se trata de hacer peticiones web a la <em>API</em> e interpretarlas.</p>
+
+<p>Empezaremos por instalar una librería que nos va a facilitar bastante entender las peticiones y crear las respuestas. Lo vamos a hacer en un <em>virtualenv</em> por limpieza.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/projects/telebot$ virtualenv env
+New python executable in /home/gerard/projects/telebot/env/bin/python
+Installing setuptools, pip, wheel...done.
+gerard@sirius:~/projects/telebot$ . env/bin/activate
+(env) gerard@sirius:~/projects/telebot$ pip install python-telegram-bot
+Collecting python-telegram-bot
+  Downloading python_telegram_bot-4.3.3-py2.py3-none-any.whl (122kB)
+    100% |████████████████████████████████| 122kB 471kB/s 
+Collecting certifi (from python-telegram-bot)
+  Downloading certifi-2016.2.28-py2.py3-none-any.whl (366kB)
+    100% |████████████████████████████████| 368kB 514kB/s 
+Collecting urllib3&gt;=1.10 (from python-telegram-bot)
+  Downloading urllib3-1.16-py2.py3-none-any.whl (98kB)
+    100% |████████████████████████████████| 102kB 901kB/s 
+Collecting future&gt;=0.15.2 (from python-telegram-bot)
+Installing collected packages: certifi, urllib3, future, python-telegram-bot
+Successfully installed certifi-2016.2.28 future-0.15.2 python-telegram-bot-4.3.3 urllib3-1.16
+(env) gerard@sirius:~/projects/telebot$ 
+</code></pre>
+
+<p>Realmente no hay mucho misterio; siguiendo la documentación se saca rápidamente un <em>script</em>, al que llamaremos <em>run.py</em>.</p>
+
+<pre><code class="language-python">#!/usr/bin/env python
+
+import telegram
+
+bot = telegram.Bot(token='190363978:AAG0bHpIbidczVYUPhW9UwrwG3n5s54XSlE')
+print bot.getMe()
+
+def process_update(update):
+    request, response = update.message.text, 'unknown'
+    if request.upper().startswith('UPPER '):
+        response = request[6:].upper()
+    params = {
+        'chat_id': update.message.chat_id,
+        'text': '*Response*: ' + response,
+        'parse_mode': 'Markdown',
+    }
+    bot.sendMessage(**params)
+
+last_update = None
+while True:
+    if last_update is None:
+        updates = bot.getUpdates(timeout=10)
+    else:
+        updates = bot.getUpdates(offset=last_update+1, timeout=10)
+    for update in updates:
+        process_update(update)
+        last_update = update.update_id
+</code></pre>
+
+<p>El <em>script</em> es relativamente fácil de entender, así que solo os dejo algunas reflexiones:</p>
+
+<ul>
+<li>El <em>token</em> usado en <em>telegram.Bot()</em> es el que nos dio el <strong>BotFather</strong> (ha sido destruido, así que no penséis en vandalizar).</li>
+<li>Los <em>update_id</em> son secuenciales; sin embargo, varias lecturas a la <em>API</em> nos vuelven a traer todos los mensajes. La forma de que no nos los vuelva a dar es especificando un parámetro <em>offset</em> (aunque en la primera iteración no lo tenemos).</li>
+<li>Se ha decidido por procesar cada <em>update</em> en una función aparte, ya que cada <em>bot</em> hará algo diferente con ellos.</li>
+<li>Este <em>bot</em> de prueba solo va a devolvernos el mensaje que le pasemos en mayúsculas, y solo si este empieza por &ldquo;UPPER&rdquo;. El resto devuelve &ldquo;unknown&rdquo;.</li>
+<li>Las respuestas pueden contener lenguaje <em>wiki</em>, en este caso, <strong>markdown</strong>; pueden también definir teclados a medida con las respuestas posibles.</li>
+<li>Las respuestas conocen a su receptor mediante el campo <em>chat_id</em>. Este campo se puede ver como un indicador de sesión, si vuestro <em>bot</em> mantiene el estado de un &ldquo;jugador&rdquo; concreto.</li>
+</ul>
+
+<p>La verdad es que es bastante simple la interfaz de la <em>API</em>.  Con un poco de imaginación y una base de datos, es muy posible hacer un juego conversacional, sea con campos en la base de datos, o mediante una máquina de estados simple. Me quedo con esa idea para el futuro.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

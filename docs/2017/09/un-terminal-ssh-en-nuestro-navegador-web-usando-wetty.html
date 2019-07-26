@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un terminal SSH en nuestro navegador web usando Wetty - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un terminal SSH en nuestro navegador web usando Wetty</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-09-25
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/ssh.html">ssh</a> / <a href="/tag/terminal.html">terminal</a> / <a href="/tag/wetty.html">wetty</a>
+</p>
+
+<p>No siempre tenemos acceso a nuestro terminal SSH favorito para acceder a nuestros entornos en caso de emergencia. De hecho, en muchas redes suelen prohibir el tráfico por otros puertos ajenos a la navegación web. Para estos casos podemos tener un terminal SSH a través de una página web propia.</p>
+
+<p>El truco consiste en usar <strong>Wetty</strong>. Si os interesa, podéis encontrar el repositorio de GitHub <a href="https://github.com/krishnasrinivas/wetty">aquí</a>.</p>
+
+<blockquote>
+<p>Terminal over HTTP and HTTPS. Wetty is an alternative to ajaxterm/anyterm but much better than them because wetty uses ChromeOS&rsquo; terminal emulator (hterm) which is a full fledged implementation of terminal emulation written entirely in Javascript. Also it uses websockets instead of Ajax and hence better response time.</p>
+</blockquote>
+
+<p>Podemos encontrar una imagen en <a href="https://hub.docker.com/r/nathanleclaire/wetty/">DockerHub</a>, que nos vale para una demostración rápida. Sin embargo, el gran tamaño de su imagen la hace impracticable para un uso habitual.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/wetty$ docker images | grep wetty
+nathanleclaire/wetty   latest              94635175ccb6        2 years ago         1.2 GB
+gerard@aldebaran:~/docker/wetty$ 
+</code></pre>
+
+<p>Así pues, podemos construir otra imagen, basándonos en los pasos de instalación que aparecían en GitHub, con el único añadido de un fichero <em>.tar.gz</em> con una imagen del repositorio.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/wetty$ tar tf wetty.tar.gz 
+.gitignore
+Dockerfile
+Gruntfile.js
+LICENSE
+README.md
+app.js
+bin/
+bin/wetty.conf
+bin/wetty.js
+bin/wetty.service
+package.json
+public/
+public/index.html
+public/wetty/
+public/wetty/hterm_all.js
+public/wetty/index.html
+public/wetty/wetty.js
+terminal.png
+gerard@aldebaran:~/docker/wetty$ cat Dockerfile 
+FROM alpine:3.5
+RUN apk add --no-cache nodejs tini
+ENV NODE_ENV=production
+ADD wetty.tar.gz /srv/app/
+WORKDIR /srv/app/
+RUN apk add --no-cache python2 make g++ &amp;&amp; \
+    npm install &amp;&amp; \
+    apk del python2 make g++
+RUN adduser guest -D &amp;&amp; \
+    echo &quot;guest:guest&quot; | chpasswd
+ENTRYPOINT [&quot;/sbin/tini&quot;, &quot;--&quot;]
+CMD [&quot;node&quot;, &quot;app.js&quot;, &quot;-p&quot;, &quot;3000&quot;]
+gerard@aldebaran:~/docker/wetty$ 
+</code></pre>
+
+<p>Esto nos deja una imagen mucho más pequeña, pero nos limita a entrar por SSH en un terminal de <em>Alpine Linux</em>, que aunque magnífico, no es tan completo como el de otras distribuciones. Usad la distribución que más os convenga.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/wetty$ docker images | grep wetty
+wetty                  latest              45635173077e        35 minutes ago      56.2 MB
+gerard@aldebaran:~/docker/wetty$ 
+</code></pre>
+
+<p>Como pretendo utilizarla como un máquina de salto, este tamaño y limitación son más que adecuados. Sin embargo no estaba dispuesto a pagar 1,2 gb por un contenedor que no hace nada por sí mismo&hellip;</p>
+
+<p>Solo nos queda ejecutar la imagen exponiendo el puerto 3000 del contenedor, para poder acceder remotamente desde el navegador, que en mi caso estaría en <a href="http://localhost:3000/">http://localhost:3000/</a>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/wetty$ docker run -ti --rm -p 3000:3000 wetty
+http on port 3000
+</code></pre>
+
+<p><strong>AVISO</strong>: Esta página está desprotegida, sin autenticación ni encriptación. Una buena opción está en dotarla de ambos usando un servidor web <strong>nginx</strong> como frontal. También es interesante modificar el usuario de entrada con par de claves, añadir un cliente de SSH para saltar, y lo que más nos interese.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

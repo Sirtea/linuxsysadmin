@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un sistema de ficheros comprimido y de solo lectura: squashfs - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un sistema de ficheros comprimido y de solo lectura: squashfs</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-02-19
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/squashfs.html">squashfs</a> / <a href="/tag/mount.html">mount</a> / <a href="/tag/filesystem.html">filesystem</a>
+</p>
+
+<p>Cuando trabajamos con tamaños de disco muy limitados, como por ejemplo en dispositivos <em>embedded</em> o <em>pendrives</em>, nos vemos obligados a reducir nuestros sistemas de ficheros. Algunos de estos sistemas de ficheros son de solo lectura, y vienen comprimidos, lo que nos permite ahorrar en espacio de disco, no en funcionalidades.</p>
+
+<p>En este campo aparece el nombre de <em>squashfs</em>, que es básicamente un sistema de ficheros <em>ext2</em> comprimido. La única diferencia entre <em>ext2</em>, <em>ext3</em> y <em>ext4</em> es el <em>journal</em>, que es el registro encargado de que no se pierdan las escrituras hechas en el disco en caso de fallo antes de <em>flushear</em> lo <em>bufferes</em>, así que la version <em>ext2</em> no es ni un atraso ni un impedimento.</p>
+
+<h2 id="creación-del-sistema-de-ficheros">Creación del sistema de ficheros</h2>
+
+<p>Para crear un sistema de ficheros nos hacen falta las herramientas <strong>mksquashfs</strong> y posiblemente el decompresor <strong>unsquashfs</strong>. En <em>Debian</em> se pueden obtener instalando el paquete <strong>squashfs-tools</strong>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ sudo apt-get install squashfs-tools
+[sudo] password for gerard:
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes adicionales:
+  liblzo2-2
+Se instalarán los siguientes paquetes NUEVOS:
+  liblzo2-2 squashfs-tools
+0 actualizados, 2 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 179 kB de archivos.
+Se utilizarán 488 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+gerard@atlantis:~$
+</code></pre>
+
+<p>Vamos a crear un sistema de ficheros normal en un carpeta, que luego vamos a comprimir. Hoy, y a modo de ejemplo, vamos a crearlos con ficheros de contenido aleatorio; normalmente suelo poner jaulas o partes del sistema operativo.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ mkdir rootfs
+gerard@atlantis:~/squashtest$ dd if=/dev/urandom of=/dev/stdout bs=1K count=10 | base64 &gt; rootfs/file1
+10+0 registros leídos
+10+0 registros escritos
+10240 bytes (10 kB, 10 KiB) copied, 0,000641935 s, 16,0 MB/s
+gerard@atlantis:~/squashtest$ dd if=/dev/urandom of=/dev/stdout bs=1K count=10 | base64 &gt; rootfs/file2
+10+0 registros leídos
+10+0 registros escritos
+10240 bytes (10 kB, 10 KiB) copied, 0,000119261 s, 85,9 MB/s
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<p>Si miramos lo que nos ha quedado, vemos que el resultado es el correcto. Tened en cuenta que la carpeta contenedora <em>rootfs</em> se considerará la raíz del sistema de ficheros.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ tree -h
+.
+└── [4.0K]  rootfs
+    ├── [ 14K]  file1
+    └── [ 14K]  file2
+
+1 directory, 2 files
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<p>Solo nos queda lanzar el comando <strong>mksquashfs</strong> que se encargará de comprimir el conjunto de carpetas que indiquemos y creará el fichero que declaremos en el último parámetro.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ mksquashfs rootfs/ rootfs.sqsh
+Parallel mksquashfs: Using 1 processor
+Creating 4.0 filesystem on rootfs.sqsh, block size 131072.
+[==================================================================================================================================================================================================|] 2/2 100%
+
+Exportable Squashfs 4.0 filesystem, gzip compressed, data block size 131072
+        compressed data, compressed metadata, compressed fragments, compressed xattrs
+        duplicates are removed
+Filesystem size 20.80 Kbytes (0.02 Mbytes)
+        76.13% of uncompressed filesystem size (27.32 Kbytes)
+Inode table size 53 bytes (0.05 Kbytes)
+        54.08% of uncompressed inode table size (98 bytes)
+Directory table size 30 bytes (0.03 Kbytes)
+        75.00% of uncompressed directory table size (40 bytes)
+Number of duplicate files found 0
+Number of inodes 3
+Number of files 2
+Number of fragments 1
+Number of symbolic links  0
+Number of device nodes 0
+Number of fifo nodes 0
+Number of socket nodes 0
+Number of directories 1
+Number of ids (unique uids + gids) 1
+Number of uids 1
+        gerard (1000)
+Number of gids 1
+        gerard (1000)
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<p>Podemos ver en este caso que el tamaño del sistema de ficheros final es solamente el 76.13% de lo que era antes de comprimir. No es mucho, pero con ficheros más realistas suele comprimir más, pero de momento nos vale. Veamos el tamaño final del sistema de ficheros, que se queda en 24kb:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ ls -lh
+total 28K
+drwxr-xr-x 2 gerard gerard 4,0K sep 20 10:43 rootfs
+-rw-r--r-- 1 gerard gerard  24K sep 20 10:44 rootfs.sqsh
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<h2 id="uso-del-sistema-de-ficheros">Uso del sistema de ficheros</h2>
+
+<p>Para montar el sistema de ficheros no nos hace falta nada especial, ni ninguna de las <strong>squashfs-tools</strong>, al menos en <em>Debian</em>, que ya incluye el módulo de <em>squashfs</em> en el <em>kernel</em>.</p>
+
+<p>El fichero <em>rootfs.sqsh</em> no sirve por si solo; hay que montarlo. Supongamos que queremos montar nuestro nuevo sistema de ficheros en la carpeta <em>mount/</em>, que al no existir, crearemos.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ mkdir mount
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<p>El comando de montaje no es diferente de cualquier otro, y lo podríamos poner en el <em>/etc/fstab</em> para que se monte solo en cada reinicio. De momento os paso el comando de <em>mount</em> básico, que demuestra lo fácil que es de hacer:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ sudo mount rootfs.sqsh mount/
+[sudo] password for gerard:
+gerard@atlantis:~/squashtest$ tree mount/
+mount/
+├── file1
+└── file2
+
+0 directories, 2 files
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<p>Como todo sistema de ficheros montado en <em>linux</em>, queda accesible en la carpeta de montaje. Para acceder a los ficheros solo necesitamos hacerlo de la forma habitual, aunque por tratarse de un sistema de ficheros de solo lectura, solo podemos leerlo, pero no escribirlo.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/squashtest$ touch mount/hello
+touch: no se puede efectuar `touch' sobre 'mount/hello': Sistema de ficheros de sólo lectura
+gerard@atlantis:~/squashtest$
+</code></pre>
+
+<h2 id="añadiendo-una-capa-de-lectura-y-escritura">Añadiendo una capa de lectura y escritura</h2>
+
+<p>Un sistema de ficheros de lectura solo no tiene mucha utilidad en sí misma; aunque es verdad que podemos poner la jaula como solo lectura y montar una carpeta de trabajo solamente. Sin embargo hay otro método ámpliamente utilizado para hacer que parezca de lectura y escritura.</p>
+
+<p>Se trata del método que utiliza la distribución <a href="https://www.slax.org/es/">Slax</a>. La idea es que el sistema de ficheros &ldquo;final&rdquo; es una carpeta en la que se montan varias capas de sistema de ficheros. Esto se consigue con sistemas de ficheros tipo <em>UnionFS</em>, <em>AUFS</em> o <em>overlayfs</em>.</p>
+
+<p>De esta forma podemos tener la imagen base, posiblemente compartida por varios montajes distintos, y luego disponer de varias capas de diferencias respecto al original. Estas capas de diferencias suelen ser más pequeñas que la imagen base y se pueden descartar para volver a la versíon original de lo que teníamos en la carpeta.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

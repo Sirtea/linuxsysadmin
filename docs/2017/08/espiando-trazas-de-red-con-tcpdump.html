@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Espiando trazas de red con tcpdump - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Espiando trazas de red con tcpdump</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-08-14
+	<strong>Tiempo de lectura</strong>: 2 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/tcpdump.html">tcpdump</a> / <a href="/tag/red.html">red</a> / <a href="/tag/trazas.html">trazas</a> / <a href="/tag/evidencias.html">evidencias</a>
+</p>
+
+<p>No suelen haber errores de conexión en los entornos que administro; sin embargo, alguna vez los hay. Esto supone un marrón, porque la red es ese elemento que escapa a mi gestión; la gente que se dedica a eso suele negar estos problemas argumentando cualquier excusa. Para eso está <strong>tcpdump</strong>.</p>
+
+<p>Las pocas veces que tengo que recurrir a esto para conseguir evidencias siempre es una fiesta, porque como no lo utilizo de forma habitual, me olvido fácilmente de los parámetros más básicos. Y esto pretende ser una chuleta para el futuro.</p>
+
+<p>Normalmente solo me encargo de capturar los paquetes en un fichero de formato <em>.pcap</em>, dejando a otro más experto en el tema el gusto de interpretarlos. Claro que muchas otras veces son usados como evidencias sin análisis previo&hellip;</p>
+
+<h2 id="elegir-la-interfaz-a-usar">Elegir la interfaz a usar</h2>
+
+<p>Usaremos el <em>flag -i</em> para indicar la interfaz (o todas con <em>any</em>), pudiendo consultar las disponibles con el flag <em>-D</em>.</p>
+
+<pre><code class="language-bash">tcpdump -D
+tcpdump -i eth0
+tcpdump -i any
+</code></pre>
+
+<h2 id="filtrar-por-varios-criterios">Filtrar por varios criterios</h2>
+
+<p>Como el tamaño del fichero final crece descontroladamente, vale la pena usar filtros, que en <strong>tcpdump</strong> son combinaciones de <em>expresiones</em>.</p>
+
+<p>Una <em>expresión</em> puede ser de 3 tipos:</p>
+
+<ul>
+<li><strong>De tipo</strong>: <em>host</em> (ej. 172.16.0.3), <em>net</em> (ej. 10.0.0.0/8) y <em>port</em> (ej. 443)</li>
+<li><strong>De dirección</strong>: <em>src</em>, <em>dst</em> o nada (que significa ambas)</li>
+<li><strong>De protocolo</strong>: <em>tcp</em>, <em>udp</em> o <em>icmp</em></li>
+</ul>
+
+<p><strong>NOTA</strong>: Esta lista no está completa. Revisad las páginas <em>man</em> para más detalles.</p>
+
+<p>Así pues, para filtrar el tráfico que se origina en una red local 192.168.1.0/24, podríamos usar algo como:</p>
+
+<pre><code class="language-bash">tcpdump -i any src net 192.168.1.0/24
+</code></pre>
+
+<p>Podemos combinar grupos de expresiones con los operadores <em>not</em>, <em>or</em> y <em>and</em>, con uso de paréntesis para priorizar operadores.</p>
+
+<pre><code class="language-bash">tcpdump src 10.0.2.4 and (dst port 3389 or 22)
+</code></pre>
+
+<h2 id="captura-de-un-fichero-para-su-uso-posterior">Captura de un fichero para su uso posterior</h2>
+
+<p>Ver los paquetes en local es una opción válida, pero dependiendo del volumen de tráfico capturado puede resultar en dejarse la vista. En estos casos es más fácil guardar el resultado en un fichero que luego pueda ser leído, por el mismo <strong>tcpdump</strong> (con el <em>flag -r</em>), o por una cómoda aplicación de escritorio, como por ejemplo, <a href="https://www.wireshark.org/">Wireshark</a>.</p>
+
+<p>En este caso, basta con utilizar un <em>flag</em> que le indique que tiene que guardar un fichero. Este <em>flag</em> es el <em>flag -w</em>.</p>
+
+<pre><code class="language-bash">tcpdump -i eth0 tcp -w traffic.pcap
+</code></pre>
+
+<p><strong><em>Y con estas pinceladas básicas, podemos aportar evidencias para que el experto se lo mire</em></strong></p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

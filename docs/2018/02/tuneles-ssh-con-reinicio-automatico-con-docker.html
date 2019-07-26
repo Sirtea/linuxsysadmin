@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Túneles SSH con reinicio automático con Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Túneles SSH con reinicio automático con Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-02-12
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/ssh.html">ssh</a> / <a href="/tag/tunel.html">túnel</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/docker-compose.html">docker-compose</a>
+</p>
+
+<p>Ya vimos en <a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">un artículo anterior</a> como delegar en <strong>SystemD</strong> la persistencia de túneles SSH. El otro día intenté reproducirlo sin éxito en un servidor con una versión baja de <strong>SystemD</strong>; finalmente me di cuenta de que había otra herramienta en el servidor capaz de reiniciar un túnel caído: <strong>Docker</strong>.</p>
+
+<h2 id="el-problema">El problema</h2>
+
+<p>El contexto no cambia respecto al citado artículo: tengo un servidor ejecutando los servicios de <strong>MongoDB</strong> y <strong>SSH</strong>, pero no puedo acceder a la base de datos porque expone su <em>socket</em> solo a <em>localhost</em>.</p>
+
+<p>En circunstancias normales, el túnel es trivial:</p>
+
+<pre><code class="language-bash">ssh -L 9999:localhost:27017 usuario@servidor -Nf
+</code></pre>
+
+<p>Pero en mi entorno de trabajo, debido a directivas de seguridad arbitrarias, ese túnel se caía demasiado a menudo, y levantarlo manualmente era muy pesado.</p>
+
+<h2 id="la-solución">La solución</h2>
+
+<p>Fallado el intento con <strong>SystemD</strong>, decidí dar un intento a <strong>Docker</strong>, y este es el resultado; se trata solamente de una imagen con el cliente <strong>SSH</strong> que más nos convenga, con una distribución base de nuestro agrado, por ejemplo, <strong>Alpine Linux</strong>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/tunnelmaker$ cat context/Dockerfile 
+FROM alpine:3.6
+RUN apk add --no-cache openssh-client
+gerard@sirius:~/docker/tunnelmaker$ 
+</code></pre>
+
+<p>Con estas herramientas, nos valdría con lanzar el comando del túnel, pero habrá que acompañar el contenedor hecho a partir de esta imagen de varias cosas:</p>
+
+<ul>
+<li>La clave <strong>SSH</strong> para levantar el túnel sin contraseña, evitando una intervención manual o el fallo directo del <code>docker run</code>. Por supuesto, el servidor destino debe aceptar la clave para el usuario indicado en el comando del túnel.</li>
+<li>Una configuración <strong>SSH</strong> cliente que impida detenernos en el momento de aceptar el <em>fingerprint</em> del servidor destino.</li>
+<li>El propio comando del túnel <strong>SSH</strong>, que no hemos puesto en el <em>Dockerfile</em> para poder levantar diferentes túneles con la misma imagen.</li>
+</ul>
+
+<p>Es especialmente importante respetar el usuario y los permisos de los fichero <em>id_rsa</em> y <em>config</em>, siendo <code>root:root:600</code> para el primero y <code>root:root:644</code> para el segundo.</p>
+
+<p>Podemos levantar esta imagen con el comando <code>docker run</code> habitual, pero como tiene varios añadidos, y por comodidad, usaremos <strong>docker-compose</strong>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/tunnelmaker$ cat docker-compose.yml 
+version: '2'
+services:
+  mongotunnel:
+    build: context
+    volumes:
+      - ./id_rsa:/root/.ssh/id_rsa
+      - ./config:/root/.ssh/config
+    ports:
+      - &quot;27777:9999&quot;
+    extra_hosts:
+      - &quot;mongoserver:192.168.1.135&quot;
+    command: ssh -L 0.0.0.0:9999:localhost:27017 jump@mongoserver -N
+    stdin_open: true
+    restart: always
+gerard@sirius:~/docker/tunnelmaker$ 
+</code></pre>
+
+<p>Podemos observar el el fichero <em>docker-compose.yml</em> otras varias anomalías:</p>
+
+<ul>
+<li><strong>restart: always</strong> &rarr; Este es el punto de todo el artículo; queremos que cuando el túnel se caiga, el mismo demonio de <strong>Docker</strong> se ocupe de levantarlo de nuevo.</li>
+<li>** stdin_open: true** &rarr; Sin este parámetro, el túnel se cerraba nada más establecerse; sospecho que esta era la causa de que no funcionara la solución con <strong>SystemD</strong>.</li>
+<li><strong>extra_hosts</strong> &rarr; No es indispensable, pero he querido utilizar nombres de servidor por claridad, aunque no dispongo de resolución de nombres para mis servidores locales. Esto añade la correspondiente entrada en <em>/etc/hosts</em>.</li>
+<li><strong>ports</strong> &rarr; Nuestro contenedor va a levantar el túnel en el puerto arbitrario 9999; lo mapeamos en cualquier puerto que tengamos libre en nuestro ordenador.</li>
+</ul>
+
+<p>Adjunto la configuración <strong>SSH</strong> para tener el ejemplo completo. No pongo la clave privada <strong>SSH</strong> por razones de seguridad obvias; tendréis que generar vuestro propio par con el comando <strong>ssh-keygen</strong>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/tunnelmaker$ cat config 
+Host *
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    ServerAliveInterval 60
+gerard@sirius:~/docker/tunnelmaker$ 
+</code></pre>
+
+<h2 id="el-resultado">El resultado</h2>
+
+<p>Solo necesitamos levantar el contenedor usando <strong>docker-compose</strong> para poder observar el resultado.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/tunnelmaker$ docker-compose up -d
+Creating network &quot;tunnelmaker_default&quot; with the default driver
+Creating tunnelmaker_mongotunnel_1
+gerard@sirius:~/docker/tunnelmaker$ 
+</code></pre>
+
+<p>Ahora podremos acceder sin problemas a dicho servidor de bases de datos como si se encontrase en el puerto 27777 local; solo hace falta comprobarlo usando, por ejemplo, el mismo cliente de <strong>MongoDB</strong>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker$ mongo --port 27777
+MongoDB shell version v3.4.7
+connecting to: mongodb://127.0.0.1:27777/
+MongoDB server version: 3.4.4
+...  
+&gt; 
+</code></pre>
+
+<p>No importa cuantas veces se caiga el túnel; cuando eso pase, el contenedor acabará y el demonio de <strong>Docker</strong> lo va a volver a levantar.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

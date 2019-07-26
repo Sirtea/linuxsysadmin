@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Restringiendo accesos mediante certificados de cliente - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Restringiendo accesos mediante certificados de cliente</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-02-22
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/nginx.html">nginx</a> / <a href="/tag/2-way-ssl.html">2 way ssl</a> / <a href="/tag/ssl.html">ssl</a> / <a href="/tag/https.html">https</a> / <a href="/tag/certificado.html">certificado</a>
+</p>
+
+<p>De vez en cuando, tenemos algún contenido web o una API que necesita un control de acceso superior. El método mas eficaz del que disponemos hoy en día es la autenticación con certificados SSL cliente, en donde es el cliente el que debe ofrecer un certificado que el servidor validará.</p>
+
+<p>Como se trata de proteger contenido web, vamos a necesitar un servidor web, por ejemplo, <strong>nginx</strong>. De paso, vamos a instalar el paquete <strong>openssl</strong>, que nos permitirá generar los certificados usados.</p>
+
+<pre><code class="language-bash">root@server:~# apt-get install nginx-light openssl
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes extras:
+  nginx-common
+Paquetes sugeridos:
+  fcgiwrap nginx-doc ssl-cert ca-certificates
+Se instalarán los siguientes paquetes NUEVOS:
+  nginx-common nginx-light openssl
+0 actualizados, 3 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 1.126 kB de archivos.
+Se utilizarán 2.148 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+root@server:~#
+</code></pre>
+
+<h2 id="generar-el-certificado-y-la-clave-de-la-ca">Generar el certificado y la clave de la CA</h2>
+
+<p>Empezaremos por generar la clave de la CA, que va a servir para firmar el certificado que pondremos en el servidor.</p>
+
+<pre><code class="language-bash">root@server:~# openssl genrsa -des3 -out ca.key 4096
+Generating RSA private key, 4096 bit long modulus
+...................................................................++
+.++
+e is 65537 (0x10001)
+Enter pass phrase for ca.key:
+Verifying - Enter pass phrase for ca.key:
+root@server:~#
+</code></pre>
+
+<p>Ahora generamos el certificado de la CA. Lo generamos directamente firmado en un solo paso.</p>
+
+<pre><code class="language-bash">root@server:~# openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin&quot;
+Enter pass phrase for ca.key:
+root@server:~#
+</code></pre>
+
+<h2 id="generar-el-certificado-para-el-servidor-web">Generar el certificado para el servidor web</h2>
+
+<p>Generamos la clave para el certificado del servidor web.</p>
+
+<pre><code class="language-bash">root@server:~# openssl genrsa -des3 -out server.key 4096
+Generating RSA private key, 4096 bit long modulus
+.............................................++
+.....................................++
+e is 65537 (0x10001)
+Enter pass phrase for server.key:
+Verifying - Enter pass phrase for server.key:
+root@server:~#
+</code></pre>
+
+<p>Ahora creamos un certificado para el servidor web. Es importante que el campo <strong>CN</strong> sea el mismo que el nombre del <em>virtualhost</em>.</p>
+
+<pre><code class="language-bash">root@server:~# openssl req -new -key server.key -out server.csr -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=private.linuxsysadmin.tk&quot;
+Enter pass phrase for server.key:
+root@server:~#
+</code></pre>
+
+<p>Y lo firmamos con la clave y el certificado de la CA.</p>
+
+<pre><code class="language-bash">root@server:~# openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
+Signature ok
+subject=/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=private.linuxsysadmin.tk
+Getting CA Private Key
+Enter pass phrase for ca.key:
+root@server:~#
+</code></pre>
+
+<p><strong>TRUCO</strong>: Si la clave está protegida por una passphrase, se va a necesitar introducirla cada vez que se quiera levantar el servidor web. Nos lo podemos ahorrar con unos simples comandos, que dejará la clave como insegura.</p>
+
+<pre><code class="language-bash">root@server:~# mv server.key server.key.secure
+root@server:~# openssl rsa -in server.key.secure -out server.key
+Enter pass phrase for server.key.secure:
+writing RSA key
+root@server:~#
+</code></pre>
+
+<h2 id="generar-el-certificado-cliente">Generar el certificado cliente</h2>
+
+<p>Generamos la clave para el certificado del cliente.</p>
+
+<pre><code class="language-bash">root@server:~# openssl genrsa -des3 -out client.key 1024
+Generating RSA private key, 1024 bit long modulus
+...............................++++++
+.....................++++++
+e is 65537 (0x10001)
+Enter pass phrase for client.key:
+Verifying - Enter pass phrase for client.key:
+root@server:~#
+</code></pre>
+
+<p>El siguiente paso consiste en generar una petición de certificado, que posteriormente haremos firmar. El campo <strong>CN</strong> puede ser recogido por el servidor web y trasladado mediante cabeceras a un hipotético <em>backend</em>, en caso de hacer un <em>proxy_pass</em>.</p>
+
+<pre><code class="language-bash">root@server:~# openssl req -new -key client.key -out client.csr -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=Gerard Monells&quot;
+Enter pass phrase for client.key:
+root@server:~#
+</code></pre>
+
+<p>Firmamos nuestra petición de certificado con la clave de la CA, obteniendo el certificado final.</p>
+
+<pre><code class="language-bash">root@server:~# openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 91 -out client.crt
+Signature ok
+subject=/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=Gerard Monells
+Getting CA Private Key
+Enter pass phrase for ca.key:
+root@server:~#
+</code></pre>
+
+<p>Ahora queda empaquetar la clave y el certificado en un fichero <em>client.p12</em> que pueda ser importado en un navegador web.</p>
+
+<pre><code class="language-bash">root@server:~# openssl pkcs12 -export -in client.crt -inkey client.key -out client.p12 -name &quot;LinuxSysadmin&quot;
+Enter pass phrase for client.key:
+Enter Export Password:
+Verifying - Enter Export Password:
+root@server:~#
+</code></pre>
+
+<h2 id="montando-el-dominio-web">Montando el dominio web</h2>
+
+<p>Además de necesitar el certificado y la clave servidor, es necesario que el servidor web conozca el certificado de la CA para que pueda verificar el servidor cliente que nos ofrezca el navegador.</p>
+
+<pre><code class="language-bash">root@server:~# cp server.key /etc/ssl/private/
+root@server:~# cp server.crt /etc/ssl/certs/
+root@server:~# cp ca.crt /etc/ssl/certs/
+root@server:~#
+</code></pre>
+
+<p>Así quedarían los certificados una vez en su sitio.</p>
+
+<pre><code class="language-bash">root@server:~# tree /etc/ssl/
+/etc/ssl/
+├── certs
+│   ├── ca.crt
+│   └── server.crt
+├── openssl.cnf
+└── private
+    └── server.key
+
+2 directories, 4 files
+root@server:~#
+</code></pre>
+
+<p>Vamos a poner un fichero de configuración en <strong>nginx</strong>, que va a escuchar por el puerto 443 y con <strong>SSL</strong> habilitado. Indicamos también donde están los ficheros que servirá el <strong>nginx</strong>, la localización de los certificados y la necesidad de verificar al cliente mediante certificado contra el certificado de la CA.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/nginx/sites-enabled/private.linuxsysadmin.tk
+server {
+    listen                      443 ssl;
+    server_name                 private.linuxsysadmin.tk;
+    root                        /www;
+
+    ssl_certificate             /etc/ssl/certs/server.crt;
+    ssl_certificate_key         /etc/ssl/private/server.key;
+    ssl_client_certificate      /etc/ssl/certs/ca.crt;
+    ssl_verify_client           on;
+}
+root@server:~#
+</code></pre>
+
+<p>Podemos verificar que la sintaxis de la configuración es correcta usando el binario de <strong>nginx</strong> con el parámetro adecuado.</p>
+
+<pre><code class="language-bash">root@server:~# nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@server:~#
+</code></pre>
+
+<p>Y sabiendo que es correcto, reiniciamos el servidor web.</p>
+
+<pre><code class="language-bash">root@server:~# service nginx restart
+root@server:~#
+</code></pre>
+
+<h2 id="comprobación-de-funcionamiento">Comprobación de funcionamiento</h2>
+
+<p>Como hemos indicado en la configuración en el <em>document root</em>, vamos a servir el contenido que se encuentra en <em>/www</em>. Empezaremos poniendo algún contenido en él.</p>
+
+<pre><code class="language-bash">root@server:~# mkdir /www
+root@server:~# echo &quot;Private area&quot; &gt; /www/index.html
+root@server:~#
+</code></pre>
+
+<p>Ahora apuntemos el navegador a la <strong>URL</strong> del servidor web. Debemos aceptar el certificado autofirmado, puesto que no viene firmado por ninguna autoridad certificadora conocida, por ejemplo, <strong>VeriSign</strong>.</p>
+
+<p>Aún así, como no hemos presentado el certificado cliente, el servidor web nos impide el acceso, con una respuesta <strong>HTTP 400</strong>.</p>
+
+<p><img src="/images/2-way-ssl-access-denied.png" alt="2 way SSL access denied" /></p>
+
+<p>Ahora debemos importar el certificado <em>client.p12</em> en el navegador web. En el caso concreto de <strong>Google Chrome</strong>, se hace desde el siguiente menú:</p>
+
+<blockquote>
+<p>Menu &rarr; Settings &rarr; Show advanced settings &rarr; HTTPS/SSL &rarr; Manage certificates &rarr; Your certificates &rarr; Import &rarr; client.p12</p>
+</blockquote>
+
+<p>Y ya podemos acceder a nuestro contenido protegido, previa selección del certificado a usar.</p>
+
+<p><img src="/images/2-way-ssl-certificate.png" alt="2 way SSL certificate" /></p>
+
+<p>Y con esto ya tenemos montada la autenticación cliente mediante certificados.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un registro docker privado por HTTPS con autenticación básica - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un registro docker privado por HTTPS con autenticación básica</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-11-19
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/registro.html">registro</a> / <a href="/tag/ssl.html">ssl</a> / <a href="/tag/tls.html">tls</a> / <a href="/tag/autenticacion.html">autenticación</a> / <a href="/tag/autenticacion-basica.html">autenticacion basica</a>
+</p>
+
+<p>Cuando usamos integración continua o despliegues en varios servidores y usamos <strong>docker</strong>, se hace importante tener una fuente de imágenes de donde descargar las nuestras propias. Aquí entra en juego la confidencialidad, y es necesario pagar la capa privada de un registro, o podemos simplemente crear un registro nuestro propio.</p>
+
+<p>Si el registro está abierto a nuestra red corporativa, somos vulnerables a ataques maliciosos por parte de empleados descontentos o traviesos. En estos casos se recomienda utilizar TLS para encriptar las comunicaciones y activar autenticación para que no nos puedan reescribir las imágenes.</p>
+
+<p>Hacerlo no es muy complicado y solo vamos a tener que hacerlo una vez; vale la pena y así dejamos un punto de preocupación menos en nuestra infraestructura. Vamos a partir del siguiente escenario:</p>
+
+<ul>
+<li>Un servidor con <strong>docker</strong> dedicado al registro, con nombre <code>registry.test</code></li>
+<li>Un servidor cliente, también con <strong>docker</strong> para simular los futuros clientes de nuestro registro, con nombre <code>node01.test</code></li>
+</ul>
+
+<p><strong>NOTA</strong>: Es importante poner un dominio en nuestro servidor de registro, porque sino <strong>docker</strong> puede pensarse que se trata de un usuario de <strong>DockerHub</strong>; por ejemplo <code>registry/image</code> se puede referir a la URL &ldquo;registry&rdquo; o ir a <strong>DockerHub</strong> y hacer el <em>push</em> o <em>pull</em> con el usuario &ldquo;registry&rdquo;.</p>
+
+<h2 id="activando-tls">Activando TLS</h2>
+
+<p>Para activar TLS, solamente se necesita indicar el <em>path</em> en el contenedor en donde está el certificado, con las configuraciones o variables de entorno <code>REGISTRY_HTTP_TLS_KEY</code> y <code>REGISTRY_HTTP_TLS_CERTIFICATE</code>. Como la imagen no lleva certificados, y para facilitar su cambio, vamos a montar los certificados como volúmenes locales.</p>
+
+<p>Como no tenemos dichos certificados, vamos a crearlos. Por economía voy a utilizar un certificado autofirmado, pero tal vez os interese utilizar uno firmado por una autoridad certificadora, como <strong>VeriSign</strong> u otras. En el caso del certificado autofirmado, necesitaremos un paso adicional en cada cliente, que ya veremos.</p>
+
+<p>Creamos la carpeta de certificados (que luego montaremos), y generamos la clave y el certificado con los comandos habituales:</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ mkdir certs
+gerard@registry:~/registry$
+</code></pre>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -x509 -days 365 -out certs/domain.crt
+...
+Common Name (e.g. server FQDN or YOUR name) []:registry.test
+...
+gerard@registry:~/registry$
+</code></pre>
+
+<p><strong>NOTA</strong>: El campo CN es importante; debe coincidir con el dominio HTTPS que se solicite o el certificado será rechazado.</p>
+
+<p>Levantaremos con <strong>docker-compose</strong> por comodidad y para facilitar el levantamiento futuro del mismo; solo hemos cambiado el puerto de servicio al 443 y hemos indicado la clave y el certificado, en la ruta que montamos como volúmen. El resto es a gusto del consumidor.</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ cat docker-compose.yml
+version: '3'
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    hostname: registry
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:443
+      REGISTRY_HTTP_TLS_KEY: /certs/domain.key
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/domain.crt
+    volumes:
+      - data:/var/lib/registry
+      - ./certs:/certs:ro
+    ports:
+      - &quot;443:443&quot;
+    restart: always
+volumes:
+  data:
+gerard@registry:~/registry$
+</code></pre>
+
+<p>En este punto, nuestra carpeta de <em>runtime</em> solo tiene 3 ficheros:</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ tree
+.
+├── certs
+│   ├── domain.crt
+│   └── domain.key
+└── docker-compose.yml
+
+1 directory, 3 files
+gerard@registry:~/registry$
+</code></pre>
+
+<p>Levantamos el servicio, y con esto tenemos el registro en funcionamiento, aunque sin autenticación por el momento.</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ docker-compose up -d
+Creating network &quot;registry_default&quot; with the default driver
+Creating volume &quot;registry_data&quot; with default driver
+Creating registry ... done
+gerard@registry:~/registry$
+</code></pre>
+
+<h3 id="trabajando-con-el-cliente">Trabajando con el cliente</h3>
+
+<p>El funcionamiento en el cliente es el mismo de siempre; solo tenemos que preceder el nombre de la imagen por la URL del registro a utilizar. Para no crear mi propia imagen y emborronar el artículo, voy a descargar una cualquiera y a adueñármela:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker pull alpine
+Using default tag: latest
+latest: Pulling from library/alpine
+4fe2ade4980c: Pull complete
+Digest: sha256:621c2f39f8133acb8e64023a94dbdf0d5ca81896102b9e57c0dc184cadaf5528
+Status: Downloaded newer image for alpine:latest
+gerard@node01:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@node01:~$ docker tag alpine registry.test/alpine
+gerard@node01:~$
+</code></pre>
+
+<p>En este momento tenemos las dos imágenes, aunque se puede ver por el <em>image id</em> que son las mismas.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+alpine                 latest              196d12cf6ab1        5 weeks ago         4.41MB
+registry.test/alpine   latest              196d12cf6ab1        5 weeks ago         4.41MB
+gerard@node01:~$
+</code></pre>
+
+<p>La subimos al registro con el correspondiente <code>docker pull</code> y listo:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker push registry.test/alpine
+The push refers to repository [registry.test/alpine]
+Get https://registry.test/v2/: x509: certificate signed by unknown authority
+gerard@node01:~$
+</code></pre>
+
+<p><strong>NOTA</strong>: El <em>push</em> ha fallado, porque el certificado no es confiable, al no estar firmado por ninguna autoridad certificadora. Si queremos que se acepte este certificado, necesitamos un paso adicional, que es el que sigue:</p>
+
+<p>Para que <strong>docker</strong> confíe en un certificado no confiable, debemos añadir dicho certificado a la ruta <code>/etc/docker/certs.d/&lt;dominio&gt;/ca.crt</code>. Este <code>ca.crt</code> no es otro que el certificado del registro (no la clave), que hemos llamado <code>domain.crt</code> en el servidor del registro.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ sudo mkdir -p /etc/docker/certs.d/registry.test
+gerard@node01:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@node01:~$ sudo cat /etc/docker/certs.d/registry.test/ca.crt
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+gerard@node01:~$
+</code></pre>
+
+<p>No es necesario reiniciar nada. Relanzamos el <code>docker push</code> y ya debería funcionar.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker push registry.test/alpine
+The push refers to repository [registry.test/alpine]
+df64d3292fd6: Pushed
+latest: digest: sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b size: 528
+gerard@node01:~$
+</code></pre>
+
+<p>Podemos verificar que el registro contiene la imagen consultando su propia API:</p>
+
+<pre><code>gerard@node01:~$ curl -k https://registry.test/v2/_catalog
+{&quot;repositories&quot;:[&quot;alpine&quot;]}
+gerard@node01:~$
+</code></pre>
+
+<p>Esto nos demuestra que el registro privado funciona según lo esperado.</p>
+
+<h2 id="habilitando-la-autenticación">Habilitando la autenticación</h2>
+
+<p>Vamos a utilizar autenticación básica por su simplicidad, pero hay varios métodos posibles. Para ello vamos a utilizar la misma técnica: indicar autenticación básica mediante variables de entorno, indicando el <em>path</em> a un fichero de autenticación que vamos a montar como volúmen.</p>
+
+<p>Generamos un fichero <code>htpasswd</code> estándar, que se puede crear mediante la misma imagen del registro:</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ mkdir auth
+gerard@registry:~/registry$
+</code></pre>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ docker run --entrypoint htpasswd --rm registry:2 -Bbn user p4ssw0rd &gt; auth/htpasswd
+gerard@registry:~/registry$
+</code></pre>
+
+<p><strong>TRUCO</strong>: Es posible crear varios usuarios, pero no es muy útil; todos ellos van a poder ver las mismas imágenes y modificarlas a placer.</p>
+
+<p>En este punto tenemos un fichero nuevo con los usuarios aceptados; si alguna vez tenemos que cambiarlos, como no forman parte de la imagen, basta con &ldquo;dar el cambiazo&rdquo;.</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ cat auth/htpasswd
+user:$2y$05$M/IbI44MSrDFj9bcuFRPt.6tiit1r0V1.KCy2tf4hAzNuznqR9cXG
+gerard@registry:~/registry$
+</code></pre>
+
+<p>El número de ficheros de <em>runtime</em> no ha incrementado casi nada:</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ tree
+.
+├── auth
+│   └── htpasswd
+├── certs
+│   ├── domain.crt
+│   └── domain.key
+└── docker-compose.yml
+
+2 directories, 4 files
+gerard@registry:~/registry$
+</code></pre>
+
+<p>Solo vamos a necesitar algunas modificaciones en el <em>docker-compose.yml</em> para añadir el volumen de autenticación y las variables de entorno que la activan.</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ cat docker-compose.yml
+version: '3'
+services:
+  registry:
+    image: registry:2
+    container_name: registry
+    hostname: registry
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:443
+      REGISTRY_HTTP_TLS_KEY: /certs/domain.key
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/domain.crt
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: LinuxSysadmin registry
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - data:/var/lib/registry
+      - ./certs:/certs:ro
+      - ./auth:/auth:ro
+    ports:
+      - &quot;443:443&quot;
+    restart: always
+volumes:
+  data:
+gerard@registry:~/registry$
+</code></pre>
+
+<p>Vamos a levantar de nuevo el servicio para que apliquen los cambios:</p>
+
+<pre><code class="language-bash">gerard@registry:~/registry$ docker-compose up -d
+Recreating registry ... done
+gerard@registry:~/registry$
+</code></pre>
+
+<h3 id="verificando-la-autenticación">Verificando la autenticación</h3>
+
+<p>El primer indicio de que algo falla es que no podemos consultar la API, ni descargar la imagen:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ curl -k https://registry.test/v2/_catalog
+{&quot;errors&quot;:[{&quot;code&quot;:&quot;UNAUTHORIZED&quot;,&quot;message&quot;:&quot;authentication required&quot;,&quot;detail&quot;:[{&quot;Type&quot;:&quot;registry&quot;,&quot;Class&quot;:&quot;&quot;,&quot;Name&quot;:&quot;catalog&quot;,&quot;Action&quot;:&quot;*&quot;}]}]}
+gerard@node01:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@node01:~$ docker pull registry.test/alpine
+Using default tag: latest
+Error response from daemon: Get https://registry.test/v2/alpine/manifests/latest: no basic auth credentials
+gerard@node01:~$
+</code></pre>
+
+<p>En el caso de la API, podemos usar el <em>flag</em> que <strong>curl</strong> nos ofrece, que ya gestiona la parte de la autenicación básica:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ curl -k -u user:p4ssw0rd https://registry.test/v2/_catalog
+{&quot;repositories&quot;:[&quot;alpine&quot;]}
+gerard@node01:~$
+</code></pre>
+
+<p>Para poder utilizar <strong>docker</strong>, vamos a necesitar hacer <em>login</em>. <strong>Docker</strong> ya nos ofrece esta facilidad.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker login registry.test
+Username: user
+Password:
+WARNING! Your password will be stored unencrypted in /home/gerard/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
+gerard@node01:~$
+</code></pre>
+
+<p>Una vez hecho el <em>login</em>, ya podemos hacer las operaciones de <em>push</em> y de <em>pull</em> al registro.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker pull registry.test/alpine
+Using default tag: latest
+latest: Pulling from alpine
+4fe2ade4980c: Pull complete
+Digest: sha256:02892826401a9d18f0ea01f8a2f35d328ef039db4e1edcc45c630314a0457d5b
+Status: Downloaded newer image for registry.test/alpine:latest
+gerard@node01:~$
+</code></pre>
+
+<p><strong>NOTA</strong>: El ejemplo parte de un servidor sin imágenes.</p>
+
+<p>Solo nos falta ver que la imagen está disponible en el servidor local:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+registry.test/alpine   latest              196d12cf6ab1        5 weeks ago         4.41MB
+gerard@node01:~$
+</code></pre>
+
+<p>Las credenciales se guardan en <code>~/.docker/config.json</code>, de una forma poco segura; es mejor ir haciendo <em>login</em> y <em>logout</em> entre operaciones. Alternativamente a las operationes de <em>login</em> y <em>logout</em>, podemos ir creando y eliminando este fichero según convenga.</p>
+
+<pre><code class="language-bash">gerard@node01:~$ cat .docker/config.json
+{
+        &quot;auths&quot;: {
+                &quot;registry.test&quot;: {
+                        &quot;auth&quot;: &quot;dXNlcjpwNHNzdzByZA==&quot;
+                }
+        },
+        &quot;HttpHeaders&quot;: {
+                &quot;User-Agent&quot;: &quot;Docker-Client/18.06.1-ce (linux)&quot;
+        }
+}
+gerard@node01:~$
+</code></pre>
+
+<p>Como ejemplo de la seguridad del fichero, solo hace falta ver que huele a una cadena en <strong>base64</strong>; descodificarla es trivial:</p>
+
+<pre><code class="language-bash">gerard@node01:~$ echo dXNlcjpwNHNzdzByZA== | base64 -d
+user:p4ssw0rd
+gerard@node01:~$
+</code></pre>
+
+<h2 id="conclusiones">Conclusiones</h2>
+
+<p>Tener un registro privado de <strong>docker</strong>, seguro y restringido, es relativamente fácil. Vale la pena dedicar un poco de esfuerzo al principio para que dicho servidor no sea la fuente de nuestras preocupaciones por su falta de seguridad o intrusiones futuras.</p>
+
+<p>Estos pasos se hacen una sola vez por cada registro y no se tocan casi nunca, salvo renovación de certificados o de credenciales. Gracias a <strong>docker-compose</strong>, esto también es trivial&hellip;</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

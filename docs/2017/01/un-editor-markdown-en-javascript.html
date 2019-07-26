@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un editor Markdown en javascript - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un editor Markdown en javascript</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-01-02
+	<strong>Tiempo de lectura</strong>: 2 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/editor.html">editor</a> / <a href="/tag/markdown.html">markdown</a> / <a href="/tag/javascript.html">javascript</a>
+</p>
+
+<p>Cuando utilizas el lenguaje <strong>markdown</strong> de forma casi diaria, es muy probable que tengas editores dedicados para tal tarea. Sin embargo, es muy probable que la idea a escribir nos venga mientras estamos utilizando un ordenador distinto del habitual, en el que es posible que no tengamos nuestro editor favorito.</p>
+
+<p>Aunque la sintaxis de <strong>markdown</strong> es tan simple que no se necesita un editor particular, podemos salir del paso con un editor web, de los que existen cientos. Luego podemos transferirnos el resultado usando un servicio en la nube o directamente enviándolo por <em>email</em>.</p>
+
+<p>Si queremos crear un formulario para integrar en una aplicación web, podemos utilizar un complemento <em>javascript</em> que nos va a convertir un <em>textarea</em> de HTML en un editor magnífico. Este editor se llama <a href="https://simplemde.com/">SimpleMDE</a>.</p>
+
+<p>La misma página web oficial incluye una demostración que nos da una idea de como se vería nuestro editor. Para simplificar este ejemplo, pongo un código HTML mínimo con el esqueleto de la página, con algunos complementos auxiliares activados, así como de la <em>feature</em> de iluminación de sintaxis.</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+
+&lt;html&gt;
+
+&lt;head&gt;
+	&lt;meta charset=utf-8 /&gt;
+	&lt;title&gt;Markdown editor&lt;/title&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css&quot;&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/highlight.js/latest/styles/github.min.css&quot;&gt;
+    &lt;script src=&quot;https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js&quot;&gt;&lt;/script&gt;
+    &lt;script src=&quot;https://cdn.jsdelivr.net/highlight.js/latest/highlight.min.js&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+    &lt;div style=&quot;width: 80%; margin: auto;&quot;&gt;
+        &lt;h1&gt;Markdown editor&lt;/h1&gt;
+        &lt;textarea&gt;&lt;/textarea&gt;
+        &lt;script&gt;
+            var simplemde = new SimpleMDE({
+                renderingConfig: {
+                    codeSyntaxHighlighting: true,
+                },
+                showIcons: [&quot;code&quot;, &quot;table&quot;],
+            });
+        &lt;/script&gt;
+    &lt;/div&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
+</code></pre>
+
+<p>Por supuesto, los archivos <em>.css</em> y los <em>.js</em> se pueden servir localmente, previa descarga, si la situación lo hiciera necesario o recomendable.</p>
+
+<p>Os pongo una imagen para ver como queda; posiblemente acabe integrado en un proyecto futuro.</p>
+
+<p><img src="/images/editor_simpleMDE.jpg" alt="Editor SimpleMDE" /></p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

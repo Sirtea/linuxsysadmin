@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Operaciones - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Category: operaciones</h1>
+
+<h2 class="article"><a href="/2019/07/exponiendo-docker-por-tcp-de-forma-controlada.html">Exponiendo Docker por TCP de forma controlada</a></h2>
+<p>Tengo un usuario que es muy cómodo; él solo consiguió una excepción de seguridad para poder abrir el puerto TCP de <strong>docker</strong> de un servidor concreto, para chafardear cómodamente desde su máquina. A pesar de mis reticencias, cumplí con lo que se me pedía, y no tardamos mucho en lamentarlo.</p>
+<p><a class="article" href="/2019/07/exponiendo-docker-por-tcp-de-forma-controlada.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">Distribuyendo contenido en Docker Swarm: configuraciones y secretos</a></h2>
+<p>Muchas veces he utilizado los volúmenes de <strong>Docker</strong> para &ldquo;inyectar&rdquo; un fichero de configuración que sobreescriba a otro. Cuando utilizamos <strong>Docker Swarm</strong> suele ser un problema distribuir estos ficheros de configuración; además, a veces necesitamos que se transmitan encriptados para que no los puedan ver los contenedores hermanos, por seguridad.</p>
+<p><a class="article" href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Restringiendo los comandos ejecutables con SSH y un par de claves</a></h2>
+<p>Una petición muy habitual que recibo es la de algún usuario que quiere ejecutar &ldquo;algo&rdquo; en un servidor. Como no puede ser de otra manera dadas las restricciones de seguridad de la compañía, solo le puedo dar acceso por SSH; pero poner una jaula para restringir sus acciones es tedioso.</p>
+<p><a class="article" href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">Verificando la salud de nuestros contenedores en Docker</a></h2>
+<p>Como bien sabemos los que trabajamos con <strong>Docker</strong>, el servidor es bastante malo comprobando si un contenedor está funcionando o no. El <em>check</em> que hace <strong>Docker</strong> solo se molesta en ver si el proceso invocado está ejecutando o no, aunque no esté respondiendo. Esto ha cambiado recientemente con los <em>healthchecks</em>.</p>
+<p><a class="article" href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/05/haciendo-backups-con-borgbackup.html">Haciendo backups con BorgBackup</a></h2>
+<p>Es un hecho inmutable que los desastres con nuestros datos ocurren; da igual lo cuidadosos que seamos, o si el servicio se autoreplica. En algún momento puede perderse información por un fallo imprevisto, o puede que sea necesario restablecer un punto conocido, para buscar errores o para cumplir imperativos legales.</p>
+<p><a class="article" href="/2019/05/haciendo-backups-con-borgbackup.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/05/generando-ficheros-docker-compose-parametrizables-con-docker-app.html">Generando ficheros docker-compose parametrizables con docker-app</a></h2>
+<p>Casi siempre he utilizado <strong>docker-compose</strong> en mi local, y eso me ayudó mucho cuando empecé a usar <strong>Docker Swarm</strong>. El fichero <code>docker-compose.yml</code> varía un poco en cada entorno y cada vez que se modifica se degrada respecto al original, por no mencionar el problema de mantener actualizadas las copias.</p>
+<p><a class="article" href="/2019/05/generando-ficheros-docker-compose-parametrizables-con-docker-app.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/04/ensamblando-un-livecd-con-debian-y-xorriso.html">Ensamblando un livecd con Debian y xorriso</a></h2>
+<p>Últimamente me he visto obligado a virtualizar en una máquina distinta de la habitual por un problema técnico; esto no sería un problema de no ser porque la arquitectura es de 32 bits. Eso me deja sin ninguna distribución prefabricada con la herramienta <code>zerofree</code> y me obliga a hacer una.</p>
+<p><a class="article" href="/2019/04/ensamblando-un-livecd-con-debian-y-xorriso.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/02/forzar-rangos-de-ips-prohibidas-para-docker.html">Forzar rangos de IPs prohibidas para Docker</a></h2>
+<p>Tras cambiar de oficina en mi trabajo, vuelvo a tener el dudoso honor de trabajar tras un <em>proxy</em>. Como viene siendo habitual, me puse un servidor <strong>Virtualbox</strong> con <strong>Debian</strong> para disponer de las opciones que una máquina auxiliar me ofrece, pero no fue hasta instalar <strong>Docker</strong> que estalló el desastre.</p>
+<p><a class="article" href="/2019/02/forzar-rangos-de-ips-prohibidas-para-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/01/testeando-la-apertura-de-puertos-con-perl.html">Testeando la apertura de puertos con Perl</a></h2>
+<p>Muchas veces me toca solicitar la apertura de puertos en un <em>firewall</em> que no administro. Muchas veces estos administradores se olvidan de ejecutar pasos que resultan en una ausencia total de conectividad, lo que me obliga a revisar su trabajo antes de poner alguna aplicación dando servicio en ese puerto.</p>
+<p><a class="article" href="/2019/01/testeando-la-apertura-de-puertos-con-perl.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/12/usando-docker-para-saltarse-los-permisos-de-linux.html">Usando Docker para saltarse los permisos de Linux</a></h2>
+<p>Según el paradigma de externalización de mi empresa, todos los sistemas son gestionados por un tercero, a base de cambios. Por petición mia, tengo un usuario nominal de SSH y puedo entrar a mirar logs y configuraciones, pero no todas. Lo que no saben es que puedo hacer de todo.</p>
+<p><a class="article" href="/2018/12/usando-docker-para-saltarse-los-permisos-de-linux.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/category/operaciones.html">1</a>
+	<a href="/category/operaciones/page/2.html">2</a>
+	<a href="/category/operaciones/page/3.html">3</a>
+	<a href="/category/operaciones/page/4.html">4</a>
+	<a href="/category/operaciones/page/5.html">5</a>
+	<a href="/category/operaciones/page/6.html">6</a>
+	<a href="/category/operaciones/page/7.html">7</a>
+	<a href="/category/operaciones/page/8.html">8</a>
+	<a href="/category/operaciones/page/2.html">&raquo;</a>
+	<a href="/category/operaciones/page/8.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

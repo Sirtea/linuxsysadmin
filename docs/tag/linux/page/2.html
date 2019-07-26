@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>linux - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: linux</h1>
+
+<h2 class="article"><a href="/2017/02/compartiendo-carpetas-con-nfs.html">Compartiendo carpetas con NFS</a></h2>
+<p>Son muchas las veces que queremos tener una carpeta disponible en todas las máquinas que usamos habitualmente, sea una unidad de <em>backup</em>, o sea una carpeta de intercambio de fotos. Disponemos de servidores tipo FTP, pero es mas cómodo tener una unidad remota como una carpeta mas de nuestra máquina.</p>
+<p><a class="article" href="/2017/02/compartiendo-carpetas-con-nfs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/11/semaforos-en-linux.html">Semáforos en linux</a></h2>
+<p>Tras revisar un <em>bug</em> de cierto proceso en <em>background</em> de una aplicación en mi trabajo, vimos que saltaban dos ejecuciones simultáneas y los dos procesos interferían entre ellos. Implementar una exclusión mutua en el proceso era costoso, así que opté por hacerlo con un comando <strong>linux</strong>, que descubrí por internet.</p>
+<p><a class="article" href="/2016/11/semaforos-en-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/python-como-una-calculadora-estadistica.html">Python como una calculadora estadística</a></h2>
+<p>El otro día me encontraba en mi trabajo con otra petición muy especial: se necesitaba un <em>check</em> para <strong>Nagios</strong> que contara las apariciones de cierto tipo de errores en un fichero de <em>log</em>. Ese <em>check</em> debía saltar en función de cuán alejado estaba el valor de las últimas 100 muestras.</p>
+<p><a class="article" href="/2016/10/python-como-una-calculadora-estadistica.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Crear jaulas de forma fácil basadas en Debian y Ubuntu con debootstrap</a></h2>
+<p>Cuando creamos jaulas nos enfrentamos siempre al mismo dilema: usar una imagen de dudoso origen o perder nuestro tiempo investigando y buscando librerías que falten. Sin embargo, hay una forma mejor, que es descargar un sistema básico con herramientas oficiales que nos van a dar hasta un gestor de paquetes.</p>
+<p><a class="article" href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/07/un-escritorio-con-archlinux.html">Un escritorio con Archlinux</a></h2>
+<p>En <a href="/2016/04/un-escritorio-minimo-con-debian.html">otro articulo</a> vimos como instalar <strong>Archlinux</strong>. Como tantas otras distribuciones nos vale para servidor y como distribución de escritorio. Sin embargo, debido a su filosofía como <em>rolling release</em>, puede asustarnos un poco como servidor; aunque tener un escritorio &ldquo;a la última&rdquo; es un caramelo que muy pocos podemos rechazar.</p>
+<p><a class="article" href="/2016/07/un-escritorio-con-archlinux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/07/direccion-ip-compartida-manualmente-entre-servidores.html">Dirección IP compartida manualmente entre servidores</a></h2>
+<p>Cuando hablamos de alta disponibilidad, uno de los métodos mas utilizados es el <strong>failover</strong>. La idea es que una de las máquinas es la que asume la totalidad del servicio, y el resto están preparadas para ejercer la misma función en el caso de que la primera deje de funcionar.</p>
+<p><a class="article" href="/2016/07/direccion-ip-compartida-manualmente-entre-servidores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/07/instalando-una-maquina-con-archlinux.html">Instalando una máquina con Archlinux</a></h2>
+<p>Hoy quiero presentar una distribución de <em>linux</em> que es una maravilla; es rápida, altamente actualizada, y lo último en innovación. Se trata de una distribución tipo <em>rolling</em>, con una filosofía de última tendencia que es especialmente útil en un entorno no tan crítico, como puede ser una máquina tipo escritorio.</p>
+<p><a class="article" href="/2016/07/instalando-una-maquina-con-archlinux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/preparando-un-servidor-de-repositorios-git.html">Preparando un servidor de repositorios GIT</a></h2>
+<p>Algunas veces tenemos necesidad de crear un proyecto con un equipo pequeño y necesitamos versionarlo en un sitio accesible para todos los participantes involucrados. El precio de soluciones en la nube suele ser prohibitivo, y montar una solución gráfica puede ser demasiado. Lo podemos hacer simplemente usando <strong>git</strong> y <strong>ssh</strong>.</p>
+<p><a class="article" href="/2016/06/preparando-un-servidor-de-repositorios-git.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/un-root-shell-en-c.html">Un root shell en C</a></h2>
+<p>Cuando operamos un servidor de producción es habitual que no tengamos acceso habitual al usuario <em>root</em>, e incluso lo tengan altamente vigilado. Podemos intentar dejar una puerta trasera, por ejemplo poniendo un binario con el <em>setuid</em> bit activado, te pueden pillar. Sin embargo es posible dejar una puerta abierta oculta.</p>
+<p><a class="article" href="/2016/06/un-root-shell-en-c.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/controlando-contenedores-docker-con-ansible.html">Controlando contenedores docker con ansible</a></h2>
+<p>La facilidad de levantar un contenedor <strong>docker</strong> nos lleva a la pregunta del millón: ¿es posible usar <strong>docker</strong> para crear contenedores de usar y tirar para probar otras tecnologías? La respuesta es que sí, y para demostrarlo, vamos a generar un entorno minimalista en contenedores <strong>docker</strong>, desplegados mediante <strong>ansible</strong> <em>playbooks</em>.</p>
+<p><a class="article" href="/2016/06/controlando-contenedores-docker-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/linux.html">&laquo;&laquo;</a>
+	<a href="/tag/linux.html">&laquo;</a>
+	<a href="/tag/linux.html">1</a>
+	<a class="active" href="/tag/linux/page/2.html">2</a>
+	<a href="/tag/linux/page/3.html">3</a>
+	<a href="/tag/linux/page/4.html">4</a>
+	<a href="/tag/linux/page/5.html">5</a>
+	<a href="/tag/linux/page/6.html">6</a>
+	<a href="/tag/linux/page/3.html">&raquo;</a>
+	<a href="/tag/linux/page/6.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

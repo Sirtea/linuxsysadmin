@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Escribiendo units en systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Escribiendo units en systemd</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-11-09
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/mongodb.html">mongodb</a>
+</p>
+
+<p>Cuando se anunció <em>systemd</em> me llamó la atención que además de las funciones estándares de otros sistemas de <em>init</em> (por ejemplo <em>sysvinit</em>), también se ofrecían otras funcionalidades normalmente delegadas a otros procesos, como por ejemplo, la posibilidad de reiniciar procesos automáticamente o de lanzar procesos temporales al estilo de <em>cron</em>.</p>
+
+<p>En este artículo se explica como escribir estos ficheros que rigen las tareas propias del sistema <em>init</em> para iniciar procesos que no disponen de tales facilidades. Adicionalmente, vamos a ver como beneficiarnos del sistema de plantillas de estos mismos ficheros para evitarnos tener que repetirnos, de acuerdo con el principio <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY (don&rsquo;t repeat yourself)</a>.</p>
+
+<p>Como ejemplo, vamos a utilizar un sistema básico de <em>Linux</em> con <em>systemd</em>; que podría ser <em>RedHat 7</em>, <em>ArchLinux</em> o <em>Debian 8</em>. En este caso, se va a utilizar un sistema <em>Debian Jessie</em> con una instalación básica <em>netinstall</em> con <em>SSH</em> y nada mas.</p>
+
+<p>Vamos a suponer que queremos montar un servidor con 2 instancias de <em>MongoDB</em>, escuchando en los puertos 27001 y 27002. Empecemos con montar una estructura en <em>/opt/</em> para contener todo lo relacionado con este despliegue. La idea es que vamos a levantar el binario <em>mongod</em> con dos configuraciones distintas. Por eso, de momento basta con poner el binario <em>mongod</em>, las dos configuraciones y las dos carpetas de datos.</p>
+
+<pre><code class="language-bash">root@server:~# tree /opt/
+/opt/
+└── mongodb
+    ├── bin
+    │   └── mongod
+    ├── conf
+    │   ├── mongo1.conf
+    │   └── mongo2.conf
+    ├── data
+    │   ├── mongo1
+    │   └── mongo2
+    └── logs
+
+7 directories, 3 files
+root@server:~# 
+</code></pre>
+
+<p>La configuración de ambos procesos va a ser la mínima necesaria para que los procesos no entren en conflicto entre ellos.</p>
+
+<pre><code class="language-bash">root@server:~# cat /opt/mongodb/conf/mongo1.conf 
+systemLog:
+    path: /opt/mongodb/logs/mongo1.log
+    logAppend: true
+    destination: file
+
+net:
+    port: 27001
+
+storage:
+    dbPath: /opt/mongodb/data/mongo1
+    smallFiles: true
+root@server:~# cat /opt/mongodb/conf/mongo2.conf 
+systemLog:
+    path: /opt/mongodb/logs/mongo2.log
+    logAppend: true
+    destination: file
+
+net:
+    port: 27002
+
+storage:
+    dbPath: /opt/mongodb/data/mongo2
+    smallFiles: true
+root@server:~# 
+</code></pre>
+
+<p>Como apunte importante, no se ha definido un archivo para guardar el <em>PID</em> del proceso; <em>systemd</em> no lo necesita y conoce el <em>PID</em> de los procesos que levanta.</p>
+
+<p>Siguiendo las directivas de seguridad mínimas, los dos procesos <em>mongod</em> van a levantarse con un usuario estándar que no sea <em>root</em>. En este caso, toda la carpeta <em>/opt/mongodb/</em> pertenece al usuario <em>mongo</em>, aunque bastaría con la carpeta de datos y la de logs.</p>
+
+<p>Ponemos la definición de nuestras <strong>units</strong> en la carpeta designada según el estándar, que es <em>/etc/systemd/system/</em>.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/systemd/system/mongo1.service 
+[Unit]
+Description=MongoDB
+
+[Service]
+User=mongo
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+ExecStartPre=/bin/rm -f /opt/mongodb/data/mongo1/mongod.lock
+ExecStart=/opt/mongodb/bin/mongod -f /opt/mongodb/conf/mongo1.conf
+
+[Install]
+WantedBy=multi-user.target
+root@server:~# cat /etc/systemd/system/mongo2.service 
+[Unit]
+Description=MongoDB
+
+[Service]
+User=mongo
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+ExecStartPre=/bin/rm -f /opt/mongodb/data/mongo2/mongod.lock
+ExecStart=/opt/mongodb/bin/mongod -f /opt/mongodb/conf/mongo2.conf
+
+[Install]
+WantedBy=multi-user.target
+root@server:~# 
+</code></pre>
+
+<p>Es especialmente interesante ver que el lenguaje de la <strong>units</strong> de <em>systemd</em> es declarativo, y que no son <em>init scripts</em>; <em>systemd</em> se encarga de todo por nosotros. Basta con declarar el comando con el que levantar el servicio y el usuario con el que hacerlo.</p>
+
+<p>La directiva <strong>WantedBy</strong> indica que se tiene que levantar con el <strong>target</strong> <em>multi-user</em>, que es el que usa <em>Debian</em> por defecto. Un <strong>target</strong> viene a ser el equivalente a un <em>runlevel</em> de <em>sysvinit</em>.</p>
+
+<p>Hay una directiva <strong>ExecStartPre</strong> que se encarga de eliminar el <em>lock file</em> de <em>MongoDB</em> por si el proceso hubiera acabado de forma inesperada. El binario <em>mongod</em> no levanta si este fichero existe, ya que cree que ya hay una instancia de <em>mongod</em> usando la carpeta de datos.</p>
+
+<p>El resto de directivas se limitan a modificar los límites de los procesos a levantar, de acuerdo a la documentación de <em>MongoDB</em>.</p>
+
+<p>A partir de ahora, son <strong>units</strong> normales del sistema y se pueden activar e iniciar. Si ya estuvieran cargados, habría que recargar la configuración de <em>systemd</em>.</p>
+
+<pre><code class="language-bash">root@server:~# systemctl enable mongo1
+root@server:~# systemctl enable mongo2
+root@server:~# systemctl start mongo1
+root@server:~# systemctl start mongo2
+root@server:~# systemctl daemon-reload
+root@server:~# 
+</code></pre>
+
+<h2 id="uso-de-plantillas-para-evitar-repetirnos">Uso de plantillas para evitar repetirnos</h2>
+
+<p>Toda <strong>unit</strong> cuyo nombre acabe en <strong>arroba</strong> seguido por <em>.service</em> o cualquier otro tipo de <strong>unit</strong>, es por convención, una <strong>plantilla</strong>.</p>
+
+<p>La idea es que vamos a crear un <em>link</em> a la <strong>plantilla</strong>, que ponga un texto detrás de la <strong>arroba</strong>. Este texto va a estar disponible en la plantilla como <strong>%i</strong>. De esta forma podemos &ldquo;pasar un parámetro&rdquo; a la plantilla, usando ese parámetro como diferenciador de los dos procesos.</p>
+
+<p><strong>Veamos un ejemplo:</strong></p>
+
+<p>Creamos dos <em>links</em> a la <strong>plantilla</strong> <em>mongodb@.service</em>, con los nombres <em>mongodb@mongo1.service</em> y <em>mongodb@mongo2.service</em>, que son nuestras instancias. Estas instancias se rigen con las directivas de la <strong>plantilla</strong>, con la variable <strong>%i</strong> conteniendo los valores <em>mongo1</em> y <em>mongo2</em> respectivamente.</p>
+
+<pre><code class="language-bash">root@server:~# ls -l /etc/systemd/system/mongodb\@*
+lrwxrwxrwx 1 root root  16 nov  3 12:46 /etc/systemd/system/mongodb@mongo1.service -&gt; mongodb@.service
+lrwxrwxrwx 1 root root  16 nov  3 12:46 /etc/systemd/system/mongodb@mongo2.service -&gt; mongodb@.service
+-rw-r--r-- 1 root root 207 nov  3 12:45 /etc/systemd/system/mongodb@.service
+</code></pre>
+
+<p>Ahora redactamos la plantilla, teniendo en cuenta los valores que se van a cambiarse por la variable <strong>%i</strong>, que vamos a usar para identificar el fichero de configuración de cada instancia. También es posible poner otras variables en la <strong>plantilla</strong>, como por ejemplo, el nombre de la máquina o la versión del <em>kernel</em> de la máquina.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/systemd/system/mongodb\@.service 
+[Unit]
+Description=MongoDB
+
+[Service]
+User=mongo
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+ExecStartPre=/bin/rm -f /opt/mongodb/data/%i/mongod.lock
+ExecStart=/opt/mongodb/bin/mongod -f /opt/mongodb/conf/%i.conf
+
+[Install]
+WantedBy=multi-user.target
+root@server:~# 
+</code></pre>
+
+<p>Ahora solo falta activar las instancias e iniciarlas, con los comandos habituales del demonio <em>systemd</em>.</p>
+
+<pre><code class="language-bash">root@server:~# systemctl enable mongodb@mongo1
+Created symlink from /etc/systemd/system/multi-user.target.wants/mongodb@mongo1.service to /etc/systemd/system/mongodb@.service.
+root@server:~# systemctl enable mongodb@mongo2
+Created symlink from /etc/systemd/system/multi-user.target.wants/mongodb@mongo2.service to /etc/systemd/system/mongodb@.service.
+root@server:~# systemctl start mongodb@mongo1
+root@server:~# systemctl start mongodb@mongo2
+root@server:~# 
+</code></pre>
+
+<p>Y con esto lo hemos conseguido.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>ssh - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: ssh</h1>
+
+<h2 class="article"><a href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Restringiendo los comandos ejecutables con SSH y un par de claves</a></h2>
+<p>Una petición muy habitual que recibo es la de algún usuario que quiere ejecutar &ldquo;algo&rdquo; en un servidor. Como no puede ser de otra manera dadas las restricciones de seguridad de la compañía, solo le puedo dar acceso por SSH; pero poner una jaula para restringir sus acciones es tedioso.</p>
+<p><a class="article" href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/05/haciendo-backups-con-borgbackup.html">Haciendo backups con BorgBackup</a></h2>
+<p>Es un hecho inmutable que los desastres con nuestros datos ocurren; da igual lo cuidadosos que seamos, o si el servicio se autoreplica. En algún momento puede perderse información por un fallo imprevisto, o puede que sea necesario restablecer un punto conocido, para buscar errores o para cumplir imperativos legales.</p>
+<p><a class="article" href="/2019/05/haciendo-backups-con-borgbackup.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Protegiendo sistemas Linux con una autenticación de dos factores</a></h2>
+<p>El otro día tuve un auditor de seguridad imponiendo sus criterios arbitrarios; quería que cierto servidor seguro no fuera accesible si no era con una autenticación de 2 factores. Aunque personalmente no lo veo útil, me tocó ceder a sus exigencias y aquí he anotado como lo hice: con <strong>libpam-google-authenticator</strong>.</p>
+<p><a class="article" href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/09/un-contenedor-multiservicio-con-docker-y-s6.html">Un contenedor multiservicio con docker y s6</a></h2>
+<p>Lo he vuelto a hacer: a pesar de que es una antipráctica de <strong>docker</strong>, me veo tentado a ejecutar varios servicios en mis contenedores. Solo lo hago cuando estos servicios tienen un objetivo común, como servir PHP (nginx/php-fpm); para ello necesitamos un gestor de procesos. Hoy hablaremos de <strong>s6</strong>.</p>
+<p><a class="article" href="/2018/09/un-contenedor-multiservicio-con-docker-y-s6.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/09/una-unidad-de-red-remota-con-sshfs.html">Una unidad de red remota con SSHFS</a></h2>
+<p>Es muy cómodo dejar un fichero en una carpeta local y saber que ese fichero está a salvo, en la nube; seguramente los que utilizáis un servicio de sincronización en la nube váis a estar de acuerdo. La empresas no suelen permitirlo, pero podéis utilizar un servicio local por <strong>SSH</strong>.</p>
+<p><a class="article" href="/2018/09/una-unidad-de-red-remota-con-sshfs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/08/cambiando-la-posicion-del-fichero-authorized-keys.html">Cambiando la posición del fichero authorized_keys</a></h2>
+<p>Un requerimiento de seguridad estándar en mi trabajo, es que los servidores SFTP no permitan la autenticación con <em>passwords</em> normales, y estamos obligados a usar autenticación por claves. El otro día tuvimos una queja de un usuario que no podía entrar porque había eliminado su carpeta <code>.ssh</code> de forma consciente.</p>
+<p><a class="article" href="/2018/08/cambiando-la-posicion-del-fichero-authorized-keys.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/05/una-jaula-ssh-con-git-shell.html">Una jaula SSH con git-shell</a></h2>
+<p>El otro día recibí una petición en el trabajo por parte de un cliente: poder ejecutar algunas operaciones por SSH en nuestro servidor. Solo de pensar en montar una jaula SSH con los binarios y sus librerías ya se me hizo cuesta arriba, y por eso lo hice con <strong>git-shell</strong>.</p>
+<p><a class="article" href="/2018/05/una-jaula-ssh-con-git-shell.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/tuneles-ssh-con-reinicio-automatico-con-docker.html">Túneles SSH con reinicio automático con Docker</a></h2>
+<p>Ya vimos en <a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">un artículo anterior</a> como delegar en <strong>SystemD</strong> la persistencia de túneles SSH. El otro día intenté reproducirlo sin éxito en un servidor con una versión baja de <strong>SystemD</strong>; finalmente me di cuenta de que había otra herramienta en el servidor capaz de reiniciar un túnel caído: <strong>Docker</strong>.</p>
+<p><a class="article" href="/2018/02/tuneles-ssh-con-reinicio-automatico-con-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/01/usando-un-bastion-ssh.html">Usando un bastión SSH</a></h2>
+<p>Hoy vamos a presentar un patrón de conectividad para acceder a un conjunto de máquinas, exponiendo solamente una de ellas, y aprovechando el protocolo SSH para pasar el tráfico a través, de forma transparente. Eso facilita los casos en los que no podemos tener una VPN o una red dedicada.</p>
+<p><a class="article" href="/2018/01/usando-un-bastion-ssh.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/09/un-terminal-ssh-en-nuestro-navegador-web-usando-wetty.html">Un terminal SSH en nuestro navegador web usando Wetty</a></h2>
+<p>No siempre tenemos acceso a nuestro terminal SSH favorito para acceder a nuestros entornos en caso de emergencia. De hecho, en muchas redes suelen prohibir el tráfico por otros puertos ajenos a la navegación web. Para estos casos podemos tener un terminal SSH a través de una página web propia.</p>
+<p><a class="article" href="/2017/09/un-terminal-ssh-en-nuestro-navegador-web-usando-wetty.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/ssh.html">1</a>
+	<a href="/tag/ssh/page/2.html">2</a>
+	<a href="/tag/ssh/page/3.html">3</a>
+	<a href="/tag/ssh/page/2.html">&raquo;</a>
+	<a href="/tag/ssh/page/3.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Visualizando gráficamente el estado de nuestro servidor con Telegraf, InfluxDB y Chronograf - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Visualizando gráficamente el estado de nuestro servidor con Telegraf, InfluxDB y Chronograf</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-11-07
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/chronograf.html">chronograf</a> / <a href="/tag/telegraf.html">telegraf</a> / <a href="/tag/influxdb.html">influxdb</a> / <a href="/tag/docker.html">docker</a>
+</p>
+
+<p>No hay nada mas visualmente atractivo que ver nuestros servidores en tiempo real mediante gráficos temporales, y existen algunas buenas herramientas ya hechas. Necesitaremos un agente que recolecte los datos del servidor y los envíe a una base de datos temporales, para que se pueden dibujar en una página web.</p>
+
+<p>Estamos hablando del combo <strong>Telegraf</strong>, <strong>InfluxDB</strong> y <strong>Chronograf</strong>, que para ponernos la vida mas fácil, se pueden levantar como contenedores <strong>Docker</strong>.</p>
+
+<h2 id="servicios-necesarios">Servicios necesarios</h2>
+
+<h3 id="la-base-de-datos-temporal">La base de datos temporal</h3>
+
+<p>Una base de datos temporal especialmente diseñada para este trabajo se llama <strong>InfluxDB</strong>. Solo neceitamos levantar un contenedor en el almacenar nuestras series de datos. Para ello, no tenemos mas que levantar nuestro contenedor, de entre la imágenes oficiales.</p>
+
+<pre><code class="language-bash">gerard@sodium:~/docker$ docker run -d influxdb
+9ee87def20cda02c273acb6ae4dbd15a2473a1d93821533ea92e375a0ef54313
+gerard@sodium:~/docker$ 
+</code></pre>
+
+<h3 id="el-recolector-de-datos">El recolector de datos</h3>
+
+<p>El proceso encargado de recoger los datos de un servidor es <strong>Telegraf</strong>. En principio, necesitamos uno en cada servidor que queramos monitorizar. Para no alargar en el artículo, lo vamos a levantar en la misma máquina.</p>
+
+<p>Hay que empezar generando una configuración, que vamos a cambiar para ajustar a nuestras necesidades. Esta configuración se encarga de decidir que muestras se van a tomar de nuestro servidor, y sirve también para indicar la localización de la base de datos en donde las va a guardar.</p>
+
+<pre><code class="language-bash">gerard@sodium:~/docker$ docker run --rm telegraf -sample-config &gt; telegraf.conf
+gerard@sodium:~/docker$ 
+</code></pre>
+
+<p>En este caso, vamos a cambiar solamente la dirección de la base de datos:</p>
+
+<pre><code class="language-bash">gerard@sodium:~/docker$ cat telegraf.conf 
+...
+[[outputs.influxdb]]
+...
+  urls = [&quot;http://172.17.0.2:8086&quot;] # required
+...
+gerard@sodium:~/docker$ 
+</code></pre>
+
+<p>Ahora hay que levantar el agente con la nueva configuración. Podemos hacerlo con una imagen modificada, o si eso no nos gusta, podemos utilizar un contenedor a la máquina local. Haremos esto último.</p>
+
+<pre><code class="language-bash">gerard@sodium:~/docker$ docker run -v $PWD/telegraf.conf:/etc/telegraf/telegraf.conf:ro -d telegraf
+e5cbaed75570d22c709c940a7d5ccf4a633fc2453df37e05dfa094ae4913572a
+gerard@sodium:~/docker$ 
+</code></pre>
+
+<h3 id="el-panel-web">El panel web</h3>
+
+<p>Hay muchas herramientas para visualizar datos, pero nos vamos a limitar a la herramienta de la misma <em>suite</em>, que es <strong>Chronograf</strong>. Para eso tenemos que levantar su contenedor. Es especialmente importante exponer el puerto, para poder ver la web desde fuera del contenedor.</p>
+
+<pre><code class="language-bash">gerard@sodium:~/docker$ docker run -p 10000:10000 -d chronograf
+b3fb6777bac2ad5c061ff5ea6603305c0c43d6103c552a47fafb1414a7434c34
+gerard@sodium:~/docker$ 
+</code></pre>
+
+<p>Solo nos faltaría abrir un navegador a la URL configurada, que en mi caso es <a href="http://localhost:10000/">http://localhost:10000/</a>. Es un buen momento para configurar nuestra base de datos. Aunque se pueden usar varias, no lo haremos por hoy.</p>
+
+<p>Le damos al botón &ldquo;Add new server&rdquo; y le indicamos los valores de acceso al servidor <strong>InfluxDB</strong>. En mi caso, solo he tenido que tocar la dirección IP, que al tratarse del primer contenedor levantado, es la 172.17.0.2; mirad la salida de un <em>docker inspect</em> en caso de dudas.</p>
+
+<h2 id="configurando-visualizaciones-y-dashboards">Configurando visualizaciones y dashboards</h2>
+
+<p>Una visualización es un gráfico basado en una serie de valores de una serie. Un <em>dashboard</em> es un conjunto de visualizaciones puestas en la misma pantalla, para su fácil observación.</p>
+
+<p>Podemos crear visualizaciones mediante el botón &ldquo;Add Visualization&rdquo; desde la sección &ldquo;Visualizations&rdquo; o desde un <em>dashboard</em>. La configuración es trivial; basta con darle un nombre al gráfico y seleccionar base de datos, medidas y el valor o valores de la medida que queremos ver.</p>
+
+<p>Por ejemplo, podemos crear el gráfico &ldquo;Memory&rdquo;. Seleccionamos la base de datos <em>telegraf</em>, la serie <em>mem</em> en &ldquo;Filter by&rdquo; y el campo <em>used_percent</em> en &ldquo;Extract by&rdquo;. La consulta resultante a <strong>InfluxDB</strong> quedaría así:</p>
+
+<blockquote>
+<p>SELECT used_percent FROM telegraf..mem WHERE tmpltime()</p>
+</blockquote>
+
+<p>Insuficiente con este valor, creamos un <em>dashboard</em> llamado &ldquo;Server&rdquo;. Le añadimos la visualización ya existente llamada &ldquo;Memory&rdquo; y porque no, creamos una visualización nueva &ldquo;CPU&rdquo; con dos valores en el campo &ldquo;Extract by&rdquo;. Así de fácil.</p>
+
+<p><img src="/images/chronograf.jpg" alt="Chronograf dashboard" /></p>
+
+<p>Y con eso acabamos. Solo falta poner esto en un sitio visible y sacar nuestras conclusiones.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

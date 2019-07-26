@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ejecutando procesos desde python con popen - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Ejecutando procesos desde python con popen</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-11-20
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/subprocess.html">subprocess</a> / <a href="/tag/popen.html">popen</a>
+</p>
+
+<p>Algunas veces nos interesa lanzar comandos <em>bash</em>, pero necesitamos de la potencia de <em>python</em> para <em>parsear</em> la salida. En otras ocasiones queremos lanzar los comandos <em>bash</em> directamente desde <em>python</em> porque se hace desde una aplicación web. En estos casos nos viene muy bien el módulo <em>subprocess</em> que nos lo permite.</p>
+
+<p>Aunque no quiero dar detalles porque la idea es todavia una prueba de concepto, en mi caso concreto se trataba de hacer una herramienta web muy simple para lanzar <em>backups</em> y <em>restores</em> sobre <strong>mongodb</strong>, usando los comandos <em>mongodump</em> y <em>mongorestore</em>.</p>
+
+<p>En este artículo he decidido poner dos ejemplos muy simplificados, de forma que no nos distraigan de lo que relamente es importante; uno es sobre como lanzar comandos y recoger resultados, mientras que el otro es un poco más avanzado y nos permite concatenar varios comandos como haríamos en <em>bash</em>.</p>
+
+<h2 id="un-ejemplo-simple">Un ejemplo simple</h2>
+
+<p>Supongamos que queremos graficar la carga del sistema, tal como nos las da el comando <em>uptime</em>. Para ello tenemos que <em>parsear</em> y convertir en números los tres valores que el comando nos da. Por ello tenemos el siguiente <em>script</em>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/popen$ cat uptimes.py
+#!/usr/bin/env python
+
+from subprocess import Popen, PIPE, STDOUT
+
+proc = Popen(['uptime'], stdout=PIPE, stderr=STDOUT)
+out, err = proc.communicate()
+
+uptimes = out.rstrip().split('load average: ')[1]
+uptimes = uptimes.split(', ')
+uptimes = [float(e.replace(',', '.')) for e in uptimes]
+
+times = ['1 minute', '5 minutes', '15 minutes']
+for i in xrange(3):
+    print 'Last %s: %s' % (times[i], uptimes[i])
+gerard@atlantis:~/projects/popen$
+</code></pre>
+
+<p>La parte importante se limita a dos líneas, que son las que crean la variable <code>proc</code> y la siguiente. Se ejecuta el comando especificado en el <em>array</em> del primer parámetro de <code>Popen</code>, sin indicar entrada estándar (no hay por defecto), redirigiendo la salida de error a la salida estándar, y dejando esta como <code>PIPE</code> la convertimos en un <em>stream</em>, que luego podemos enchufar a otro proceso o recoger con el método <code>communicate()</code>, que es el caso.</p>
+
+<p>El resto es un mero ejercicio de <em>parsing</em>; con algunas funciones básicas de la clase <em>string</em> (<em>strip</em>, <em>split</em> y <em>replace</em>) y algunos <em>castings</em> a <em>float</em>, tenemos lo que nos interesa. La parte de graficar queda como ejercicio para el lector.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/popen$ ./uptimes.py
+Last 1 minute: 0.28
+Last 5 minutes: 0.09
+Last 15 minutes: 0.03
+gerard@atlantis:~/projects/popen$
+</code></pre>
+
+<p>Y podemos ver que tenemos la respuesta esperada con los valores pelados, y listos para disponer de ellos como queramos.</p>
+
+<h2 id="un-ejemplo-concatenando-varios-procesos">Un ejemplo concatenando varios procesos</h2>
+
+<p>Este ejemplo es posiblemente uno de los más inútiles que puedo mostrar. Simplemente se trata de hacer algo como <code>seq 1 100 | grep 3 | grep 5</code>. No es muy útil, pero nos va a ilustrar sobre como se hacen este tipo de cosntrucciones <em>bash</em>.</p>
+
+<p>El truco consiste en hacer 3 procesos, para cada uno de los comandos, usando los <em>streams</em> declarados con <code>PIPE</code> para enchufarlos a la entrada estándar del siguiente comando:</p>
+
+<ul>
+<li><strong>p1</strong> ejecutará el <code>seq 1 100</code></li>
+<li><strong>p2</strong> ejecutará un <code>grep 3</code> sobre la entrada estándar, que será la salida estándar de <strong>p1</strong></li>
+<li><strong>p3</strong> ejecutará un <code>grep 5</code> sobre la entrada estándar, que será la salida estándar de <strong>p2</strong></li>
+</ul>
+
+<p>Y así queda nuestro <em>script</em>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/popen$ cat seq.py
+#!/usr/bin/env python
+
+from subprocess import Popen, PIPE
+
+p1 = Popen(['seq', '1', '100'], stdout=PIPE)
+p2 = Popen(['grep', '3'], stdin=p1.stdout, stdout=PIPE)
+p3 = Popen(['grep', '5'], stdin=p2.stdout, stdout=PIPE)
+p1.stdout.close()
+p2.stdout.close()
+out = p3.communicate()[0].strip()
+
+print out
+gerard@atlantis:~/projects/popen$
+</code></pre>
+
+<p>Cabe indicar que el método <code>communicate()</code> se llama solamente en el último comando de la cadena, para esperar que acabe y recoger así su salida estándar y su salida de error, que en este caso, desechamos.</p>
+
+<p>Solo queda comentar que los <em>streams</em> de salida de <strong>p1</strong> y de <strong>p2</strong> se cierran después de enchufarlos a <strong>p3</strong>, tal como sugiere la documentación, para evitar problemas en caso de que <strong>p3</strong> acabe antes que <strong>p2</strong>, o este acabe antes que <strong>p1</strong>.</p>
+
+<p>A partir de aquí, solo nos queda comprobar que el resultado es el mismo, tanto en <em>bash</em>, como en <em>python</em>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/popen$ seq 1 100 | grep 3 | grep 5
+35
+53
+gerard@atlantis:~/projects/popen$ ./seq.py
+35
+53
+gerard@atlantis:~/projects/popen$
+</code></pre>
+
+<p>Y con esto ampliamos nuestra <em>toolbox</em> de recursos, de forma que podamos encarar futuros retos con nuevas opciones.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

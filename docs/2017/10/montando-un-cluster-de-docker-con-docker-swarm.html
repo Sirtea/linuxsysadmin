@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Montando un cluster de docker con docker swarm - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Montando un cluster de docker con docker swarm</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-10-30
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/cluster.html">cluster</a>
+</p>
+
+<p>Usar <strong>docker</strong> en nuestro dia a dia es muy interesante y tiene un montón de aplicaciones prácticas; sin embargo no es la mejor opción confiar en un único servidor en producción. Para tener alta disponibilidad y alto renidmiento podemos montar un cluster, como por ejemplo su implementación oficial, <strong>docker swarm</strong>.</p>
+
+<h2 id="preparando-los-servidores">Preparando los servidores</h2>
+
+<p>Vamos a seguir el tutorial mismo de la página de docker, que nos invita a crear 3 servidores, siendo uno el <em>manager</em> y el resto <em>nodos</em>. Así pues, nuestro cluster se va a componer inicialmente de 3 servidores:</p>
+
+<ul>
+<li><strong>shangrila</strong> &rarr; nuestro manager, con IP 192.168.56.2</li>
+<li><strong>arcadia</strong> &rarr; el nodo 1, con IP 192.168.56.3</li>
+<li><strong>eldorado</strong> &rarr; el nodo 2, con IP 192.168.56.4</li>
+</ul>
+
+<p>Para ello vamos a preparar tres máquinas que son las que van a componer el cluster de <strong>Docker</strong>. Las máquinas solo necesitan <strong>docker</strong> y me he guiado por <a href="/2017/07/montando-un-servidor-docker-con-debian-stretch.html">este artículo</a>. Adicionalmente, he instalado el servicio <strong>NTP</strong> siguiendo <a href="/2017/10/un-servicio-casi-imprescindible-ntp.html">este otro artículo</a>, aunque esto es opcional.</p>
+
+<p>Un punto importante a tener en cuenta es que las máquinas deben tener <a href="https://docs.docker.com/engine/swarm/swarm-tutorial/#the-ip-address-of-the-manager-machine">conectividad con el manager</a>, y deben poder accederse entre ellas por <a href="https://docs.docker.com/engine/swarm/swarm-tutorial/#open-protocols-and-ports-between-the-hosts">algunos puertos</a>.</p>
+
+<h2 id="creando-el-manager">Creando el manager</h2>
+
+<p>Entramos por SSH en el manager (en nuestro caso <strong>shangrila</strong>) y lanzamos el comando <code>docker swarm init</code>. Esto nos va a crear un cluster con solamente un <em>manager</em> y sin <em>nodos</em>.</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker swarm init --advertise-addr 192.168.56.2
+Swarm initialized: current node (rtmzvsbndn4ox5mhzsgu2xi81) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-09ebvbcbqjttt3o6ssqfnkb1n4xuzf1e1jildujhkh7dpb6iaq-0i6smvy5g75h2mn82t8kv4ptd 192.168.56.2:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+
+gerard@shangrila:~$
+</code></pre>
+
+<p>También hemos añadido el flag <code>--advertise-addr</code> para indicar la IP del <em>manager</em> que se va a usar para las comunicaciones con los diferentes nodos.</p>
+
+<p>Ahora ya tenemos un cluster de <em>docker swarm</em> operativo, aunque al no tener <em>nodos</em>, no podemos usar algunos de los comandos, que son multinodo.</p>
+
+<p>Podemos ver los nodos del cluster y el estado del mismo con unos pocos comandos:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker info
+...
+Swarm: active
+ NodeID: rtmzvsbndn4ox5mhzsgu2xi81
+ Is Manager: true
+ ClusterID: krknl2v0llpyczyqg1ihi250d
+ Managers: 1
+ Nodes: 1
+ Orchestration:
+  Task History Retention Limit: 5
+ Raft:
+  Snapshot Interval: 10000
+  Number of Old Snapshots to Retain: 0
+  Heartbeat Tick: 1
+  Election Tick: 3
+ Dispatcher:
+  Heartbeat Period: 5 seconds
+ CA Configuration:
+  Expiry Duration: 3 months
+  Force Rotate: 0
+ Root Rotation In Progress: false
+ Node Address: 192.168.56.2
+ Manager Addresses:
+  192.168.56.2:2377
+...
+gerard@shangrila:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+rtmzvsbndn4ox5mhzsgu2xi81 *   shangrila           Ready               Active              Leader
+gerard@shangrila:~$
+</code></pre>
+
+<h2 id="añadiendo-nodos-al-cluster">Añadiendo nodos al cluster</h2>
+
+<p>Para añadir un <em>nodo</em> en el cluster, solo tenemos que entrar en ese nodo y lanzar el comando que nos sugirió el <code>docker init</code>. Si no nos acordamos, siempre podemos pedir que nos lo repita:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker swarm join-token worker
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-09ebvbcbqjttt3o6ssqfnkb1n4xuzf1e1jildujhkh7dpb6iaq-0i6smvy5g75h2mn82t8kv4ptd 192.168.56.2:2377
+
+gerard@shangrila:~$
+</code></pre>
+
+<p>Así tal cual, lanzamos el comando en cualquier <em>nodo</em> que deseemos preparar ahora. No es necesario poner todos los <em>nodos</em> en este momento, pudiendo añadir <em>nodos</em> en un futuro, tal como nuestro cluster lo vaya necesitando.</p>
+
+<p>Lanzamos en <strong>arcadia</strong>:</p>
+
+<pre><code class="language-bash">gerard@arcadia:~$ docker swarm join --token SWMTKN-1-09ebvbcbqjttt3o6ssqfnkb1n4xuzf1e1jildujhkh7dpb6iaq-0i6smvy5g75h2mn82t8kv4ptd 192.168.56.2:2377
+This node joined a swarm as a worker.
+gerard@arcadia:~$
+</code></pre>
+
+<p>Y lanzamos en <strong>eldorado</strong>:</p>
+
+<pre><code class="language-bash">gerard@eldorado:~$ docker swarm join --token SWMTKN-1-09ebvbcbqjttt3o6ssqfnkb1n4xuzf1e1jildujhkh7dpb6iaq-0i6smvy5g75h2mn82t8kv4ptd 192.168.56.2:2377
+This node joined a swarm as a worker.
+gerard@eldorado:~$
+</code></pre>
+
+<p>Y podemos comprobar de nuevo el estado de nuestro cluster:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker info
+...
+Swarm: active
+ NodeID: rtmzvsbndn4ox5mhzsgu2xi81
+ Is Manager: true
+ ClusterID: krknl2v0llpyczyqg1ihi250d
+ Managers: 1
+ Nodes: 3
+ Orchestration:
+  Task History Retention Limit: 5
+ Raft:
+  Snapshot Interval: 10000
+  Number of Old Snapshots to Retain: 0
+  Heartbeat Tick: 1
+  Election Tick: 3
+ Dispatcher:
+  Heartbeat Period: 5 seconds
+ CA Configuration:
+  Expiry Duration: 3 months
+  Force Rotate: 0
+ Root Rotation In Progress: false
+ Node Address: 192.168.56.2
+ Manager Addresses:
+  192.168.56.2:2377
+...
+gerard@shangrila:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+5p0wbl6rhvs5oo461xsmxhph4     eldorado            Ready               Active
+rtmzvsbndn4ox5mhzsgu2xi81 *   shangrila           Ready               Active              Leader
+su20j7s0itgssfcm8x5whz8o8     arcadia             Ready               Active
+gerard@shangrila:~$
+</code></pre>
+
+<p><strong>AVISO:</strong> Tened en cuenta que los comandos de estado del cluster solo se pueden lanzar en un <em>manager</em>.</p>
+
+<p>Y con esto tenemos montado nuestro cluster.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

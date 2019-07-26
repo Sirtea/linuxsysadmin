@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Haciendo snapshots con LVM - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Haciendo snapshots con LVM</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-02-15
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/lvm.html">lvm</a> / <a href="/tag/logical-volume-manager.html">logical volume manager</a> / <a href="/tag/snapshot.html">snapshot</a> / <a href="/tag/point-in-time.html">point-in-time</a> / <a href="/tag/backup.html">backup</a>
+</p>
+
+<p>Una de las funcionalidades mas implementadas en los sistemas de ficheros de nueva generación es la capacidad de hacer <em>snapshots point-in-time</em>. Sin embargo, no tenemos que renunciar a la estabilidad de los sistemas de ficheros tradicionales como <strong>ext4</strong>; otras veces no es posible por requisitos del servicio que debe usarlo.</p>
+
+<p>En este tutorial vamos a demostrar lo fácil que es hacer este tipo de <em>snapshots</em>, usando como tecnología subyacente el <strong>logical volume manager</strong>, de ahora en adelante, <strong>LVM</strong>.</p>
+
+<p>Los únicos requisitos para seguir esta guía son el paquete <strong>lvm</strong> y un disco físico sobre el que vamos a construir el <em>volume group</em> que va a alojar los <em>logical volumes</em>; al menos van a ser la partición original y algo de espacio para servir como volumen para el <em>snapshot</em>.</p>
+
+<h2 id="preparación">Preparación</h2>
+
+<p>Empezamos instalando los requisitos software:</p>
+
+<pre><code class="language-bash">root@server:~# apt-get install lvm2
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes extras:
+  dmeventd libdevmapper-event1.02.1 liblvm2cmd2.02 libreadline5
+Paquetes sugeridos:
+  thin-provisioning-tools
+Se instalarán los siguientes paquetes NUEVOS:
+  dmeventd libdevmapper-event1.02.1 liblvm2cmd2.02 libreadline5 lvm2
+0 actualizados, 5 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 1.530 kB de archivos.
+Se utilizarán 3.898 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+root@server:~#
+</code></pre>
+
+<p>Suponiendo que el disco que vamos a usar es <em>/dev/sdb</em>, vamos a acondicionarlo para que pueda actuar como <em>physical volume</em>.</p>
+
+<pre><code class="language-bash">root@server:~# pvcreate /dev/sdb
+  Physical volume &quot;/dev/sdb&quot; successfully created
+root@server:~#
+</code></pre>
+
+<p>Ahora vamos a usar este <em>physical volume</em> para crear el <em>volume group</em>.</p>
+
+<pre><code class="language-bash">root@server:~# vgcreate lvm /dev/sdb
+  /proc/devices: No entry for device-mapper found
+  Volume group &quot;lvm&quot; successfully created
+root@server:~#
+</code></pre>
+
+<p>Vamos a sacar un <em>logical volume</em> para crear el sistema de ficheros que va a ser el objeto del <em>snapshot</em>. El tamaño del volumen puede ser el que nos convenga, e incluso crecer según sea necesario. De momento, nos basta con 1 GB.</p>
+
+<pre><code class="language-bash">root@server:~# lvcreate lvm -L 1G -n datos
+  Logical volume &quot;datos&quot; created
+root@server:~#
+</code></pre>
+
+<p>Lo formateamos como si de un disco mas se tratara.</p>
+
+<pre><code class="language-bash">root@server:~# mkfs.ext4 /dev/lvm/datos
+mke2fs 1.42.12 (29-Aug-2014)
+Se está creando El sistema de ficheros con 262144 4k bloques y 65536 nodos-i
+
+UUID del sistema de ficheros: 1ad4e531-82de-4797-9968-28cb33b3badd
+Respaldo del superbloque guardado en los bloques:
+        32768, 98304, 163840, 229376
+
+Reservando las tablas de grupo: hecho
+Escribiendo las tablas de nodos-i: hecho
+Creando el fichero de transacciones (8192 bloques): hecho
+Escribiendo superbloques y la información contable del sistema de ficheros: hecho
+
+root@server:~#
+</code></pre>
+
+<p>Vamos a asumir que nuestro servicio necesita dejar sus datos en <em>/data</em>; como no existe, vamos a crearlo.</p>
+
+<pre><code class="language-bash">root@server:~# mkdir /data
+root@server:~#
+</code></pre>
+
+<p>El siguiente paso es montar ese volumen en su sitio, en este caso, en <em>/data</em>. Se deja como ejercicio personal ponerlo en el <em>/etc/fstab</em>.</p>
+
+<pre><code class="language-bash">root@server:~# mount /dev/lvm/datos /data/
+root@server:~#
+</code></pre>
+
+<p>Vamos a crear algo de contenido en la carpeta para simular los datos que dejaría el servicio que supuestamente usaría esta carpeta.</p>
+
+<pre><code class="language-bash">root@server:~# echo 1 &gt; /data/a
+root@server:~# echo 1 &gt; /data/b
+root@server:~#
+</code></pre>
+
+<h2 id="creación-del-snapshot">Creación del snapshot</h2>
+
+<p>Hacer un <em>snapshot</em> es tan fácil como invocar el binario <strong>lvcreate</strong> con el parámetro <em>-s</em>, especificando el tamaño, el nombre y el volumen objetivo.</p>
+
+<pre><code class="language-bash">root@server:~# lvcreate -L 100M -n datos-snap -s /dev/lvm/datos
+  Logical volume &quot;datos-snap&quot; created
+root@server:~#
+</code></pre>
+
+<p>El volumen <em>datos-snap</em> solo contiene las diferencias con el volumen original, así que no necesita tener el mismo tamaño que el original. Sin embargo, si hubiera mas de 100 MB de cambios, este <em>snapshot</em> quedaría inválido.</p>
+
+<p>De momento, creo que con 100 MB va a ser suficiente, ya que solo pretendo sacar un fichero comprimido de ese <em>snapshot</em>, eliminándolo después. Un tamaño seguro habría sido el mismo que el volumen original. Sin embargo, como se trata de otro volumen <strong>LVM</strong>, podremos extenderla a posteriori con <em>lvextend</em>.</p>
+
+<p>Vamos a analizar el contenido; lo montamos en una carpeta cualquiera para ver su contenido.</p>
+
+<pre><code class="language-bash">root@server:~# mount /dev/lvm/datos-snap /mnt/
+root@server:~#
+</code></pre>
+
+<p>Es fácil de verificar que tienen el mismo contenido.</p>
+
+<pre><code class="language-bash">root@server:~# grep . /data/* /mnt/*
+/data/a:1
+/data/b:1
+/mnt/a:1
+/mnt/b:1
+root@server:~#
+</code></pre>
+
+<p>Vamos a continuar simulando que el servicio escribe en el volumen original, por ejemplo, modificando uno de los ficheros.</p>
+
+<pre><code class="language-bash">root@server:~# echo 2 &gt; /data/a
+root@server:~#
+</code></pre>
+
+<p>Y verificamos que el <em>snapshot point-in-time</em> se quedó en el momento temporal en el que lo hicimos, quedando como estaba entonces:</p>
+
+<pre><code class="language-bash">root@server:~# grep . /data/* /mnt/*
+/data/a:2
+/data/b:1
+/mnt/a:1
+/mnt/b:1
+root@server:~#
+</code></pre>
+
+<p>Verificando los <em>logical volume</em> con el comando <em>lvs</em>, vemos que es un volumen de 100 MB, con una ocupación baja, del 0,08%. El <em>snapshot</em> quedaría inservible si llegara a superar el 100%.</p>
+
+<pre><code class="language-bash">root@server:~# lvs
+  LV         VG   Attr       LSize   Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
+  datos      lvm  owi-aos---   1,00g
+  datos-snap lvm  swi-aos--- 100,00m      datos  0,08
+root@server:~#
+</code></pre>
+
+<h2 id="sacando-el-backup">Sacando el backup</h2>
+
+<p>El objetivo inicial era sacar una copia de los datos, congelados en un momento concreto. Tenemos ese momento en el volumen <em>datos-snap</em>.</p>
+
+<p>Empezaremos montándolo en alguna carpeta cualquiera, si no lo teníamos ya (lo hemos montado en el punto anterior).</p>
+
+<pre><code class="language-bash">root@server:~# mount /dev/lvm/datos-snap /mnt/
+root@server:~#
+</code></pre>
+
+<p>Con el volumen montado, el resto es procedimiento estándar. En este caso, vamos a sacar un fichero <em>.tar.gz</em> con el contenido de la carpeta:</p>
+
+<pre><code class="language-bash">root@server:~# cd /mnt/
+root@server:/mnt# tar cvzf /root/backup.tar.gz *
+a
+b
+root@server:/mnt#
+</code></pre>
+
+<p>Y finalmente vamos a limpiar el <em>snapshot</em>, empezando por desmontar el volumen. Como estamos dentro de la carpeta no vamos a poder desmontar el volumen, así que salimos.</p>
+
+<pre><code class="language-bash">root@server:/mnt# cd
+root@server:~# umount /mnt/
+root@server:~#
+</code></pre>
+
+<p>Y ahora que no lo tenemos montado, lo eliminamos sin problemas con las herramientas propias de <strong>LVM</strong>.</p>
+
+<pre><code class="language-bash">root@server:~# lvremove /dev/lvm/datos-snap
+Do you really want to remove active logical volume datos-snap? [y/n]: y
+  Logical volume &quot;datos-snap&quot; successfully removed
+root@server:~#
+</code></pre>
+
+<p>Y solo quedará poner el fichero <em>backup.tar.gz</em> a buen recaudo.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

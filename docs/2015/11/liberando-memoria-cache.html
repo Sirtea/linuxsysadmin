@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Liberando memoria caché - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Liberando memoria caché</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-11-02
+	<strong>Tiempo de lectura</strong>: 2 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/kernel.html">kernel</a> / <a href="/tag/memory-manager.html">memory manager</a> / <a href="/tag/drop-caches.html">drop caches</a>
+</p>
+
+<p>A veces nos encontramos que nuestro sistema linux parece tener la memoria <em>virtual</em> ocupada, cuando no tenemos nada de memoria <em>RSS</em>; esto no es un problema, ya que por la forma de funcionar del <em>memory manager</em> de linux, se conserva &ldquo;por si acaso&rdquo; y se libera cuando realmente se necesita.</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ free -m
+             total       used       free     shared    buffers     cached
+Mem:          3858       3226        632          0        114       2545
+-/+ buffers/cache:        566       3291
+Swap:         2381          0       2381
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Sin embargo este detalle nos puede resultar molesto y puede que queramos <strong>liberar</strong> esa memoria de verdad, por ejemplo, para comparar memoria real ocupada por el sistema o sencillamente porque así lo queremos.</p>
+
+<p>En este caso no tenemos mas remedio que solicitar el <em>memory manager</em> que la libere, escribiendo en el fichero de control habilitado para ello, de acuerdo a la <a href="https://www.kernel.org/doc/Documentation/sysctl/vm.txt">documentación del <em>kernel</em> de linux</a>.</p>
+
+<pre><code class="language-bash">drop_caches
+
+Writing to this will cause the kernel to drop clean caches, as well as
+reclaimable slab objects like dentries and inodes.  Once dropped, their
+memory becomes free.
+
+To free pagecache:
+    echo 1 &gt; /proc/sys/vm/drop_caches
+To free reclaimable slab objects (includes dentries and inodes):
+    echo 2 &gt; /proc/sys/vm/drop_caches
+To free slab objects and pagecache:
+    echo 3 &gt; /proc/sys/vm/drop_caches
+
+This is a non-destructive operation and will not free any dirty objects.
+To increase the number of objects freed by this operation, the user may run
+`sync' prior to writing to /proc/sys/vm/drop_caches.  This will minimize the
+number of dirty objects on the system and create more candidates to be
+dropped.
+</code></pre>
+
+<p>Este fichero viene por defecto con permisos de escritura solamente para el usuario <strong>root</strong> y no se puede escribir sin el mismo. Como no queremos trabajar con el usuario <strong>root</strong>, vamos a usar el comando <em>sudo</em> con un usuario normal:</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ sudo bash -c &quot;echo 3 &gt; /proc/sys/vm/drop_caches&quot;
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Alternativamente, podemos utilizar el comando <em>tee</em> para realizar la misma operación, sin el envoltorio de <em>bash</em>:</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ echo 3 | sudo tee /proc/sys/vm/drop_caches
+3
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Y finalmente nuestra memoria queda vacía de todo aquello que no era indispensable para la ejecución del sistema.</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ free -m
+             total       used       free     shared    buffers     cached
+Mem:          3858        752       3105          0          2        207
+-/+ buffers/cache:        542       3315
+Swap:         2381          0       2381
+gerard@desktop:~$ 
+</code></pre>
+
+<p>¡Acabamos de liberar 2 gigabytes de memoria!</p>
+
+<p><strong>CUIDADO</strong>: Esta operación puede afectar el rendimiento puntual del sistema, ya que en caso de volver a necesitar la información <em>cacheada</em>, deberá volver a recargar la memoria, probablemente desde disco.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

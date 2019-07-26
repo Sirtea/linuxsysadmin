@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un registro local de Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un registro local de Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-01-09
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/registro.html">registro</a> / <a href="/tag/docker.html">docker</a>
+</p>
+
+<p>He llegado a ese momento en el que el número de imágenes <strong>docker</strong> que he construido se me ha ido de las manos. Ya no pueden seguir ocupando espacio en mi local, así que me he decidido a montar mi propio registro de imágenes, para mi uso y disfrute privado.</p>
+
+<p>Si miramos en <a href="https://hub.docker.com/_/registry/">DockerHub</a> no nos va a costar demasiado encontrar una imagen que nos proporciones este servicio. Ejecutar esta imagen para uso local no tiene ninguna complicación, y basta con seguir las instrucciones. La cosa se complica si queremos sacarlo de nuestra infraestructura, pero no va a ser el caso de hoy.</p>
+
+<h2 id="levantando-un-registro-local">Levantando un registro local</h2>
+
+<p>Siguiendo las instrucciones, lanzamos el comando indicado en la documentación:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker run -d -p 5000:5000 registry
+735016f722f25c0d8a8f09c1e2b856011d46fa4efd3a4d6c7846405140443128
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Solo necesitamos exponer el puerto 5000 que, por comodidad, va a usar el mismo puerto en mi máquina local. La única parte con estado de la imagen es <em>/var/lib/registry</em>, y puede resultar interesante saberlo para hacer copias de seguridad; no voy a hacerlo porque la imagen ya lleva por defecto un <em>container volume</em> declarado.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker history registry
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+c9bd19d022f6        7 weeks ago         /bin/sh -c #(nop)  CMD [&quot;/etc/docker/registry   0 B                 
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop)  ENTRYPOINT [&quot;/entrypoint.s   0 B                 
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop) COPY file:7b57f7ab1a8cf85c0   155 B               
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop)  EXPOSE 5000/tcp              0 B                 
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop)  VOLUME [/var/lib/registry]   0 B                 
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop) COPY file:6c4758d509045dc45   295 B               
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop) COPY file:3f73dd916d906a0db   27.21 MB            
+&lt;missing&gt;           7 weeks ago         /bin/sh -c set -ex     &amp;&amp; apk add --no-cache    1.287 MB            
+&lt;missing&gt;           7 weeks ago         /bin/sh -c #(nop) ADD file:7afbc23fda8b0b3872   4.803 MB            
+gerard@aldebaran:~/docker/registry$ docker inspect 735016f722f2
+[
+    {
+...  
+        &quot;Mounts&quot;: [
+            {
+                &quot;Name&quot;: &quot;875b58044b85426eb82b5ea74f51f22865994d1bb84d26317c91abaaf1d5f83c&quot;,
+                &quot;Source&quot;: &quot;/var/lib/docker/volumes/875b58044b85426eb82b5ea74f51f22865994d1bb84d26317c91abaaf1d5f83c/_data&quot;,
+                &quot;Destination&quot;: &quot;/var/lib/registry&quot;,
+                &quot;Driver&quot;: &quot;local&quot;,
+                &quot;Mode&quot;: &quot;&quot;,
+                &quot;RW&quot;: true,
+                &quot;Propagation&quot;: &quot;&quot;
+            }
+        ],
+...  
+    }
+]
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Si preferís la versión usando <strong>docker-compose</strong>, no difiere demasiado:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ cat docker-compose.yml 
+version: '2'
+services:
+  registry:
+    image: registry
+    hostname: registry
+    container_name: registry
+    volumes:
+      - ./data:/var/lib/registry
+    ports:
+      - &quot;5000:5000&quot;
+gerard@aldebaran:~/docker/registry$ docker-compose up -d
+Creating network &quot;registry_default&quot; with the default driver
+Creating registry
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>En este caso, se ha optado por mapear el volumen <em>/var/lib/registry</em> en una carpeta local, para poder inspeccionarlo fácilmente y para sacar <em>backups</em> con mas facilidad todavía.</p>
+
+<h2 id="uso-de-nuestro-registro-local">Uso de nuestro registro local</h2>
+
+<p>Se puede trabajar con nuestro registro de la misma forma con la que lo haríamos con <em>DockerHub</em>, a base de usar el comando <em>docker push</em> y <em>docker pull</em>. Solo hay que mencionar que el registro destino viene especificado en el nombre de la imagen, en el formato <code>&lt;host&gt;:&lt;port&gt;/&lt;imagen&gt;:&lt;tag&gt;</code>. Por ejemplo, vamos a subir una imagen <em>alpine:3.4</em>, aunque podría ser una imagen nuestra.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker tag alpine:3.4 localhost:5000/alpine:3.4
+gerard@aldebaran:~/docker/registry$ docker images
+REPOSITORY                                                                                      TAG                 IMAGE ID            CREATED             SIZE
+alpine                                                                                          3.4                 baa5d63471ea        7 weeks ago         4.803 MB
+localhost:5000/alpine                                                                           3.4                 baa5d63471ea        7 weeks ago         4.803 MB
+gerard@aldebaran:~/docker/registry$ docker push localhost:5000/alpine:3.4
+The push refers to a repository [localhost:5000/alpine]
+011b303988d2: Pushed 
+3.4: digest: sha256:1354db23ff5478120c980eca1611a51c9f2b88b61f24283ee8200bf9a54f2e5c size: 528
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Y las capas que conforman nuestra imagen, quedan guardadas en nuestro registro local, como podemos ver:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ tree data/
+data/
+└── docker
+    └── registry
+        └── v2
+            ├── blobs
+            │   └── sha256
+            │       ├── 13
+            │       │   └── 1354db23ff5478120c980eca1611a51c9f2b88b61f24283ee8200bf9a54f2e5c
+            │       │       └── data
+            │       ├── 36
+            │       │   └── 3690ec4760f95690944da86dc4496148a63d85c9e3100669a318110092f6862f
+            │       │       └── data
+            │       └── ba
+            │           └── baa5d63471ead618ff91ddfacf1e2c81bf0612bfeb1daf00eb0843a41fbfade3
+            │               └── data
+            └── repositories
+                └── alpine
+                    ├── _layers
+                    │   └── sha256
+                    │       ├── 3690ec4760f95690944da86dc4496148a63d85c9e3100669a318110092f6862f
+                    │       │   └── link
+                    │       └── baa5d63471ead618ff91ddfacf1e2c81bf0612bfeb1daf00eb0843a41fbfade3
+                    │           └── link
+                    ├── _manifests
+                    │   ├── revisions
+                    │   │   └── sha256
+                    │   │       └── 1354db23ff5478120c980eca1611a51c9f2b88b61f24283ee8200bf9a54f2e5c
+                    │   │           └── link
+                    │   └── tags
+                    │       └── 3.4
+                    │           ├── current
+                    │           │   └── link
+                    │           └── index
+                    │               └── sha256
+                    │                   └── 1354db23ff5478120c980eca1611a51c9f2b88b61f24283ee8200bf9a54f2e5c
+                    │                       └── link
+                    └── _uploads
+
+28 directories, 8 files
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Nada nos impediría hacer un <code>docker pull localhost:5000/alpine:3.4</code> en el futuro.</p>
+
+<p><strong>TRUCO</strong>: En caso de querer hacer un <em>push</em> de un tag <em>default</em> de la imagen <code>tools/tsung</code>, bastaría con que usar <code>localhost:5000/tools/tsung</code>; el nombre de la imagen puede contener el separador <code>/</code> y el <em>tag</em> es opcional, usando el <em>tag</em> por defecto <em>default</em>, justo como pasa con <em>DockerHub</em>.</p>
+
+<h2 id="consultando-el-contenido-de-nuestro-registro">Consultando el contenido de nuestro registro</h2>
+
+<p>Ahora mismo nuestro registro solo tiene guardado un <em>alpine:3.4</em>. Para poder ver una salida mas interesante de la API del registro, subo una <em>alpine:edge</em> y una <em>debian:jessie</em>. Así podemos apreciar dos imágenes, y una de ellas, con dos <em>tags</em>.</p>
+
+<p>Empezamos dando un nombre que contenga <em>localhost:5000</em> como ya hemos visto más arriba:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker tag {,localhost:5000/}alpine:edge
+gerard@aldebaran:~/docker/registry$ docker tag {,localhost:5000/}debian:jessie
+gerard@aldebaran:~/docker/registry$ docker images | grep localhost
+localhost:5000/debian                                                                           jessie              73e72bf822ca        4 weeks ago         123 MB
+localhost:5000/alpine                                                                           edge                a1a3cae7a75e        7 weeks ago         3.979 MB
+localhost:5000/alpine                                                                           3.4                 baa5d63471ea        7 weeks ago         4.803 MB
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Y los empujamos al registro:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker push localhost:5000/alpine:edge
+The push refers to a repository [localhost:5000/alpine]
+6f4ada5745cd: Pushed 
+edge: digest: sha256:cd9c03c2d382fcf00c31dc1635445163ec185dfffb51242d9e097892b3b0d5b4 size: 528
+gerard@aldebaran:~/docker/registry$ docker push localhost:5000/debian:jessie
+The push refers to a repository [localhost:5000/debian]
+fe4c16cbf7a4: Pushed 
+jessie: digest: sha256:c1ce85a0f7126a3b5cbf7c57676b01b37c755b9ff9e2f39ca88181c02b985724 size: 529
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Disponemos de una API con -al menos- dos métodos que nos sirven para ver lo que hay en el registro:</p>
+
+<ul>
+<li>Listar las imágenes de nuestro repositorio -&gt; <code>GET /v2/_catalog</code></li>
+<li>Listar los <em>tags</em> de una imagen concreta -&gt; <code>GET /v2/&lt;imagen&gt;/tags/list</code></li>
+</ul>
+
+<p>Así, podemos ver lo que hay con las siguientes invocaciones:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ curl http://localhost:5000/v2/_catalog
+{&quot;repositories&quot;:[&quot;alpine&quot;,&quot;debian&quot;]}
+gerard@aldebaran:~/docker/registry$ curl http://localhost:5000/v2/alpine/tags/list
+{&quot;name&quot;:&quot;alpine&quot;,&quot;tags&quot;:[&quot;edge&quot;,&quot;3.4&quot;]}
+gerard@aldebaran:~/docker/registry$ curl http://localhost:5000/v2/debian/tags/list
+{&quot;name&quot;:&quot;debian&quot;,&quot;tags&quot;:[&quot;jessie&quot;]}
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Se puede automatizar esta salida con un simple <em>script</em>, que he escrito en <strong>python</strong>:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ cat list_registry.py 
+#!/usr/bin/env python
+
+import httplib
+import json
+
+def get_json_response(host, port, uri):
+    c = httplib.HTTPConnection(host, port)
+    c.request('GET', uri)
+    r = c.getresponse()
+    return json.load(r)
+
+catalog = get_json_response('localhost', 5000, '/v2/_catalog')
+for image in catalog['repositories']:
+    print '* %s' % image
+    taginfo = get_json_response('localhost', 5000, '/v2/%s/tags/list' % image)
+    for tag in taginfo['tags']:
+        print '    * %s:%s' % (taginfo['name'], tag)
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+
+<p>Y con esto vemos una salida bastante legible.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ ./list_registry.py 
+* alpine
+    * alpine:edge
+    * alpine:3.4
+* debian
+    * debian:jessie
+gerard@aldebaran:~/docker/registry$ 
+</code></pre>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

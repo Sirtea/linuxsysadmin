@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Levantando un cluster de consul - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Levantando un cluster de consul</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-04-30
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/consul.html">consul</a> / <a href="/tag/service-discovery.html">service discovery</a> / <a href="/tag/cluster.html">cluster</a>
+</p>
+
+<p>Ya vimos que <strong>consul</strong> nos permitía mantener una foto del estado de nuestros servidores y de los servicios que corren en ellos. Es todavía más importante cuando contamos con varios servidores, y todos declaran sus partes a un servidor central, de forma que tenemos una foto global de la situación.</p>
+
+<p>Para este ejemplo, vamos a contar con 3 servidores; uno de los cuales va a actuar de <em>servidor</em> y el resto harán de <em>clientes</em>. Los servidores son:</p>
+
+<ul>
+<li><strong>node1</strong> &rarr; Dirección IP 10.0.0.2 (será el <em>servidor</em>)</li>
+<li><strong>node2</strong> &rarr; Dirección IP 10.0.0.3 (será un <em>cliente</em>)</li>
+<li><strong>node3</strong> &rarr; Dirección IP 10.0.0.4 (será un <em>cliente</em>)</li>
+</ul>
+
+<p><strong>NOTA</strong>: Es posible poner varios <em>servidores</em> para obtener alta disponibilidad, pero al no ser un servício crítico, no vamos a extender el artículo innecesariamente.</p>
+
+<h2 id="instalación">Instalación</h2>
+
+<p>Ya vimos en <a href="/2018/04/monitorizacion-y-service-discovery-con-consul.html">otro articulo</a> que <strong>consul</strong> no necesita instalación, ya que es un binario estático. Para su fácil distribución entre las máquinas, lo he empaquetado en una imagen de <strong>docker</strong>, acompañado de una carpeta <em>/data/</em> que es donde <strong>consul</strong> deja sus ficheros operativos. Vamos a inyectar la configuración desde el servidor mediante <em>host volumes</em>.</p>
+
+<p>Para tener el artículo completo, adjunto el contexto con el que se contruyó la imagen que usamos en el mismo.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul/build$ cat Dockerfile
+FROM scratch
+ADD rootfs.tar.gz /
+ENTRYPOINT [&quot;/consul&quot;]
+gerard@atlantis:~/projects/consul/build$ tar tf rootfs.tar.gz
+consul
+data/
+gerard@atlantis:~/projects/consul/build$
+</code></pre>
+
+<p>Esto nos deja una imagen de unos 28mb. He usado el <em>tag</em> <code>sirrtea/consul:1.0.5</code> y lo he subido de forma temporal a <a href="https://hub.docker.com/">DockerHub</a>, que va a funcionar como repositorio de imágenes. No hace falta decir que 1.0.5 es la versión de <strong>consul</strong> en el momento de escribir el artículo&hellip;</p>
+
+<p><strong>TRUCO</strong>: Los <em>clientes</em> son volátiles; no necesitamos persistir su carpeta de datos porque no guardan nada importante. Sin embargo, la carpeta <em>/data/</em> de los servidores guardan información importante del <em>cluster</em> y debe asegurarse que no se pierden en el reinicio del contenedor.</p>
+
+<h2 id="levantando-el-master">Levantando el master</h2>
+
+<p>Ponemos en <strong>node1</strong> un carpeta con el fichero <em>docker-compose.yml</em> y la configuración vacía, en donde lo tendremos todo ordenado.</p>
+
+<p>Es importante recalcar que la configuración la mapeamos desde el <em>host</em> y también la carpeta de datos, para que al reiniciar el contenedor no de pierda. Si eso pasara, habría que volver a añadir manualmente todos los otros nodos.</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ cat docker-compose.yml
+version: '2'
+services:
+  consul:
+    image: sirrtea/consul:1.0.5
+    container_name: consul
+    hostname: consul
+    network_mode: host
+    volumes:
+      - ./consul.json:/consul.json
+      - ./data:/data
+    command: agent -node node1 -advertise 10.0.0.2 -data-dir /data --config-file /consul.json -server -bootstrap-expect=1
+    restart: always
+gerard@node1:~/consul$ cat consul.json
+{}
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Levantamos el servidor con <strong>docker-compose</strong> de la forma habitual:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker-compose up -d
+Creating consul ... done
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Podemos ver que el <em>cluster</em> solo tiene el servidor, ya que no hemos puesto otros nodos:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker exec consul /consul members
+Node   Address        Status  Type    Build  Protocol  DC   Segment
+node1  10.0.0.2:8301  alive   server  1.0.5  2         dc1  &lt;all&gt;
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Solo nos queda por ver que el <em>servidor</em> asume el rol de <em>leader</em>:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker-compose logs | grep -o &quot;New leader elected.*&quot;
+New leader elected: node1
+gerard@node1:~/consul$
+</code></pre>
+
+<h2 id="añadiendo-los-clientes">Añadiendo los clientes</h2>
+
+<p>De forma similar, vamos a crear una carpeta en <strong>node2</strong> y en <strong>node3</strong> (y en un futuro en el resto de nodos) para contener el fichero <em>docker-compose.yml</em> y la configuración de <strong>consul</strong>.</p>
+
+<p>Vamos a poner una configuración vacía; más adelante ya añadiremos servicios y <em>health checks</em>.</p>
+
+<pre><code class="language-bash">gerard@node2:~/consul$ cat docker-compose.yml
+version: '2'
+services:
+  consul:
+    image: sirrtea/consul:1.0.5
+    container_name: consul
+    hostname: consul
+    network_mode: host
+    volumes:
+      - ./consul.json:/consul.json
+    command: agent -node node2 -advertise 10.0.0.3 -data-dir /data --config-file /consul.json -join node1
+    restart: always
+gerard@node2:~/consul$ cat consul.json
+{}
+gerard@node2:~/consul$
+</code></pre>
+
+<p><strong>TRUCO</strong>: La operación de <em>join</em> se puede hacer en el comando de inicio o manualmente <em>a posteriori</em>; la primera forma nos simplifica bastante el trabajo.</p>
+
+<p>Levantamos el contenedor de <strong>consul</strong> y verificamos que el <em>cluster</em> conoce al nuevo miembro:</p>
+
+<pre><code class="language-bash">gerard@node2:~/consul$ docker-compose up -d
+Creating consul ... done
+gerard@node2:~/consul$
+</code></pre>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker exec consul /consul members
+Node   Address        Status  Type    Build  Protocol  DC   Segment
+node1  10.0.0.2:8301  alive   server  1.0.5  2         dc1  &lt;all&gt;
+node2  10.0.0.3:8301  alive   client  1.0.5  2         dc1  &lt;default&gt;
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Repetimos lo mismo para el <strong>node3</strong> (cuidado con la IP de <em>advertise</em>)</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker exec consul /consul members
+Node   Address        Status  Type    Build  Protocol  DC   Segment
+node1  10.0.0.2:8301  alive   server  1.0.5  2         dc1  &lt;all&gt;
+node2  10.0.0.3:8301  alive   client  1.0.5  2         dc1  &lt;default&gt;
+node3  10.0.0.4:8301  alive   client  1.0.5  2         dc1  &lt;default&gt;
+gerard@node1:~/consul$
+</code></pre>
+
+<p>La misma verificación se puede hacer solicitando la dirección de los nuevos nodos:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 node1.node.consul +short
+10.0.0.2
+gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 node2.node.consul +short
+10.0.0.3
+gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 node3.node.consul +short
+10.0.0.4
+gerard@node1:~/consul$
+</code></pre>
+
+<h2 id="añadiendo-servicios">Añadiendo servicios</h2>
+
+<p>Supongamos ahora que queremos declarar un servicio <em>web</em> en <strong>node1</strong> y <strong>node2</strong>. Simplemente vamos a añadir una configuración adecuada y a reiniciar el contenedor de <strong>consul</strong>.</p>
+
+<p>A pesar de que <strong>node1</strong> es un <em>servidor</em> y <strong>node2</strong> es un <em>cliente</em>, eso solo afecta a la mecánica del <em>cluster</em>. Siguen siendo dos <em>agentes</em> normales a todos los efectos; se configuran y se operan de la misma forma.</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8080 }
+  ],
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;service_id&quot;: &quot;web&quot;, &quot;http&quot;: &quot;http://localhost:8080/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; }
+  ]
+}
+gerard@node1:~/consul$ docker-compose restart
+Restarting consul ... done
+gerard@node1:~/consul$
+</code></pre>
+
+<p><strong>TRUCO</strong>: al tener la carpeta <em>/data/</em> en el <em>host</em> en donde corre el <em>servidor</em>, no perdemos la lista de <em>clientes</em>.</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ docker exec consul /consul members
+Node   Address        Status  Type    Build  Protocol  DC   Segment
+node1  10.0.0.2:8301  alive   server  1.0.5  2         dc1  &lt;all&gt;
+node2  10.0.0.3:8301  alive   client  1.0.5  2         dc1  &lt;default&gt;
+node3  10.0.0.4:8301  alive   client  1.0.5  2         dc1  &lt;default&gt;
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Y lo mismo para <strong>node2</strong>:</p>
+
+<pre><code class="language-bash">gerard@node2:~/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8080 }
+  ],
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;service_id&quot;: &quot;web&quot;, &quot;http&quot;: &quot;http://localhost:8080/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; }
+  ]
+}
+gerard@node2:~/consul$ docker-compose restart
+Restarting consul ... done
+gerard@node2:~/consul$
+</code></pre>
+
+<p>Solo nos queda por observar que el servidor DNS integrado nos devuelve ambos, ya que están saludables:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 web.service.consul +short
+10.0.0.2
+10.0.0.3
+gerard@node1:~/consul$
+</code></pre>
+
+<h2 id="caídas-e-incrementos-de-servicio">Caídas e incrementos de servicio</h2>
+
+<p>Si se cayera, por ejemplo, la web de <strong>node1</strong>, el servidor DNS no la devolvería, al no estar saludable:</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 web.service.consul +short
+10.0.0.3
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Este detalle hace que podamos añadir el servicio en otro nodo <strong>antes</strong> del mismo servicio. Como la web no funciona, <strong>consul</strong> no devolvería el nuevo nodo hasta que la web estuviera instalada, funcionando y saludable.</p>
+
+<p>Así pues, vamos a declarar el servicio <em>web</em> también en <strong>nodo3</strong>:</p>
+
+<pre><code class="language-bash">gerard@node3:~/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8080 }
+  ],
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;service_id&quot;: &quot;web&quot;, &quot;http&quot;: &quot;http://localhost:8080/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; }
+  ]
+}
+gerard@node3:~/consul$ docker-compose restart
+Restarting consul ... done
+gerard@node3:~/consul$
+</code></pre>
+
+<p>Y sin sorpresas, el servidor DNS (y la API) de <strong>consul</strong> no nos devolverían las 3 direcciones, ya que la tercera no funciona.</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 web.service.consul +short
+10.0.0.3
+10.0.0.2
+gerard@node1:~/consul$
+</code></pre>
+
+<p>Solo nos faltaría levantar la web en el <strong>nodo3</strong> para que el servidor nos devolviera este nodo como proveedor del servicio <em>web</em>.</p>
+
+<pre><code class="language-bash">gerard@node1:~/consul$ dig @127.0.0.1 -p 8600 web.service.consul
+...
+;; QUESTION SECTION:
+;web.service.consul.            IN      A
+
+;; ANSWER SECTION:
+web.service.consul.     0       IN      A       10.0.0.4
+web.service.consul.     0       IN      A       10.0.0.3
+web.service.consul.     0       IN      A       10.0.0.2
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.1#8600(127.0.0.1)
+...
+gerard@node1:~/consul$
+</code></pre>
+
+<p>A partir de ahora, es responsabilidad del que use este DNS elegir una entre las respuestas dadas.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

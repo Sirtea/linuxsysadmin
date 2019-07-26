@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Una alternativa a dig: probando drill - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Una alternativa a dig: probando drill</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-10-22
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/drill.html">drill</a> / <a href="/tag/dig.html">dig</a> / <a href="/tag/dns.html">dns</a>
+</p>
+
+<p>Cuando trabajas con terceras partes, los problemas relacionados con la resolución DNS son demasiado habituales. Muchas veces utilizan DNS internos y cuando nos pasan los datos de conexión remota, no funciona nada. En estos casos, el procedimiento suele pasar por verificar primero la resolución DNS antes que la conectividad remota.</p>
+
+<p>Para todas aquellas verificaciones que se lanzan contra los DNS, mi herramienta favorita <em>era</em> <strong>dig</strong>. Es completa, veraz, y te da toda la información de una sola pasada.</p>
+
+<p>Sin embargo, el otro día encontré su talón de aquiles: para no instalar nada en mi máquina, utilicé un contenedor de <strong>docker</strong>, por supesto con <strong>Alpine Linux</strong>. Para aquellos que no lo sepáis, <strong>Alpine Linux</strong> usa una implementación de funciones DNS algo distinta de la habitual, y ello causa problemas relacionados con DNS.</p>
+
+<p>Aunque mejor lo mostramos en un ejemplo: partiremos de un contenedor <strong>Alpine Linux</strong>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm alpine:3.8
+/ #
+</code></pre>
+
+<h2 id="el-problema">El problema</h2>
+
+<p>En este punto, el contenedor no tiene la herramienta <strong>dig</strong> instalada, aunque lo podemos corregir de forma fácil:</p>
+
+<pre><code class="language-bash">/ # apk add --no-cache bind-tools
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.8/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.8/community/x86_64/APKINDEX.tar.gz
+(1/5) Installing libgcc (6.4.0-r8)
+(2/5) Installing json-c (0.13.1-r0)
+(3/5) Installing libxml2 (2.9.8-r0)
+(4/5) Installing bind-libs (9.12.2_p1-r0)
+(5/5) Installing bind-tools (9.12.2_p1-r0)
+Executing busybox-1.28.4-r1.trigger
+OK: 9 MiB in 18 packages
+/ #
+</code></pre>
+
+<p>Lanzamos una <em>query</em> DNS bastante normal, y obtenemos los resultados.</p>
+
+<pre><code class="language-bash">/ # dig www.google.com
+
+; &lt;&lt;&gt;&gt; DiG 9.12.2-P1 &lt;&lt;&gt;&gt; www.google.com
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: FORMERR, id: 60730
+;; flags: qr rd; QUERY: 1, ANSWER: 0, AUTHORITY: 0, ADDITIONAL: 1
+...
+/ #
+</code></pre>
+
+<p>Leemos la respuesta y vemos algo raro: &ldquo;ANSWER: 0&rdquo;. No, no se ha acabado el mundo, Google funciona bien, pero nuestra herramienta no.</p>
+
+<p>Esto pasa porque <strong>musl libc</strong> se limita a lanzar la <em>query</em> contra el primer servidor DNS de nuestro <code>/etc/resolv.conf</code>, que no es el único.</p>
+
+<h2 id="la-alternativa">La alternativa</h2>
+
+<p>Estaba yo a punto de tirar la toalla y usar un contenedor con otra distribución, pero topé casi por casualidad con otra herramienta: <strong>drill</strong>.</p>
+
+<blockquote>
+<p>The name drill is a pun on dig. With drill you should be able get even more information than with dig.</p>
+</blockquote>
+
+<p>Se trata de una versión mejorada de <strong>dig</strong>, así que vale la pena intentarlo de nuevo:</p>
+
+<pre><code class="language-bash">/ # apk add --no-cache drill
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.8/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.8/community/x86_64/APKINDEX.tar.gz
+(1/2) Installing ldns (1.7.0-r0)
+(2/2) Installing drill (1.7.0-r0)
+Executing busybox-1.28.4-r1.trigger
+OK: 10 MiB in 20 packages
+/ #
+</code></pre>
+
+<p>La misma <em>query</em> nos da un resultado correcto:</p>
+
+<pre><code class="language-bash">/ # drill www.google.com
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, rcode: NOERROR, id: 46447
+;; flags: qr rd ra ; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;; www.google.com.      IN      A
+
+;; ANSWER SECTION:
+www.google.com. 97      IN      A       216.58.201.228
+...
+/ #
+</code></pre>
+
+<h2 id="conclusión">Conclusión</h2>
+
+<p>Tenemos dos herramientas para consulta de DNS, que son <strong>dig</strong> y <strong>drill</strong>. Considerando que <strong>drill</strong> es más completa y más correcta que <strong>dig</strong>, no hay siquiera punto de comparación.</p>
+
+<p>A nivel de dependencias necesarias, <strong>drill</strong> también sobresale: necesita menos paquetes y nos da contenedores más pequeños:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ docker ps -s
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES               SIZE
+e4fa4f7afb11        alpine:3.8          &quot;/bin/sh&quot;           40 seconds ago      Up 39 seconds                           dig                 5.05MB (virtual 9.47MB)
+9f9a7b248f62        alpine:3.8          &quot;/bin/sh&quot;           43 seconds ago      Up 42 seconds                           drill               1.7MB (virtual 6.12MB)
+gerard@atlantis:~$
+</code></pre>
+
+<p>Así pues, bienvenido <strong>drill</strong> y hasta otra <strong>dig</strong>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

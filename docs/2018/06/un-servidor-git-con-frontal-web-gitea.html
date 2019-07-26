@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un servidor git con frontal web: Gitea - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un servidor git con frontal web: Gitea</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-06-11
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/git.html">git</a> / <a href="/tag/gitea.html">gitea</a> / <a href="/tag/docker.html">docker</a>
+</p>
+
+<p>Los servidores de <strong>git</strong> son muy útiles, pero si solo lo accedemos mediante terminal, se quedan limitados a pocos usuarios avanzados. Sin embargo, las soluciones con interfaz web, como <strong>GitHub</strong> llegan a todo tipo de usuarios. En un intento de abaratar costes, se han hecho varios clones, entre ellos, <strong>Gitea</strong>.</p>
+
+<p>Realmente hay muchos clones, como <strong>Gitlab</strong> o <strong>Gogs</strong>; de hecho, <strong>Gitea</strong> es un clon de <strong>Gogs</strong> hecho en lenguaje <strong>Go</strong>. Y lo que me llama especialmente la atención es la facilidad en que lo pude instalar: se trata simplemente de ejecutar un contenedor <strong>Docker</strong> que, a diferencia de otros, ocupa relativamente poco espacio de disco.</p>
+
+<h2 id="instalación">Instalación</h2>
+
+<p>Lo primero es hacer un <code>docker pull gitea/gitea</code>, que es la forma de traernos la imagen desde su correspondiente <a href="https://hub.docker.com/r/gitea/gitea/">repositorio de <strong>DockerHub</strong></a>. La misma documentación del repositorio indica como debe ejecutarse.</p>
+
+<p>Como punto interesante, <strong>Gitea</strong> utiliza una base de datos para guardar toda aquella información de la página web que no queda reflejada en el propio repositorio. Esta pequeña configuración se indica de forma web, en la primera invocación de la interfaz; las posibilidades son varias: <strong>MySQL</strong>, <strong>MSSQL</strong>, <strong>PostgreSQL</strong> e incluso una base de datos local <strong>SQLite3</strong>.</p>
+
+<p>Es vuestra decisión elegir la que usar, pero por brevedad voy a levantar la instancia de pruebas sin un servidor de base de datos dedicado, confiando en <strong>SQLite3</strong>. Por otra parte, los repositorios se alojan en el sistema de ficheros local; para evitar perderlos en caso de reinicio, lo voy a poner como un volumen local. Os pongo un <em>docker-compose.yml</em> de ejemplo, para simplificar el despliegue:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/tools/gitea$ cat docker-compose.yml 
+version: '2'
+services:
+  gitea:
+    image: gitea/gitea
+    volumes:
+      - ./data:/data
+    ports:
+      - &quot;3000:3000&quot;
+      - &quot;22:22&quot;
+gerard@sirius:~/tools/gitea$ 
+</code></pre>
+
+<p>Evidentemente, la carpeta de datos de <strong>Gitea</strong> debe existir en el servidor, con lo que la he creado en la misma carpeta:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/tools/gitea$ tree
+.
+├── data
+└── docker-compose.yml
+
+1 directory, 1 file
+gerard@sirius:~/tools/gitea$ 
+</code></pre>
+
+<p>Solo nos queda levantar los contenedores usando los comandos habituales de <em>docker-compose</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/tools/gitea$ docker-compose up -d
+Creating network &quot;gitea_default&quot; with the default driver
+Creating gitea_gitea_1
+gerard@sirius:~/tools/gitea$ 
+</code></pre>
+
+<p>Nuestra instancia de <strong>Gitea</strong> queda expuesta en <em>localhost</em>, concretamente el puerto 3000 para la web, y el puerto 22 para la comunicación SSH con la que se lanzan las peticiones de <em>clone</em>, <em>push</em> o <em>pull</em>.</p>
+
+<p>Cabe decir que la primera vez que entremos en la web habrá que configurar algunos detalles; solo recomiendo tocar los de la base de datos y aquellos que son meramente cosméticos, como por ejemplo el título del sitio. Si no rellenáis la parte del administrador, este rol va a recaer en el primer usuario que se registre; aseguraos de ser vosotros.</p>
+
+<p>Os dejo una imagen que vale más que mil palabras.</p>
+
+<p><img src="/images/gitea.jpg" alt="Frontal de Gitea" /></p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

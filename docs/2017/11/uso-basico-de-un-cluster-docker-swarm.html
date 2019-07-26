@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Uso básico de un cluster Docker Swarm - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Uso básico de un cluster Docker Swarm</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-11-06
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/cluster.html">cluster</a> / <a href="/tag/uso.html">uso</a> / <a href="/tag/basico.html">basico</a>
+</p>
+
+<p>Usar un <em>cluster</em> de <strong>docker swarm</strong> no es transparente para nuestro uso; necesitamos cambiar de mentalidad y tener en cuenta algunos conceptos. Donde antes hablábamos de contenedores, aquí se habla de <strong>servicios</strong>, que básicamente son un número variable de contenedores repartidos por los diferentes nodos del <em>cluster</em> de forma balanceada.</p>
+
+<p>Para trabajar con <strong>docker swarm</strong> necesitamos trabajar desde un nodo <em>manager</em>, y no desde los <em>workers</em>. Por ello, el resto de comandos se van a lanzar en <strong>shangrila</strong>, a menos que se diga lo contrario. En este artículo vamos a utilizar el que montamos en <a href="/2017/10/montando-un-cluster-de-docker-con-docker-swarm.html">este otro artículo</a>.</p>
+
+<h2 id="un-servicio-básico">Un servicio básico</h2>
+
+<p>Si queremos crear un servicio, podemos utilizar los subcomandos de <code>docker service</code>. Una vez creado el servicio podemos trabajar con él sin problemas. Veamos una creación de un servicio básico:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service create --replicas 1 --name helloworld alpine ping docker.com
+rl39orkjrie1r1vv0as368s8x
+Since --detach=false was not specified, tasks will be created in the background.
+In a future release, --detach=false will become the default.
+gerard@shangrila:~$
+</code></pre>
+
+<p>Básicamente esto nos indica que queremos crear un servicio llamado <em>helloworld</em>, ejecutando un contenedor <em>alpine</em> y lanzando el comando <code>ping docker.com</code>. El número de replicas inicial lo ponemos, por ejemplo, a 1; podemos escalarlo cuando queramos.</p>
+
+<p>Podemos ver el estado de nuestro servicio con <code>docker service ls</code>:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+rl39orkjrie1        helloworld          replicated          1/1                 alpine:latest
+gerard@shangrila:~$
+</code></pre>
+
+<p>Si necesitamos una información más detallada, podemos hacer un <code>docker service inspect</code>:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service inspect --pretty helloworld
+
+ID:             rl39orkjrie1r1vv0as368s8x
+Name:           helloworld
+Service Mode:   Replicated
+ Replicas:      1
+Placement:
+UpdateConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Update order:      stop-first
+RollbackConfig:
+ Parallelism:   1
+ On failure:    pause
+ Monitoring Period: 5s
+ Max failure ratio: 0
+ Rollback order:    stop-first
+ContainerSpec:
+ Image:         alpine:latest@sha256:f006ecbb824d87947d0b51ab8488634bf69fe4094959d935c0c103f4820a417d
+ Args:          ping docker.com
+Resources:
+Endpoint Mode:  vip
+gerard@shangrila:~$
+</code></pre>
+
+<p>Con <code>docker service ps</code> podemos saber en que nodos se encuentra nuestro servicio desplegado:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service ps helloworld
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE            ERROR               PORTS
+q5xeb2bftqlq        helloworld.1        alpine:latest       eldorado            Running             Running 10 minutes ago
+gerard@shangrila:~$
+</code></pre>
+
+<h2 id="escalando-el-servicio">Escalando el servicio</h2>
+
+<p>En el caso que necesitemos ajustar el número de nodos que ejecutan una copia, podemos escalar. Esto tampoco tiene ninguna complicación:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service scale helloworld=4
+helloworld scaled to 4
+gerard@shangrila:~$
+</code></pre>
+
+<p>Hemos escalado nuestro servicio por encima del número de nodos del <strong>swarm</strong>. En este caso, esto no es un problema; solamante veremos que hay nodos con varios contenedores.</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+rl39orkjrie1        helloworld          replicated          4/4                 alpine:latest
+gerard@shangrila:~$ docker service ps helloworld
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE            ERROR               PORTS
+q5xeb2bftqlq        helloworld.1        alpine:latest       eldorado            Running             Running 12 minutes ago
+6ruk3h9lvzom        helloworld.2        alpine:latest       shangrila           Running             Running 2 seconds ago
+j2xuo9pvfoeu        helloworld.3        alpine:latest       arcadia             Running             Running 2 seconds ago
+t2emtl7m6r3b        helloworld.4        alpine:latest       arcadia             Running             Running 2 seconds ago
+gerard@shangrila:~$
+</code></pre>
+
+<p>Si se cayera un nodo, el mismo <strong>swarm</strong> se encarga de levantar otro contenedor en un nodo vivo para sustituir los fallos posibles de este <em>downtime</em>:</p>
+
+<pre><code class="language-bash">erard@shangrila:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+5p0wbl6rhvs5oo461xsmxhph4     eldorado            Down                Active
+rtmzvsbndn4ox5mhzsgu2xi81 *   shangrila           Ready               Active              Leader
+su20j7s0itgssfcm8x5whz8o8     arcadia             Ready               Active
+gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+rl39orkjrie1        helloworld          replicated          4/4                 alpine:latest
+gerard@shangrila:~$ docker service ps helloworld
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE            ERROR               PORTS
+j26p1q1hgvtt        helloworld.1        alpine:latest       shangrila           Running             Running 5 seconds ago
+q5xeb2bftqlq         \_ helloworld.1    alpine:latest       eldorado            Shutdown            Running 24 seconds ago
+6ruk3h9lvzom        helloworld.2        alpine:latest       shangrila           Running             Running 3 minutes ago
+j2xuo9pvfoeu        helloworld.3        alpine:latest       arcadia             Running             Running 3 minutes ago
+t2emtl7m6r3b        helloworld.4        alpine:latest       arcadia             Running             Running 3 minutes ago
+gerard@shangrila:~$
+</code></pre>
+
+<p>El contenedor <em>helloworld.1</em> debería estar en <strong>eldorado</strong>, pero como lo hemos apagado, se ha creado otro en su sustitución en <strong>shangrila</strong>.</p>
+
+<p>Levantamos de nuevo <strong>eldorado</strong>, y se vuelve al estado original, parando la instáncia de emergencia en <strong>shangrila</strong>:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker node ls
+ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS
+5p0wbl6rhvs5oo461xsmxhph4     eldorado            Ready               Active
+rtmzvsbndn4ox5mhzsgu2xi81 *   shangrila           Ready               Active              Leader
+su20j7s0itgssfcm8x5whz8o8     arcadia             Ready               Active
+gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+rl39orkjrie1        helloworld          replicated          4/4                 alpine:latest
+gerard@shangrila:~$ docker service ps helloworld
+ID                  NAME                IMAGE               NODE                DESIRED STATE       CURRENT STATE             ERROR               PORTS
+j26p1q1hgvtt        helloworld.1        alpine:latest       shangrila           Running             Running 3 minutes ago
+q5xeb2bftqlq         \_ helloworld.1    alpine:latest       eldorado            Shutdown            Shutdown 24 seconds ago
+6ruk3h9lvzom        helloworld.2        alpine:latest       shangrila           Running             Running 7 minutes ago
+j2xuo9pvfoeu        helloworld.3        alpine:latest       arcadia             Running             Running 7 minutes ago
+t2emtl7m6r3b        helloworld.4        alpine:latest       arcadia             Running             Running 7 minutes ago
+gerard@shangrila:~$
+</code></pre>
+
+<p>Ahora, ya podemos eliminar este servicio de test, puesto que no lo vamos a necesitar más.</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service rm helloworld
+helloworld
+gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+gerard@shangrila:~$ docker service ps helloworld
+no such services: helloworld
+gerard@shangrila:~$
+</code></pre>
+
+<h2 id="publicando-servicios">Publicando servicios</h2>
+
+<p>Si deseamos exponer nuestro servicio, necesitamos indicarlo con el <em>flag</em> <code>--publish</code>, exactamente igual que el <em>flag</em> <code>-p</code> en <strong>docker-engine</strong>.</p>
+
+<p>Veamos un ejemplo. Tenemos una imagen <em>sirrtea/myhostname</em> que responde por HTTP en el puerto 8080, indicando el nombre del <em>host</em> (el contenedor) en el que se ejecuta.</p>
+
+<p>Creamos el servicio con 2 replicas, y publicando el puerto 8080 del contenedor en el 8888 de los <em>hosts</em> del <em>cluster</em>:</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker service create --replicas 2 --name myhostname --publish 8888:8080 sirrtea/myhostname
+c0pvrkvf233odc1z9piitf1wa
+Since --detach=false was not specified, tasks will be created in the background.
+In a future release, --detach=false will become the default.
+gerard@shangrila:~$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE                       PORTS
+c0pvrkvf233o        myhostname          replicated          2/2                 sirrtea/myhostname:latest   *:8888-&gt;8080/tcp
+gerard@shangrila:~$ docker service ps myhostname
+ID                  NAME                IMAGE                       NODE                DESIRED STATE       CURRENT STATE           ERROR               PORTS
+xnljno3f285w        myhostname.1        sirrtea/myhostname:latest   shangrila           Running             Running 3 seconds ago
+rivqb4uqqiwl        myhostname.2        sirrtea/myhostname:latest   eldorado            Running             Running 3 seconds ago
+gerard@shangrila:~$
+</code></pre>
+
+<p>De ahora en adelante, podemos acceder a <strong>cualquier nodo</strong> en el puerto 8888 y obtendremos un balanceo de peticiones entre todos los contenedores que conforman el servicio.</p>
+
+<p>Es importante recalcar que, aunque el servicio solo tiene contenedores en <strong>shangrila</strong> y en <strong>eldorado</strong>, también vamos a obtener respuesta del balanceador en <strong>arcadia</strong>.</p>
+
+<p>En el caso de mi <em>cluster</em>, no tengo resolución DNS, así que os resumo las IPs de mi <em>cluster</em>:</p>
+
+<ul>
+<li><strong>shangrila</strong> &rarr; 192.168.56.2</li>
+<li><strong>arcadia</strong> &rarr; 192.168.56.3</li>
+<li><strong>eldorado</strong> &rarr; 192.168.56.4</li>
+</ul>
+
+<pre><code class="language-bash">gerard@shangrila:~$ curl http://192.168.56.2:8888/
+Hello world from &lt;em&gt;9294907313e7&lt;/em&gt;
+gerard@shangrila:~$ curl http://192.168.56.2:8888/
+Hello world from &lt;em&gt;5295009a7737&lt;/em&gt;
+gerard@shangrila:~$ curl http://192.168.56.3:8888/
+Hello world from &lt;em&gt;9294907313e7&lt;/em&gt;
+gerard@shangrila:~$ curl http://192.168.56.3:8888/
+Hello world from &lt;em&gt;5295009a7737&lt;/em&gt;
+gerard@shangrila:~$ curl http://192.168.56.4:8888/
+Hello world from &lt;em&gt;9294907313e7&lt;/em&gt;
+gerard@shangrila:~$ curl http://192.168.56.4:8888/
+Hello world from &lt;em&gt;5295009a7737&lt;/em&gt;
+gerard@shangrila:~$
+</code></pre>
+
+<p>En este caso concreto, el <em>hostname</em> 9294907313e7 es el de la instancia de <strong>shangrila</strong> y el <em>hostname</em> 5295009a7737 corresponde a la intancia de <strong>eldorado</strong>. Esto se puede comprobar fácilmente mirando en los nodos que albergan los contenedores.</p>
+
+<pre><code class="language-bash">gerard@shangrila:~$ docker ps
+CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS               NAMES
+9294907313e7        sirrtea/myhostname:latest   &quot;/usr/bin/gunicorn...&quot;   25 minutes ago      Up 25 minutes                           myhostname.1.xnljno3f285wkfl0xyfmb0xek
+gerard@shangrila:~$ docker inspect myhostname.1.xnljno3f285wkfl0xyfmb0xek | grep Hostname
+        &quot;HostnamePath&quot;: &quot;/var/lib/docker/containers/9294907313e78d46193dabb36eee2b6eb422208675812c77fdef96139cb0e62b/hostname&quot;,
+            &quot;Hostname&quot;: &quot;9294907313e7&quot;,
+gerard@shangrila:~$
+
+gerard@eldorado:~$ docker ps
+CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS               NAMES
+5295009a7737        sirrtea/myhostname:latest   &quot;/usr/bin/gunicorn...&quot;   25 minutes ago      Up 25 minutes                           myhostname.2.rivqb4uqqiwlbla8716foavzy
+gerard@eldorado:~$ docker inspect myhostname.2.rivqb4uqqiwlbla8716foavzy | grep Hostname
+        &quot;HostnamePath&quot;: &quot;/var/lib/docker/containers/5295009a7737ef709260ea984b9c7720d6bd752a40d8305e86c2649c0ab2af10/hostname&quot;,
+            &quot;Hostname&quot;: &quot;5295009a7737&quot;,
+gerard@eldorado:~$
+</code></pre>
+
+<p>La recomendación oficial para tener tener una única IP consiste en poner delante de todos los nodos un balanceador, especialmente uno que pueda descartar nodos parados como puede ser <strong>HAProxy</strong>.</p>
+
+<p>Con eso ganamos balanceo entre todos los nodos del <em>cluster</em> que queden vivos y, en caso de alcanzar alguno, un balanceo entre todas las instancias de un servicio dado.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

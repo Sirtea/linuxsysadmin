@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Evolucionando los contenedores: Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Evolucionando los contenedores: Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-05-23
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/virtualizacion.html">Virtualización</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/contenedor.html">contenedor</a> / <a href="/tag/dockerfile.html">dockerfile</a> / <a href="/tag/jaula.html">jaula</a>
+</p>
+
+<p>Los contenedores tienen su caso de uso y son muy útiles. Sin embargo, ir copiando la imagen es una pérdida de tiempo. Aunque podemos solventar el problema con un sistema de ficheros <em>copy-on-write</em> o un sistema de ficheros tipo <em>union</em>, <strong>Docker</strong> ya nos lo ofrece todo preparado para su uso.</p>
+
+<p><strong>Docker</strong> trabaja con imágenes, que no son otra cosa que jaulas en donde tienen todo lo que necesitan para ejecutar su contenido. Estas imágenes se forman a partir de capas que se muestran como una sola mediante <strong>aufs</strong>. Esto nos permite construir jaulas a partir de otras, ahorrando duplicidad de ficheros en disco y aligerando sus instancias.</p>
+
+<p>Nuestro contenedor no es otra cosa que una capa de cambios (inicialmente vacía) montada encima de la imagen mediante <strong>aufs</strong>. Esta capa se elimina cuando el contenedor se destruye. El coste de crear el contenedor es prácticamente nulo, y no se modifica nunca la imagen base.</p>
+
+<p>La gran diferencia con otras tecnologías, por ejemplo <strong>LXC</strong>, es su filosofía: un contenedor <strong>Docker</strong> ejecuta un solo comando, acabando la ejecución cuando este acaba.</p>
+
+<h2 id="instalación-y-verificación">Instalación y verificación</h2>
+
+<p>La instalación es tan simple como seguir <a href="https://docs.docker.com/linux/step_one/">la documentación</a>. Así lo instalé en mi <em>netbook</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ curl -fsSL https://get.docker.com/ | sh
+...
+gerard@sirius:~$ 
+</code></pre>
+
+<p>Comprobamos su funcionamiento, por ejemplo, levantando una imagen cualquiera.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker run -ti --rm debian echo 'Hello world'
+Unable to find image 'debian:latest' locally
+latest: Pulling from library/debian
+8b87079b7a06: Pull complete 
+a3ed95caeb02: Pull complete 
+Digest: sha256:c8bdce9b6166fcd287c1336f5cd6262971f7f0e98db07c93c23d540a7a19cd96
+Status: Downloaded newer image for debian:latest
+Hello world
+gerard@sirius:~$ 
+</code></pre>
+
+<p>Podemos ver en la salida del comando que no teníamos una imagen local de la imagen <em>debian</em>, con lo que la ha descargado. Podemos ver que ya la tenemos en local, y que si volvemos a lanzar el comando, no se descarga de nuevo.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+debian              latest              bb5d89f9b6cb        4 days ago          125.1 MB
+gerard@sirius:~$ docker run -ti --rm debian echo 'Hello world'
+Hello world
+gerard@sirius:~$ 
+</code></pre>
+
+<h2 id="mejorando-las-imágenes-con-capas">Mejorando las imágenes con capas</h2>
+
+<p>Las imágenes que podemos encontrar en <a href="https://hub.docker.com/">Docker Hub</a> son básicas; por ejemplo vienen sin un servidor <strong>ssh</strong> y sin <strong>python</strong>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker run -ti --rm debian python -V
+docker: Error response from daemon: Container command 'python' not found or does not exist..
+            gerard@sirius:~$ 
+</code></pre>
+
+<p>Normalmente nos va a interesar trabajar con imágenes que ya contengan algunas de nuestras utilidades habituales. Para ello podemos construir una imagen a partir de otra que ya tengamos.</p>
+
+<p>Para ampliar una imagen modificando otra hay dos formas, que se explican a continuación. Para entender los ejemplos, vamos a suponer que ampliamos la imagen <em>debian</em> con el paquete <em>python</em>.</p>
+
+<h3 id="creando-una-imagen-instalando-manualmente-las-diferencias">Creando una imagen instalando manualmente las diferencias</h3>
+
+<p>Para hacer esta, se necesita levantar un contenedor que vamos a modificar. Luego localizamos el identificador del contenedor y le damos un <em>commit</em>.</p>
+
+<p>Empezamos de la imagen base <em>debian</em>, a la que instalamos los paquetes necesarios. En este caso, vamos a poner <em>python</em>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker run -ti --rm debian
+root@23c4caa12410:/# apt-get update
+...
+root@23c4caa12410:/# apt-get install -y python
+...
+root@23c4caa12410:/# 
+</code></pre>
+
+<p>Ahora, y desde otro terminal, buscamos el identificador del contenedor.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+23c4caa12410        debian              &quot;/bin/bash&quot;         4 minutes ago       Up 4 minutes                            backstabbing_poincare
+gerard@sirius:~$ 
+</code></pre>
+
+<p>Teniendo el identificador del contenedor, podemos hacer un <em>commit</em> y podemos ponerle un <em>tag</em> para referencias futuras.</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker commit 23c4caa12410
+sha256:f73b2072ab7404b83749fd098411a1c6392631668363c46fc7203d1a0d39782f
+gerard@sirius:~$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+&lt;none&gt;              &lt;none&gt;              f73b2072ab74        9 seconds ago       167.4 MB
+debian              latest              bb5d89f9b6cb        4 days ago          125.1 MB
+gerard@sirius:~$ docker tag f73b2072ab74 python-debian-manual
+gerard@sirius:~$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED              SIZE
+python-debian-manual   latest              f73b2072ab74        About a minute ago   167.4 MB
+debian                 latest              bb5d89f9b6cb        4 days ago           125.1 MB
+gerard@sirius:~$ 
+</code></pre>
+
+<p>Y comprobamos que funciona como debe:</p>
+
+<pre><code class="language-bash">gerard@sirius:~$ docker run -ti --rm python-debian-manual python -V
+Python 2.7.9
+gerard@sirius:~$ 
+</code></pre>
+
+<h3 id="creando-una-imagen-automáticamente-mediante-dockerfiles">Creando una imagen automáticamente mediante Dockerfiles</h3>
+
+<p>Para este método vamos a usar el comando <strong>docker build</strong> que construye una imagen a partir de un <em>Dockerfile</em>, que le sirve de receta, y construye imágenes a partir de otras.</p>
+
+<p>Supongamos que tenemos el siguiente <em>Dockerfile</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ cat Dockerfile 
+FROM debian
+RUN apt-get update &amp;&amp; \
+    apt-get install -y python
+CMD [&quot;/bin/bash&quot;]
+gerard@sirius:~/build$ 
+</code></pre>
+
+<p>Bastaría crear la imágen en la carpeta actual con el comando mencionado, especificando opcionalmente el <em>tag</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ docker build -t python-debian-auto .
+Sending build context to Docker daemon 2.048 kB
+Step 1 : FROM debian
+ ---&gt; bb5d89f9b6cb
+Step 2 : RUN apt-get update &amp;&amp;     apt-get install -y python
+ ---&gt; Running in 4e975dc297fc
+...  
+ ---&gt; 39025d968357
+Removing intermediate container 4e975dc297fc
+Step 3 : CMD /bin/bash
+ ---&gt; Running in 7331c2d109db
+ ---&gt; e52f43de8b80
+Removing intermediate container 7331c2d109db
+Successfully built e52f43de8b80
+gerard@sirius:~/build$ 
+</code></pre>
+
+<p>Comprobamos que tenemos una imagen nueva y que funciona.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ docker images
+REPOSITORY             TAG                 IMAGE ID            CREATED             SIZE
+python-debian-auto     latest              e52f43de8b80        6 minutes ago       176 MB
+python-debian-manual   latest              f73b2072ab74        22 minutes ago      167.4 MB
+debian                 latest              bb5d89f9b6cb        4 days ago          125.1 MB
+gerard@sirius:~/build$ docker run -ti --rm python-debian-auto python -V
+Python 2.7.9
+gerard@sirius:~/build$ 
+</code></pre>
+
+<h2 id="creando-una-imagen-desde-cero">Creando una imagen desde cero</h2>
+
+<p>Hay veces en las que no queremos usar imágenes de dudoso origen, y queremos hacer una nuestra. En estos casos solo hay que saber que una imagen no es otra cosa que una jaula normal. Podemos hacer esto partiendo de una imagen vacía, pensada para estos casos.</p>
+
+<p>Como ejemplo, vamos a crear una jaula con lo necesario para correr un solo comando: el ejemplo que utilizamos en <a href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">otro artículo</a>.</p>
+
+<p>Vamos a utilizar el método del <em>Dockerfile</em>, añadiendo el binario estático.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ cat Dockerfile 
+FROM scratch
+ADD hello /
+CMD [&quot;/hello&quot;]
+gerard@sirius:~/build$ 
+</code></pre>
+
+<p>Construimos la imagen y vemos que ocupa lo mismo que el binario que le hemos puesto.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ docker build -t saluda .
+Sending build context to Docker daemon 20.34 MB
+Step 1 : FROM scratch
+ ---&gt; 
+Step 2 : ADD hello /
+ ---&gt; 83da41eee33c
+Removing intermediate container 5ea901ba61be
+Step 3 : CMD /hello
+ ---&gt; Running in 54d7512dd61a
+ ---&gt; bf6c560144dd
+Removing intermediate container 54d7512dd61a
+Successfully built bf6c560144dd
+gerard@sirius:~/build$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+saluda              latest              bf6c560144dd        25 seconds ago      5.416 kB
+debian              latest              47af6ca8a14a        3 weeks ago         125.1 MB
+gerard@sirius:~/build$ 
+</code></pre>
+
+<p>Probamos que funciona, como ya viene siendo costumbre:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/build$ docker run --rm -ti saluda
+Hello world!
+gerard@sirius:~/build$ 
+</code></pre>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

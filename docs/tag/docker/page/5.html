@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: docker</h1>
+
+<h2 class="article"><a href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Un entorno web estático con nginx, rsync y docker</a></h2>
+<p>Hemos hablado de generar nuestro contenido HTML estático con otras herramientas, y finalmente ha llegado la hora de servirlo. Normalmente, los ficheros que cambian tal y como vamos generando páginas son pocos y nos interesa copiarlo de forma remota, pero no podemos hacerlo con <strong>docker</strong> porque hacen falta dos servicios.</p>
+<p><a class="article" href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Múltiples servicios en un mismo contenedor Docker</a></h2>
+<p>Como ya sabemos, un contenedor <strong>docker</strong> solo puede ejecutar un proceso, y su finalización implica la parada del contenedor. Sin embargo, a veces nos puede interesar cargar los contenedores con algún servicio más, para hacerlos autosuficientes. Para ello, nos podemos ayudar de un <em>gestor de procesos</em>, como por ejemplo, <strong>runit</strong>.</p>
+<p><a class="article" href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/sincronizando-ficheros-con-owncloud.html">Sincronizando ficheros con ownCloud</a></h2>
+<p>Finalmente ha sucedido: el ingeniero de seguridad de la empresa ha decidido cerrar servicios de sincronizado de ficheros, dejando inútiles servicios como <strong>Dropbox</strong>, <strong>Mega</strong> y otros. Sin embargo, cualquier bloqueo que se haga mediante el dominio hace que sea imposible cerrar todos estos servicios, e incluso podemos poner el nuestro.</p>
+<p><a class="article" href="/2017/02/sincronizando-ficheros-con-owncloud.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/01/un-registro-local-de-docker.html">Un registro local de Docker</a></h2>
+<p>He llegado a ese momento en el que el número de imágenes <strong>docker</strong> que he construido se me ha ido de las manos. Ya no pueden seguir ocupando espacio en mi local, así que me he decidido a montar mi propio registro de imágenes, para mi uso y disfrute privado.</p>
+<p><a class="article" href="/2017/01/un-registro-local-de-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/11/visualizando-graficamente-el-estado-de-nuestro-servidor-con-telegraf-influxdb-y-chronograf.html">Visualizando gráficamente el estado de nuestro servidor con Telegraf, InfluxDB y Chronograf</a></h2>
+<p>No hay nada mas visualmente atractivo que ver nuestros servidores en tiempo real mediante gráficos temporales, y existen algunas buenas herramientas ya hechas. Necesitaremos un agente que recolecte los datos del servidor y los envíe a una base de datos temporales, para que se pueden dibujar en una página web.</p>
+<p><a class="article" href="/2016/11/visualizando-graficamente-el-estado-de-nuestro-servidor-con-telegraf-influxdb-y-chronograf.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/microservicios-con-docker-compose.html">Microservicios con docker-compose</a></h2>
+<p><strong>Docker</strong> es una gran herramienta para levantar contenedores aislados, pero en el mundo real nos encontramos con despliegues mas complejos, que requieren varias imágenes trabajando en conjunto. En este caso, levantar los contenedores puede ser una auténtica pesadilla. Para automatizar estos casos podemos utilizar un <em>orquestador</em>, como por ejemplo, <strong>docker-compose</strong>.</p>
+<p><a class="article" href="/2016/10/microservicios-con-docker-compose.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/separando-el-build-y-el-runtime-con-contenedores-docker.html">Separando el build y el runtime con contenedores Docker</a></h2>
+<p>Cuando montamos un contenedor <strong>Docker</strong> para servir una aplicación cualquiera, solemos poner un montón de dependencias necesarias solamente para compilar el paquete o para empaquetar sus librerías. Esto supone un gasto innecesario en espacio y en tiempo de ejecución; usando contenedores desechables podemos agilizar este proceso de forma altamente considerable.</p>
+<p><a class="article" href="/2016/10/separando-el-build-y-el-runtime-con-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Lanzando playbooks de Ansible desde Jenkins</a></h2>
+<p>Somos muchos los amantes del terminal para ejecutar nuestras tareas, sea con <strong>Ansible</strong> o con otras herramientas. A veces nos puede convenir dotar la herramienta de un entorno gráfico o web para que lo hagan otras personas. Aunque ya existe como producto <strong>Ansible Tower</strong>, su precio es prohibitivo para muchos.</p>
+<p><a class="article" href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/imagenes-docker-reusables-mediante-configuraciones-dinamicas.html">Imágenes docker reusables mediante configuraciones dinámicas</a></h2>
+<p>Muchos de los servicios que necesitamos son siempre los mismos, cambiando solamente algunos parámetros. Incluso los mismos servicios pueden sufrir variaciones en su configuración, por ejemplo, un balanceador al que se añaden o quitan <em>hosts</em>. Siguiendo las prácticas de <a href="http://12factor.net/es/">12factor</a> podemos ahorrar trabajo, mediante el uso de variables de entorno.</p>
+<p><a class="article" href="/2016/09/imagenes-docker-reusables-mediante-configuraciones-dinamicas.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/07/tipos-de-volumenes-en-docker.html">Tipos de volúmenes en Docker</a></h2>
+<p>Una de las mas importantes funcionalidades de <strong>Docker</strong> son los volúmenes. Estos no son mas que carpetas en nuestro sistema de ficheros y son capaces de sobrevivir al ciclo de vida normal del contenedor. Eso nos permite, entre otras cosas, compartir varios ficheros con otros contenedores o con el <em>host</em>.</p>
+<p><a class="article" href="/2016/07/tipos-de-volumenes-en-docker.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/docker.html">&laquo;&laquo;</a>
+	<a href="/tag/docker/page/4.html">&laquo;</a>
+	<a href="/tag/docker.html">1</a>
+	<a href="/tag/docker/page/2.html">2</a>
+	<a href="/tag/docker/page/3.html">3</a>
+	<a href="/tag/docker/page/4.html">4</a>
+	<a class="active" href="/tag/docker/page/5.html">5</a>
+	<a href="/tag/docker/page/6.html">6</a>
+	<a href="/tag/docker/page/6.html">&raquo;</a>
+	<a href="/tag/docker/page/6.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un gateway con Debian, iptables y dnsmasq - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un gateway con Debian, iptables y dnsmasq</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-03-12
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/stretch.html">stretch</a> / <a href="/tag/gateway.html">gateway</a> / <a href="/tag/iptables.html">iptables</a> / <a href="/tag/dnsmasq.html">dnsmasq</a>
+</p>
+
+<p>En algunas ocasiones no nos basta con tener un servidor único. Queremos tener un conjunto de servidores que se comuniquen abiertamente entre ellos usando una red privada, pero solo queremos exponer al mundo una sola dirección IP. El resto de servidores necesitan acceso a internet a través de un representante.</p>
+
+<p>Este representante, llamando <em>gateway</em>, es un servidor con una interfaz en la red privada y una en la red pública, de forma que los paquetes de red puedan fluir desde cualquier servidor hasta internet a través de este representante.</p>
+
+<p>De forma obligatoria, un <em>gateway</em> solo necesita hacer dos cosas:</p>
+
+<ul>
+<li>Permitir el reenvío (o <em>forward</em>) de paquetes a través del servidor <em>gateway</em>.</li>
+<li>Enmascarar la dirección de origen mediante NAT para que los paquetes sepan como volver desde internet.</li>
+</ul>
+
+<p>Idealmente, suelen hacer otras funciones y ofrecer servicios a sus servidores protegidos, como por ejemplo:</p>
+
+<ul>
+<li>Funciones de <em>firewall</em> para proteger de accesos no autorizados contra la red protegida.</li>
+<li>Servidor DHCP para asignar direcciones IP a los servidores de la red interna.</li>
+<li>Servidor DNS para que los servidores de la red interna se conozcan entre ellos.</li>
+</ul>
+
+<p>Las 3 primeras funciones quedan fácilmente cubiertas en el mismo <em>kernel</em> de un sistema <em>linux</em>; los servidores DHCP y DNS se pueden añadir fácilmente con un servicio adicional llamado <strong>dnsmasq</strong>.</p>
+
+<h2 id="el-servidor-base">El servidor base</h2>
+
+<p>Partimos de un servidor <strong>Debian stretch</strong> con dos direcciones asignadas, una en cada red.</p>
+
+<ul>
+<li><strong>enp0s3</strong>: La interfaz que da al exterior, configurada como nos sea conveniente.</li>
+<li><strong>enp0s8</strong>: Esta es la interfaz que da a la red interna, con una dirección IP estática (en este caso 10.0.0.<sup>1</sup>&frasl;<sub>24</sub>).</li>
+</ul>
+
+<p><strong>NOTA</strong>: Vamos a retrasar la aplicación de todas las configuraciones hasta el final, momento en el que reiniciaremos el servidor.</p>
+
+<h2 id="las-funciones-básicas-forward-masquerade-y-firewall">Las funciones básicas: forward, masquerade y firewall</h2>
+
+<p>El primer paso es permitir el paso de paquetes de red a través de nuestro <em>gateway</em>. Ello se consigue configurando los parámetros del sistema.</p>
+
+<pre><code class="language-bash">root@gateway:~# tail -1 /etc/sysctl.conf
+net.ipv4.ip_forward = 1
+root@gateway:~#
+</code></pre>
+
+<p>El resto se consigue mediante el módulo del <em>kernel</em> llamado <em>netfilter</em>. La herramienta que modifican <em>netfilter</em> se llama <strong>iptables</strong>, y por comodidad, vamos a utilizar el paquete <strong>iptables-persistent</strong>.</p>
+
+<pre><code class="language-bash">root@gateway:~# apt-get install iptables-persistent
+...
+root@gateway:~#
+</code></pre>
+
+<p>Ahora nos falta crear el fichero de reglas que será cargado en cada reinicio:</p>
+
+<pre><code class="language-bash">root@gateway:~# cat /etc/iptables/rules.v4
+*nat
+-A POSTROUTING -o enp0s3 -j MASQUERADE
+COMMIT
+
+*filter
+-A INPUT -i lo -j ACCEPT
+-A INPUT -i enp0s3 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -i enp0s3 -j DROP
+COMMIT
+root@gateway:~#
+</code></pre>
+
+<p>La regla de la tabla <em>nat</em> es la que enmascara la dirección origen y pone la de salida del <em>gateway</em>, para que los paquetes sepan volver.</p>
+
+<p>El resto de reglas en la tabla de <em>filter</em> hacen la función de un <em>firewall</em> básico, que acepta conexiones que vengan del mismo servidor, las conexiones SSH, las conexiones que ya estén establecidas o estén pasando a través y descarta todo el resto.</p>
+
+<p><strong>NOTA</strong>: Ahora solo haría falta reiniciar el servidor, pero lo retrasamos para instalar el resto de servicios.</p>
+
+<h2 id="algunos-servicios-útiles-dhcp-y-dns">Algunos servicios útiles: DHCP y DNS</h2>
+
+<p>Todos los servicios que queramos ofrecer en la red interna se hacen igual: instalar el paquete que lo proporciona y configurarlo. En este caso, el paquete <strong>dnsmasq</strong> ofrece ambos servicios.</p>
+
+<pre><code class="language-bash">root@gateway:~# apt-get install dnsmasq
+...
+root@gateway:~#
+</code></pre>
+
+<p>La configuración del servicio se hace en el fichero <em>/etc/dnsmasq.conf</em>. Sin embargo es un fichero muy largo; vamos a beneficiarnos de la carpeta <em>/etc/dnsmasq.d/</em> para añadir nuestras configuraciones. Lo hago en dos ficheros, de forma que tengamos la configuración organizada en dos ficheros, en función de la frecuencia de modificación.</p>
+
+<pre><code class="language-bash">root@gateway:~# cat /etc/dnsmasq.d/00-base
+interface=enp0s8
+dhcp-range=10.0.0.200,10.0.0.250,1h
+root@gateway:~# cat /etc/dnsmasq.d/01-hosts
+#dhcp-host=server,10.0.0.2,1h
+root@gateway:~#
+</code></pre>
+
+<p>De esta forma, cuando queramos añadir un nuevo servidor en la red interna con dirección fija, podemos configurarlo para usar DHCP, poner una nueva línea en el fichero <em>/etc/dnsmasq.d/01-hosts</em> similar a la de comentada de arriba, y reinicar el servicio <strong>dnsmasq</strong>.</p>
+
+<p>Como <em>bonus</em>, el servidor <em>gateway</em> va a poder resolver por DNS el nombre declarado por el servidor protegido, al que ya dio dirección por DHCP. Para que los servidores de la red interna puedan resolver por nombre la máquina <em>gateway</em>, solo necesitamos añadir esa relación en el fichero <em>/etc/hosts</em> del <em>gateway</em>:</p>
+
+<pre><code class="language-bash">root@gateway:~# grep gateway /etc/hosts
+10.0.0.1        gateway
+root@gateway:~#
+</code></pre>
+
+<p>Es importante que nuestro servidor <em>gateway</em> utilice <em>localhost</em> como primer DNS, de forma que se beneficie de las funciones <em>DNS cache</em> y pueda resolver los servidores de la red interna por su nombre. Esto se hace poniendo <em>127.0.0.1</em> en el fichero <em>/etc/resolv.conf</em>.</p>
+
+<p><strong>TRUCO</strong>: Como configuré la interfaz principal por DHCP y el fichero <em>/etc/resolv.conf</em> se sobreescribe de forma automática, podemos instruir el cliente DHCP para que lo incluya antes de los que reciba por DHCP.</p>
+
+<pre><code class="language-bash">root@gateway:~# tail -1 /etc/dhcp/dhclient.conf
+prepend domain-name-servers 127.0.0.1;
+root@gateway:~#
+</code></pre>
+
+<h2 id="aplicar-los-cambios">Aplicar los cambios</h2>
+
+<p>En este punto podemos reiniciar el servidor, para que apliquen todos los cambios.</p>
+
+<pre><code class="language-bash">root@gateway:~# reboot
+...
+</code></pre>
+
+<h2 id="añadir-un-servidor-en-la-red-interna">Añadir un servidor en la red interna</h2>
+
+<p>Un servidor que se quiera unir a la red puede hacerlo con una dirección estática, pero es mas fácil hacerlo por DHCP; basta con tenerlo configurado para usar DHCP.</p>
+
+<p><strong>TRUCO</strong>: Si clonamos una máquina virtual, es necesario asegurarse que la dirección MAC de la interfaz cambia, ya que la relación entre el servidor y su IP se guarda usando la dirección MAC, y por lo tanto, no deben haber dos iguales.</p>
+
+<p><strong>TRUCO</strong>: Podemos eliminar la relación <em>localhost</em> del servidor con su nombre en <em>/etc/hosts</em>; <strong>dnsmasq</strong> resuelve eso por nosotros y para otros servidores de la red.</p>
+
+<p>Si queremos que tenga una dirección fija, se puede hacer fácilmente. Necesitamos configurar el servidor DHCP para que asigne una IP concreta basándonos en el nombre del servidor, y recargar este servicio.</p>
+
+<pre><code class="language-bash">root@gateway:~# cat /etc/dnsmasq.d/01-hosts
+dhcp-host=database,10.0.0.5,1h
+root@gateway:~# service dnsmasq restart
+root@gateway:~#
+</code></pre>
+
+<p>Solo faltará darle un nombre al servidor candidato en en <em>/etc/hostname</em> y reiniciarlo. Tanto la dirección IP, el <em>gateway</em> por defecto y el servidor DNS se cargan en la resolución DHCP.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

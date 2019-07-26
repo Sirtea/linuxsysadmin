@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>jaula - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: jaula</h1>
+
+<h2 class="article"><a href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Restringiendo los comandos ejecutables con SSH y un par de claves</a></h2>
+<p>Una petición muy habitual que recibo es la de algún usuario que quiere ejecutar &ldquo;algo&rdquo; en un servidor. Como no puede ser de otra manera dadas las restricciones de seguridad de la compañía, solo le puedo dar acceso por SSH; pero poner una jaula para restringir sus acciones es tedioso.</p>
+<p><a class="article" href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/08/cambiando-la-posicion-del-fichero-authorized-keys.html">Cambiando la posición del fichero authorized_keys</a></h2>
+<p>Un requerimiento de seguridad estándar en mi trabajo, es que los servidores SFTP no permitan la autenticación con <em>passwords</em> normales, y estamos obligados a usar autenticación por claves. El otro día tuvimos una queja de un usuario que no podía entrar porque había eliminado su carpeta <code>.ssh</code> de forma consciente.</p>
+<p><a class="article" href="/2018/08/cambiando-la-posicion-del-fichero-authorized-keys.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/05/una-jaula-ssh-con-git-shell.html">Una jaula SSH con git-shell</a></h2>
+<p>El otro día recibí una petición en el trabajo por parte de un cliente: poder ejecutar algunas operaciones por SSH en nuestro servidor. Solo de pensar en montar una jaula SSH con los binarios y sus librerías ya se me hizo cuesta arriba, y por eso lo hice con <strong>git-shell</strong>.</p>
+<p><a class="article" href="/2018/05/una-jaula-ssh-con-git-shell.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Crear jaulas de forma fácil basadas en Debian y Ubuntu con debootstrap</a></h2>
+<p>Cuando creamos jaulas nos enfrentamos siempre al mismo dilema: usar una imagen de dudoso origen o perder nuestro tiempo investigando y buscando librerías que falten. Sin embargo, hay una forma mejor, que es descargar un sistema básico con herramientas oficiales que nos van a dar hasta un gestor de paquetes.</p>
+<p><a class="article" href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/evolucionando-los-contenedores-docker.html">Evolucionando los contenedores: Docker</a></h2>
+<p>Los contenedores tienen su caso de uso y son muy útiles. Sin embargo, ir copiando la imagen es una pérdida de tiempo. Aunque podemos solventar el problema con un sistema de ficheros <em>copy-on-write</em> o un sistema de ficheros tipo <em>union</em>, <strong>Docker</strong> ya nos lo ofrece todo preparado para su uso.</p>
+<p><a class="article" href="/2016/05/evolucionando-los-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Reduciendo el tamaño de nuestros binarios con musl libc</a></h2>
+<p>Cuando construimos jaulas, por el motivo que sea, vemos que no quedan pequeñas. El problema es el conjunto de librerías que hay que poner en el caso de los binarios <em>dinámicos</em>, o el exceso de tamaño en el caso de los <em>estáticos</em>. Cambiando la librería base, podemos reducir su tamaño.</p>
+<p><a class="article" href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/creando-una-jaula-centos.html">Creando una jaula CentOS</a></h2>
+<p>Algunas veces nos puede interesar levantar procesos o demonios en entornos controlados, por ejemplo en una jaula, o para crear un contenedor. Otras veces, por comodidad o conocimiento, nos puede interesar cambiar la distribución, por ejemplo, servicios <em>CentOS</em> en un servidor <em>Ubuntu</em>. Hoy vamos a construir una jaula con <em>CentOS</em>.</p>
+<p><a class="article" href="/2016/01/creando-una-jaula-centos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/enjaulado-de-usuarios-para-uso-de-rsync.html">Enjaulado de usuarios para uso de rsync</a></h2>
+<p>Todos nos hemos encontrado alguna vez con una web, sea en <em>HTML</em> o en <em>PHP</em>, que se compone de centenares o miles de ficheros, y que hay que ir actualizando cada vez que cambian unos pocos ficheros. En estos casos la capacidad incremental de la herramienta <strong>rsync</strong> puede ayudarnos mucho.</p>
+<p><a class="article" href="/2016/01/enjaulado-de-usuarios-para-uso-de-rsync.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/jaula.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Creando un entorno escalable (IV) - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Creando un entorno escalable (IV)</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-03-21
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/proxy-http.html">proxy http</a> / <a href="/tag/balanceador.html">balanceador</a> / <a href="/tag/ssl.html">ssl</a> / <a href="/tag/nginx.html">nginx</a> / <a href="/tag/virtual-hosts.html">virtual hosts</a> / <a href="/tag/port-forwarding.html">port forwarding</a>
+</p>
+
+<p>Acabamos el artículo anterior de esta serie con las aplicaciones corriendo en sus respectivas máquinas. En este artículo vamos a poner una fachada a todo el sistema, mediante un <em>proxy HTTP</em> que haga las funciones de terminación <em>SSL</em> y de <em>balanceador</em>, exponiendo todo el sistema en una sola dirección IP.</p>
+
+<p>Como <em>proxy HTTP</em> tenemos varias opciones; solo se necesita un servidor web que soporte <em>virtual hosts</em>, protocolo HTTP sobre SSL, capacidad de hacer de <em>proxy</em> y capacidad para balancear las peticiones entre varias opciones.</p>
+
+<p>Si analizamos estos requisitos, podemos comprobar que las opciones son muchas; desde el todopoderoso <strong>apache</strong> al <strong>nginx</strong>, pasando por soluciones de balanceador puro como <strong>haproxy</strong>, u opciones mas esotéricas como <strong>squid</strong>. En este caso, se utiliza <strong>nginx</strong> por su facilidad de uso y su bajo consumo de recursos. Cumple con el subconjunto básico de funcionalidades necesario, pero no dispone de tantos algoritmos de balanceo como otras opciones.</p>
+
+<h2 id="instalación-de-paquetes">Instalación de paquetes</h2>
+
+<p>Empezamos instalando los requisitos para nuestra fachada; en principio solo se necesitaría el servidor web <strong>nginx</strong> (en la versión mínima) y <strong>openssl</strong> para generar los certificados. Adicionalmente instalaremos <strong>curl</strong> para comprobar que el resultado es correcto.</p>
+
+<pre><code class="language-bash">root@frontend:~# apt-get install nginx-light curl
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes extras:
+  ca-certificates libcurl3 libffi6 libgmp10 libgnutls-deb0-28 libhogweed2 libidn11 libldap-2.4-2 libnettle4 libp11-kit0 librtmp1
+  libsasl2-2 libsasl2-modules libsasl2-modules-db libssh2-1 libtasn1-6 nginx-common openssl
+Paquetes sugeridos:
+  gnutls-bin libsasl2-modules-otp libsasl2-modules-ldap libsasl2-modules-sql libsasl2-modules-gssapi-mit
+  libsasl2-modules-gssapi-heimdal fcgiwrap nginx-doc ssl-cert
+Se instalarán los siguientes paquetes NUEVOS:
+  ca-certificates curl libcurl3 libffi6 libgmp10 libgnutls-deb0-28 libhogweed2 libidn11 libldap-2.4-2 libnettle4 libp11-kit0
+  librtmp1 libsasl2-2 libsasl2-modules libsasl2-modules-db libssh2-1 libtasn1-6 nginx-common nginx-light openssl
+0 actualizados, 20 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 4.077 kB de archivos.
+Se utilizarán 8.832 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+root@frontend:~#
+</code></pre>
+
+<p>El paquete <strong>nginx</strong> de la distribución <em>Debian</em> viene con una configuración por defecto en <em>/etc/nginx/sites-enabled/</em>, que vamos a eliminar para evitar que se pise con nuestras configuraciones.</p>
+
+<pre><code class="language-bash">root@frontend:~# ls -lh /etc/nginx/sites-enabled/
+total 0
+lrwxrwxrwx 1 root root 34 feb 26 11:28 default -&gt; /etc/nginx/sites-available/default
+root@frontend:~# unlink /etc/nginx/sites-enabled/default
+root@frontend:~#
+</code></pre>
+
+<h2 id="consideraciones-de-seguridad">Consideraciones de seguridad</h2>
+
+<p>Cuando nuestro servidor web recibe una petición, va a iniciar una nueva conexión contra el servidor de <em>backend</em> que toque o el de <em>backoffice</em>. Para habilitar esto, se necesitan nuevas reglas en el <em>firewall</em>, que en este caso es <strong>firehol</strong>, instalado en la máquina anfitriona.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf
+...  
+app_servers=&quot;10.0.0.3 10.0.0.4 10.0.0.5&quot;
+frontend_server=&quot;10.0.0.2&quot;
+...
+router internal inface lxc0 outface lxc0
+...  
+    route webcache accept src &quot;$frontend_server&quot; dst &quot;$app_servers&quot;
+root@lxc:~#
+</code></pre>
+
+<p>No os olvidéis de reiniciar <strong>firehol</strong>, para que se apliquen las nuevas reglas.</p>
+
+<pre><code class="language-bash">root@lxc:~# service firehol restart
+...  
+root@lxc:~#
+</code></pre>
+
+<h2 id="montando-los-virtualhosts-de-ambas-aplicaciones">Montando los virtualhosts de ambas aplicaciones</h2>
+
+<p>La parte privada va a estar escondida tras una terminación <strong>HTTPS</strong>. Esa aplicación se podría esconder tras una <a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">autenticación de certificados cliente</a> o mediante <a href="/2016/02/restringiendo-accesos-web-mediante-autenticacion-basica.html">autenticación básica</a>. Por simplicidad vamos a usar esta última.</p>
+
+<p>Empezamos generando un certificado autofirmado para el servidor web, directamente firmado, y su clave. Fijaos que no generamos ningún certificado de CA, ya que no tenemos ninguna intención de generar autenticación cliente en el futuro.</p>
+
+<pre><code class="language-bash">root@frontend:~# openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout server.key -out server.crt -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=shop.linuxsysadmin.tk&quot;
+Generating a 2048 bit RSA private key
+.......................................+++
+.................................................................................................................................................................+++
+writing new private key to 'server.key'
+-----
+root@frontend:~#
+</code></pre>
+
+<p>Ponemos la clave y el certificado generado en sus respectivas localizaciones, de acuerdo a los estándares.</p>
+
+<pre><code class="language-bash">root@frontend:~# cp server.key /etc/ssl/private/
+root@frontend:~# cp server.crt /etc/ssl/certs/
+root@frontend:~#
+</code></pre>
+
+<p>Como verificación, así quedaría la carpeta <em>/etc/ssl/</em>:</p>
+
+<pre><code class="language-bash">root@frontend:~# tree /etc/ssl/
+/etc/ssl/
+├── certs
+│   └── server.crt
+├── openssl.cnf
+└── private
+    └── server.key
+
+2 directories, 3 files
+root@frontend:~#
+</code></pre>
+
+<p>Para poder autenticar mediante autenticación básica, generamos un usuario en un fichero tipo <strong>htpasswd</strong>.</p>
+
+<pre><code class="language-bash">root@frontend:~# echo &quot;admin:$(openssl passwd -crypt s3cr3t)&quot; &gt; /etc/nginx/shop.basic_auth
+root@frontend:~# cat /etc/nginx/shop.basic_auth
+admin:rOU9H0ABEB2H6
+root@frontend:~#
+</code></pre>
+
+<p>Y con todas las piezas listas, montamos los virtualhosts, en un fichero de configuración o en varios, según nos apetezca.</p>
+
+<pre><code class="language-bash">root@frontend:~# cat /etc/nginx/sites-enabled/shop
+upstream backends {
+        server backend1:8080;
+        server backend2:8080;
+}
+
+server {
+        listen 80 default_server;
+        server_name _;
+
+        location / {
+                proxy_pass http://backends;
+        }
+}
+
+server {
+        listen 443 ssl;
+        server_name _;
+
+        ssl_certificate /etc/ssl/certs/server.crt;
+        ssl_certificate_key /etc/ssl/private/server.key;
+
+        auth_basic &quot;Admin Area&quot;;
+        auth_basic_user_file /etc/nginx/shop.basic_auth;
+
+        location / {
+                proxy_pass http://backoffice:8080;
+        }
+}
+root@frontend:~#
+</code></pre>
+
+<p>La configuración es bastante estándar; se trata de un <em>server</em> (equivalente en <strong>nginx</strong> a un <em>virtualhost</em> de <strong>apache</strong>) para cada protocolo. La parte de administración es solamente la mediación <strong>SSL</strong> y un <em>proxy_pass</em> hacia el <em>backoffice</em>. La parte de la API pública también se limita a hacer un <em>proxy_pass</em>, solo que se hace contra <em>backends</em> que es un objeto <strong>upstream</strong>, que es el que define el balanceador.</p>
+
+<p>Ahora solo queda reiniciar el servidor web para aplicar los cambios. De acuerdo a la documentación, habría bastado un <em>reload</em>.</p>
+
+<pre><code class="language-bash">root@frontend:~# service nginx restart
+root@frontend:~#
+</code></pre>
+
+<h2 id="comprobando-que-las-aplicaciones-funcionan">Comprobando que las aplicaciones funcionan</h2>
+
+<p>Para comprobar que la parte de la API funciona y balancea adecuadamente, basta con hacer peticiones. Podemos comprobar el <em>backend</em> que la ha servido porque la aplicación pone una cabecera que especifica el nombre del <em>host</em> que la resolvió. Con dos peticiones veremos que va alternativamente a cada <em>backend</em>.</p>
+
+<pre><code class="language-bash">root@frontend:~# curl -i http://localhost/products/
+HTTP/1.1 200 OK
+Server: nginx/1.6.2
+Date: Fri, 26 Feb 2016 11:04:38 GMT
+Content-Type: application/json
+Content-Length: 3
+Connection: keep-alive
+Backend: backend1
+
+[]
+root@frontend:~# curl -i http://localhost/products/
+HTTP/1.1 200 OK
+Server: nginx/1.6.2
+Date: Fri, 26 Feb 2016 11:04:40 GMT
+Content-Type: application/json
+Content-Length: 3
+Connection: keep-alive
+Backend: backend2
+
+[]
+root@frontend:~#
+</code></pre>
+
+<p>Para la parte privada, haremos la petición, de la misma manera; vamos a añadir el flag <em>-k</em> para sobrepasar el certificado autofirmado. Como no hemos indicado el usuario y la contraseña, nos devuelve un error 401, que indica que no estamos autorizados a pasar mas allá.</p>
+
+<pre><code class="language-bash">root@frontend:~# curl -i -k https://localhost/products
+HTTP/1.1 401 Unauthorized
+Server: nginx/1.6.2
+Date: Fri, 26 Feb 2016 11:05:35 GMT
+Content-Type: text/html
+Content-Length: 194
+Connection: keep-alive
+WWW-Authenticate: Basic realm=&quot;Admin Area&quot;
+
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;401 Authorization Required&lt;/title&gt;&lt;/head&gt;
+&lt;body bgcolor=&quot;white&quot;&gt;
+&lt;center&gt;&lt;h1&gt;401 Authorization Required&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;nginx/1.6.2&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+root@frontend:~#
+</code></pre>
+
+<p>Y con esto parece que funciona, a falta de probar con un navegador adecuado.</p>
+
+<h2 id="un-pequeño-detalle-abrimos-los-puertos">Un pequeño detalle: abrimos los puertos</h2>
+
+<p>Puesto que este entorno está montado sobre virtualización <strong>LXC</strong>, necesitamos que la dirección IP de la maquina anfitriona exponga los puertos de la máquina <em>frontend</em>. Para ello hay que habilitar un mecanismo que se llama <em>port forwarding</em>, coloquialmente conocido como &ldquo;abrir el puerto&rdquo;.</p>
+
+<p>Mediante una directiva de <strong>firehol</strong> indicamos que pasaremos todas las peticiones recibidas a los puertos 80 y 443 directamente a la máquina de <em>frontend</em>. Hay que habilitar ese tráfico de <strong>FORWARD</strong>, mediante otras reglas.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf
+...
+frontend_server=&quot;10.0.0.2&quot;
+...
+dnat to &quot;$frontend_server&quot; proto tcp dport 80
+dnat to &quot;$frontend_server&quot; proto tcp dport 443
+...
+router world2lan inface eth0 outface lxc0
+    route http accept dst &quot;$frontend_server&quot;
+    route https accept dst &quot;$frontend_server&quot;
+...
+root@lxc:~#
+</code></pre>
+
+<p>Y nuevamente reiniciamos el servicio para aplicar las nuevas reglas.</p>
+
+<pre><code class="language-bash">root@lxc:~# service firehol restart
+...
+root@lxc:~#
+</code></pre>
+
+<h2 id="accediendo-a-las-aplicaciones-en-la-ip-pública">Accediendo a las aplicaciones en la IP pública</h2>
+
+<p>Vamos a acceder con un navegador a la parte de administración, para ver que funciona y para rellenar algunos datos, para que se vea una respuesta de la API con fundamento.</p>
+
+<p>El primer paso consiste en abrir el navegador con la URL adecuada, y nos tropezamos con la autenticación.</p>
+
+<p><img src="/images/entorno-escalable-auth-basic.jpg" alt="Auth basic" /></p>
+
+<p>Tras pasar la autenticación podemos acceder a los formularios para añadir productos.</p>
+
+<p><img src="/images/entorno-escalable-admin-form.jpg" alt="Admin form" /></p>
+
+<p>Tras añadir tres productos, vemos que ya se genera la lista, en formato web.</p>
+
+<p><img src="/images/entorno-escalable-admin-list.jpg" alt="Admin list" /></p>
+
+<p>Con los datos introducidos podemos consumir la API, para comprobar que los datos que hemos introducido en la base de datos (mediante la aplicación de administración) están disponibles.</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ wget -qO- http://192.168.1.232/products/
+[
+    {
+        &quot;price&quot;: 1.5, 
+        &quot;_id&quot;: &quot;123&quot;, 
+        &quot;description&quot;: &quot;Apples&quot;
+    }, 
+    {
+        &quot;price&quot;: 1.0, 
+        &quot;_id&quot;: &quot;456&quot;, 
+        &quot;description&quot;: &quot;Oranges&quot;
+    }, 
+    {
+        &quot;price&quot;: 2.0, 
+        &quot;_id&quot;: &quot;789&quot;, 
+        &quot;description&quot;: &quot;Pears&quot;
+    }
+]
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Y consultando un producto concreto, también funciona como debe.</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ wget -qO- http://192.168.1.232/products/456
+{
+    &quot;price&quot;: 1.0, 
+    &quot;_id&quot;: &quot;456&quot;, 
+    &quot;description&quot;: &quot;Oranges&quot;
+}
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Y con esto comprobamos que todo queda en su sitio. Solo hará falta limpiar cualquier desecho que hayamos dejado en <em>/root/</em>.</p>
+
+<p><strong><em>Y con este artículo cerramos la serie.</em></strong></p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

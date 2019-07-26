@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Logs en formato JSON en Nginx - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Logs en formato JSON en Nginx</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-06-06
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/logs.html">logs</a> / <a href="/tag/nginx.html">nginx</a> / <a href="/tag/logstash.html">logstash</a>
+</p>
+
+<p>Vimos en un artículo anterior como trabajar con herramientas para agregar los <em>logs</em> en un mismo servidor, para su consulta. Algunos formatos de <em>logs</em> necesitan complejas formas de <em>parseado</em> para que puedan servir de base para nuestra consulta, y en el caso de <strong>logstash</strong> nos conviene un formato <strong>JSON</strong> válido.</p>
+
+<p>Hay muchos servicios con complejos formatos de <em>log</em>, pero suelen tener formas para cambiarlos y ahorrarnos así una tediosa expresión regular al configurar <strong>logstash</strong>. Este es el caso de <strong>nginx</strong>.</p>
+
+<pre><code class="language-bash">172.17.0.1 - - [10/Mar/2017:10:26:59 +0000] &quot;GET / HTTP/1.1&quot; 200 1966 &quot;-&quot; &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot;
+172.17.0.1 - - [10/Mar/2017:10:26:59 +0000] &quot;GET /favicon.ico HTTP/1.1&quot; 404 571 &quot;http://172.17.0.2/&quot; &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot;
+</code></pre>
+
+<p>Solo por echar un vistazo en internet, vemos que hay varias opciones, siendo la que más me gusta <a href="https://github.com/jiaz/nginx-http-json-log">esta opción</a>. Sin embargo es un módulo de terceros y no suele venir compilado en ninguna distribución conocida.</p>
+
+<p>Como no es plan ponerse a compilar, podemos encontrar una solución más fácil en <a href="http://nginx.org/en/docs/http/ngx_http_log_module.html">la documentación de nginx</a>, que aunque no es la más correcta, nos sirve para salir del paso.</p>
+
+<p>Se trata de crear un formato de <em>log</em> personalizado, que podemos utilizar en todos nuestros sitios, y que <strong>logstash</strong> sabe <em>parsear</em> de serie.</p>
+
+<p>Para ello vamos a modificar nuestra configuración para crear un nuevo formato de <em>log</em> llamado <em>logstash_json</em>, que debe ir obligatoriamente dentro del bloque <em>http</em> (directiva <em>log_format</em>). Luego podemos utilizar ese formato en cualquier bloque <em>http</em>, <em>server</em> o <em>location</em> que nos convenga (directiva <em>access_log</em>).</p>
+
+<p>A nivel de ejemplo, os pongo a continuación una configuración muy simple, con ambas directivas:</p>
+
+<pre><code class="language-bash">gerard@server:~/docker/nginx$ cat nginx.conf 
+worker_processes 1;
+events {
+	worker_connections 1024;
+}
+http {
+	include mime.types;
+	default_type application/octet-stream;
+	sendfile on;
+	keepalive_timeout 65;
+
+	log_format logstash_json '{ &quot;@timestamp&quot;: &quot;$time_iso8601&quot;, '
+        	                 '&quot;@fields&quot;: { '
+                	         '&quot;remote_addr&quot;: &quot;$remote_addr&quot;, '
+                        	 '&quot;remote_user&quot;: &quot;$remote_user&quot;, '
+	                         '&quot;body_bytes_sent&quot;: &quot;$body_bytes_sent&quot;, '
+        	                 '&quot;request_time&quot;: &quot;$request_time&quot;, '
+                	         '&quot;status&quot;: &quot;$status&quot;, '
+                        	 '&quot;request&quot;: &quot;$request&quot;, '
+	                         '&quot;request_method&quot;: &quot;$request_method&quot;, '
+        	                 '&quot;http_referrer&quot;: &quot;$http_referer&quot;, '
+                	         '&quot;http_user_agent&quot;: &quot;$http_user_agent&quot; } }';
+	access_log /var/log/nginx/access.log logstash_json;
+
+	include conf.d/*;
+}
+gerard@server:~/docker/nginx$ 
+</code></pre>
+
+<p>Tras consultar los <em>logs</em> tras algunas consultas, vemos que sale un formato correctamente formado.</p>
+
+<pre><code class="language-bash">{ &quot;@timestamp&quot;: &quot;2017-03-10T10:38:37+00:00&quot;, &quot;@fields&quot;: { &quot;remote_addr&quot;: &quot;172.17.0.1&quot;, &quot;remote_user&quot;: &quot;-&quot;, &quot;body_bytes_sent&quot;: &quot;0&quot;, &quot;request_time&quot;: &quot;0.000&quot;, &quot;status&quot;: &quot;304&quot;, &quot;request&quot;: &quot;GET / HTTP/1.1&quot;, &quot;request_method&quot;: &quot;GET&quot;, &quot;http_referrer&quot;: &quot;-&quot;, &quot;http_user_agent&quot;: &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot; } }
+{ &quot;@timestamp&quot;: &quot;2017-03-10T10:38:56+00:00&quot;, &quot;@fields&quot;: { &quot;remote_addr&quot;: &quot;172.17.0.1&quot;, &quot;remote_user&quot;: &quot;-&quot;, &quot;body_bytes_sent&quot;: &quot;571&quot;, &quot;request_time&quot;: &quot;0.000&quot;, &quot;status&quot;: &quot;404&quot;, &quot;request&quot;: &quot;GET /nonexistent HTTP/1.1&quot;, &quot;request_method&quot;: &quot;GET&quot;, &quot;http_referrer&quot;: &quot;-&quot;, &quot;http_user_agent&quot;: &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot; } }
+</code></pre>
+
+<p>Para comprobar que el formato es correcto, y ya de paso verlo más bonito, podemos utilizar cualquier herramienta para validar formato JSON. Como ya sabéis que yo soy un fan del terminal, voy a hacerlo en <strong>python</strong>.</p>
+
+<pre><code class="language-bash">gerard@server:~/docker/nginx$ echo '{ &quot;@timestamp&quot;: &quot;2017-03-10T10:38:37+00:00&quot;, &quot;@fields&quot;: { &quot;remote_addr&quot;: &quot;172.17.0.1&quot;, &quot;remote_user&quot;: &quot;-&quot;, &quot;body_bytes_sent&quot;: &quot;0&quot;, &quot;request_time&quot;: &quot;0.000&quot;, &quot;status&quot;: &quot;304&quot;, &quot;request&quot;: &quot;GET / HTTP/1.1&quot;, &quot;request_method&quot;: &quot;GET&quot;, &quot;http_referrer&quot;: &quot;-&quot;, &quot;http_user_agent&quot;: &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot; } }' | python -m json.tool
+{
+    &quot;@fields&quot;: {
+        &quot;body_bytes_sent&quot;: &quot;0&quot;,
+        &quot;http_referrer&quot;: &quot;-&quot;,
+        &quot;http_user_agent&quot;: &quot;Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36&quot;,
+        &quot;remote_addr&quot;: &quot;172.17.0.1&quot;,
+        &quot;remote_user&quot;: &quot;-&quot;,
+        &quot;request&quot;: &quot;GET / HTTP/1.1&quot;,
+        &quot;request_method&quot;: &quot;GET&quot;,
+        &quot;request_time&quot;: &quot;0.000&quot;,
+        &quot;status&quot;: &quot;304&quot;
+    },
+    &quot;@timestamp&quot;: &quot;2017-03-10T10:38:37+00:00&quot;
+}
+gerard@server:~/docker/nginx$ 
+</code></pre>
+
+<p>Y con esto ya podemos configurar nuestro <strong>logstash</strong>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

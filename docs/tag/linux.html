@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>linux - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: linux</h1>
+
+<h2 class="article"><a href="/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html">Otro gateway con Debian, shorewall y dnsmasq</a></h2>
+<p>Hace ya algún tiempo escribí <a href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">un artículo</a> sobre como montar un <em>gateway</em> utilizando <strong>Debian</strong>, <strong>iptables</strong> y <strong>dnsmasq</strong>. Siguiendo mi política de ir actualizando los artículos más útiles, y visto la aparición en mi <em>toolbox</em> de <a href="/tag/shorewall.html">una nueva herramienta</a> para simplificar <strong>iptables</strong>, le ha tocado una reescritura al artículo mencionado anteriormente.</p>
+<p><a class="article" href="/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Restringiendo los comandos ejecutables con SSH y un par de claves</a></h2>
+<p>Una petición muy habitual que recibo es la de algún usuario que quiere ejecutar &ldquo;algo&rdquo; en un servidor. Como no puede ser de otra manera dadas las restricciones de seguridad de la compañía, solo le puedo dar acceso por SSH; pero poner una jaula para restringir sus acciones es tedioso.</p>
+<p><a class="article" href="/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/04/construyendo-firewalls-complejos-de-varias-patas-con-shorewall.html">Construyendo firewalls complejos de varias patas con Shorewall</a></h2>
+<p>Tras ver la facilidad con la que monté un <em>firewall</em> para un servidor solitario usando <strong>shorewall</strong>, he estado investigando sobre como hacer <em>firewalls</em> dedicados que enruten el tráfico en mis redes. En este artículo expongo lo que llegué a conseguir, esperando que le sirva a alguien en un futuro cercano.</p>
+<p><a class="article" href="/2019/04/construyendo-firewalls-complejos-de-varias-patas-con-shorewall.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/04/protegiendo-servidores-con-iptables-usando-shorewall.html">Protegiendo servidores con iptables usando Shorewall</a></h2>
+<p>Cada vez que me toca proteger un servidor con <strong>iptables</strong> me desanimo solo de pensarlo. No es que la herramienta sea mala (que me encanta), sino porque no es intuitiva y hay que tener en cuenta muchos casos raros. Por suerte hay utilidades que construyen el conjunto de reglas fácilmente.</p>
+<p><a class="article" href="/2019/04/protegiendo-servidores-con-iptables-usando-shorewall.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/04/ensamblando-un-livecd-con-debian-y-xorriso.html">Ensamblando un livecd con Debian y xorriso</a></h2>
+<p>Últimamente me he visto obligado a virtualizar en una máquina distinta de la habitual por un problema técnico; esto no sería un problema de no ser porque la arquitectura es de 32 bits. Eso me deja sin ninguna distribución prefabricada con la herramienta <code>zerofree</code> y me obliga a hacer una.</p>
+<p><a class="article" href="/2019/04/ensamblando-un-livecd-con-debian-y-xorriso.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/12/usando-docker-para-saltarse-los-permisos-de-linux.html">Usando Docker para saltarse los permisos de Linux</a></h2>
+<p>Según el paradigma de externalización de mi empresa, todos los sistemas son gestionados por un tercero, a base de cambios. Por petición mia, tengo un usuario nominal de SSH y puedo entrar a mirar logs y configuraciones, pero no todas. Lo que no saben es que puedo hacer de todo.</p>
+<p><a class="article" href="/2018/12/usando-docker-para-saltarse-los-permisos-de-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/07/una-oda-a-alpine-linux.html">Una oda a Alpine Linux</a></h2>
+<p>Hace unos días salió la <em>release</em> 3.8 de <strong>Alpine Linux</strong>. Por problemas varios en el <em>build</em>, la imagen de <strong>docker</strong> se hizo esperar bastante, y como la paciencia no es una de mis virtudes, decidí darle un intento en una máquina virtual <strong>Virtualbox</strong>, quedando gratamente complacido con el resultado obtenido.</p>
+<p><a class="article" href="/2018/07/una-oda-a-alpine-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">Un gateway con Debian, iptables y dnsmasq</a></h2>
+<p>En algunas ocasiones no nos basta con tener un servidor único. Queremos tener un conjunto de servidores que se comuniquen abiertamente entre ellos usando una red privada, pero solo queremos exponer al mundo una sola dirección IP. El resto de servidores necesitan acceso a internet a través de un representante.</p>
+<p><a class="article" href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/10/usar-un-sistema-de-ficheros-de-lectura-y-escritura-en-un-fichero-targz.md.html">Usar un sistema de ficheros de lectura y escritura en un fichero .tar.gz</a></h2>
+<p>¿Alguna vez habéis querido mirar en fichero <em>.tar.gz</em>, pero sin tener que descomprimirlo? Tal vez te gustaría extraer solo unos pocos ficheros; puede que lo que te interese es trabajar con una carpeta a la que le modificamos los archivos, sin tener que archivar esta carpeta cada cierto tiempo.</p>
+<p><a class="article" href="/2017/10/usar-un-sistema-de-ficheros-de-lectura-y-escritura-en-un-fichero-targz.md.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/07/montando-un-servidor-docker-con-debian-stretch.html">Montando un servidor docker con Debian Stretch</a></h2>
+<p>Finalmente ha sucedido: ha llegado el esperado lanzamiento de <strong>Debian Stretch</strong>. Como buen linuxero no me he podido resistir a hacer alguna instalación para probar, aunque solo sea como una máquina virtual. Su función, determinada por mi actual flujo de trabajo, va a ser como servidor de <strong>docker</strong> con <strong>docker-compose</strong>.</p>
+<p><a class="article" href="/2017/07/montando-un-servidor-docker-con-debian-stretch.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/linux.html">1</a>
+	<a href="/tag/linux/page/2.html">2</a>
+	<a href="/tag/linux/page/3.html">3</a>
+	<a href="/tag/linux/page/4.html">4</a>
+	<a href="/tag/linux/page/5.html">5</a>
+	<a href="/tag/linux/page/6.html">6</a>
+	<a href="/tag/linux/page/2.html">&raquo;</a>
+	<a href="/tag/linux/page/6.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

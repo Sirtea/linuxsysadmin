@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un proxy DNS con dnsmasq - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un proxy DNS con dnsmasq</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-02-01
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/dnsmasq.html">dnsmasq</a> / <a href="/tag/cache.html">cache</a> / <a href="/tag/dns.html">dns</a> / <a href="/tag/dhcp.html">dhcp</a>
+</p>
+
+<p>A veces nos puede interesar disponer de una servidor <strong>DNS</strong> para nombrar las máquinas de nuestra red privada, sin la complejidad de <strong>BIND</strong>. Otras, queremos acelerar el acceso a internet desde nuestra red; es interesante ver el tiempo que se pierde en la resolución <strong>DNS</strong>. Para eso disponemos de <strong>dnsmasq</strong>.</p>
+
+<p>El servicio <strong>dnsmasq</strong> proporciona servicios como caché <strong>DNS</strong> y como servidor <strong>DHCP</strong>. Se trata de un <em>proxy</em> <strong>DNS</strong> que va a dirigir las consultas <strong>DNS</strong> contra el servidor configurado en el <em>proxy</em>, guardando una copia en <em>caché</em> para agilizar futuras consultas.</p>
+
+<p>Es muy fácil de configurar y es bastante ligero. Se considera ideal para redes pequeñas con menos de 50 ordenadores.</p>
+
+<p>En mi caso, resultó muy útil para solucionar el problema de <strong>DNS</strong> que me planteaba una red <strong>Virtualbox</strong> <em>solo anfitrión</em>, en donde se escondían mis máquinas virtuales con dirección IP estática. Resulta que me muevo entre varias zonas de trabajo, y que no hay ningún servidor <strong>DNS</strong> accesible desde todas; ir cambiando los <strong>DNS</strong> de todas las máquinas era trabajoso.</p>
+
+<p>Con este problema, puse <strong>dnsmasq</strong> en mi anfitrión (que usaba <strong>DHCP</strong> y recibía el <strong>DNS</strong> automáticamente), y configuré todas las máquinas para que usaran el anfitrión como servidor <strong>DNS</strong>; nunca mas tuve que configurarlos.</p>
+
+<h2 id="instalación">Instalación</h2>
+
+<p>La instalación en una máquina derivada de <em>Debian</em> es muy simple; está en los repositorios oficiales.</p>
+
+<pre><code class="language-bash">root@proxy:~# apt-get install dnsmasq
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias       
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes extras:
+  dns-root-data dnsmasq-base libnetfilter-conntrack3
+Paquetes sugeridos:
+  resolvconf
+Se instalarán los siguientes paquetes NUEVOS:
+  dns-root-data dnsmasq dnsmasq-base libnetfilter-conntrack3
+0 actualizados, 4 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 488 kB de archivos.
+Se utilizarán 1.170 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...
+root@proxy:~# 
+</code></pre>
+
+<p>En caso de querer modificar la configuración, se debe editar el fichero <em>/etc/dnsmasq.conf</em>, y luego reiniciar el servicio <em>dnsmasq</em>. En este mismo fichero se puede configurar el servicio <strong>DHCP</strong> (directiva <em>dhcp-range</em>), el servidor de nombres a dar al resto (la misma máquina de <em>dnsmasq</em>, por defecto), el servidor <strong>NTP</strong> o el <em>gateway</em>.</p>
+
+<p>En mi caso, no vi necesario activar estos servicios, así que el fichero de configuración no se vio modificada. Así pues, con esto basta.</p>
+
+<p><strong>TRUCO</strong>: En caso de querer resolver localmente, <em>dnsmasq</em> sirve los nombres alojados en <em>/etc/hosts</em>, a menos que se indique lo contrario en la configuración. Basta con modificar ese fichero.</p>
+
+<h2 id="comprobación-y-uso">Comprobación y uso</h2>
+
+<p>Para comprobar que funciona, vamos a poner otra máquina, configurada para usar el nuevo servidor <strong>DNS</strong>:</p>
+
+<pre><code class="language-bash">root@client:~# cat /etc/resolv.conf 
+nameserver 192.168.56.1
+root@client:~# 
+</code></pre>
+
+<p>En principio basta con comprobar que resuelve el nombre de una petición cualquiera, por ejemplo, con un <strong>ping</strong>.</p>
+
+<p>Sin embargo, podemos apreciar la mejora de la <em>caché</em> mediante una herramienta mas avanzada de resolución <strong>DNS</strong>, por ejemplo, con <strong>dig</strong></p>
+
+<pre><code class="language-bash">root@client:~# dig www.linuxsysadmin.tk | grep &quot;Query time&quot;
+;; Query time: 118 msec
+root@client:~# dig www.linuxsysadmin.tk | grep &quot;Query time&quot;
+;; Query time: 5 msec
+root@client:~# dig www.linuxsysadmin.tk | grep &quot;Query time&quot;
+;; Query time: 4 msec
+root@client:~# 
+</code></pre>
+
+<p>Y con esto hemos cumplido; tenemos un <em>proxy caché</em> <strong>DNS</strong>, que nos agiliza las peticiones, nos resuelve localmente y nos evita ir cambiando el <strong>DNS</strong> cada vez que nos movemos de zona de trabajo.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

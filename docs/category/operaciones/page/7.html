@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Operaciones - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Category: operaciones</h1>
+
+<h2 class="article"><a href="/2016/05/autenticacion-ssh-por-claves.html">Autenticación SSH por claves</a></h2>
+<p>A pesar de que el protocolo <strong>SSH</strong> es lo que mas seguridad ofrece hoy en día, un servidor rápido puede probar gran cantidad de contraseñas generadas mediante un generador por fuerza bruta. Para añadir mas seguridad podemos autenticar mediante claves en vez de usar contraseña, opcionalmente protegidos con una <em>passphrase</em>.</p>
+<p><a class="article" href="/2016/05/autenticacion-ssh-por-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/algunas-ideas-sueltas-sobre-ansible.html">Algunas ideas sueltas sobre Ansible</a></h2>
+<p>En un <a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">artículo anterior</a> vimos qué era <strong>Ansible</strong> y como instalarlo, dejando su funcionamiento para el lector; Hay miles de tutoriales por internet, y muchos son mejores de los que pueda poner aquí. Sin embargo, hay algunas ideas que no son fáciles de ver juntas, así que aquí las dejo.</p>
+<p><a class="article" href="/2016/05/algunas-ideas-sueltas-sobre-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Instalando ansible para gestionar servidores</a></h2>
+<p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
+<p><a class="article" href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/compilando-python-desde-cero.html">Compilando python desde cero</a></h2>
+<p>Siempre que estoy trabajando en un servidor CentOS o RedHat, veo que las versiones de <em>python</em> que usan son bastante viejas. De hecho, hay una gran mejora de <em>python</em> entre las versiones 2.4, 2.6 y 2.7; así que es frecuente compilar una versión superior para nuestro uso.</p>
+<p><a class="article" href="/2016/04/compilando-python-desde-cero.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Sistemas de ficheros multicapa con aufs</a></h2>
+<p>Trabajando con contenedores tenemos una parte que se repite: el sistema de ficheros base, que copiamos siempre. Otras veces nos puede interesar hacer un sistema capaz de descartar los cambios desde un punto inicial. Podemos crear una capa base de solo lectura y añadir otra capa de cambios con <strong>aufs</strong>.</p>
+<p><a class="article" href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/haciendo-snapshots-con-lvm.html">Haciendo snapshots con LVM</a></h2>
+<p>Una de las funcionalidades mas implementadas en los sistemas de ficheros de nueva generación es la capacidad de hacer <em>snapshots point-in-time</em>. Sin embargo, no tenemos que renunciar a la estabilidad de los sistemas de ficheros tradicionales como <strong>ext4</strong>; otras veces no es posible por requisitos del servicio que debe usarlo.</p>
+<p><a class="article" href="/2016/02/haciendo-snapshots-con-lvm.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/lvm-logical-volume-manager.html">LVM: logical volume manager</a></h2>
+<p>Cuando eres un usuario medio no te complicas; particionas tu disco, a menudo usando un sistema de particionado guiado e instalas tu sistema operativo favorito. El problema es cuando las particiones se te quedan cortas. Para estos casos, se inventó una tecnología llamada <em>logical volume manager</em>, usando sus siglas: <strong>LVM</strong>.</p>
+<p><a class="article" href="/2016/01/lvm-logical-volume-manager.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/empaquetando-ficheros-punto-deb.html">Empaquetando ficheros .deb</a></h2>
+<p>Una de las grandes ventajas de <em>linux</em> es su sistema de paquetes. Con ellos es posible instalar de forma fácil un paquete de forma fácil y confiable. Hoy vamos a hacer un paquete <em>.deb</em> como ejemplo que instale un <em>script</em> cualquiera en la carpeta <em>/usr/bin/</em> para su uso cotidiano.</p>
+<p><a class="article" href="/2015/12/empaquetando-ficheros-punto-deb.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/creacion-de-un-livecd-con-debian.html">Creación de un livecd con Debian</a></h2>
+<p>Tras ver como las actualizaciones de mis máquinas virtuales <em>VirtualBox</em> expandían mis discos <em>.vdi</em> sin control, quise pasar la herramienta <em>zerofree</em> y un compactado con la herramienta oficial <em>VBoxManage</em>. No quería instalar <em>zerofree</em> de forma permanente y no pude encontrar un <em>livecd</em> que lo tuviera, así que decidí crear uno.</p>
+<p><a class="article" href="/2015/12/creacion-de-un-livecd-con-debian.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/creando-sistemas-de-ficheros-temporales-con-tmpfs.html">Creando sistemas de ficheros temporales con tmpfs</a></h2>
+<p>A veces nos podemos encontrar con un sistema de ficheros lleno que no nos permite completar alguna acción por falta de espacio en disco. En un caso así, existe la posibilidad de sacar un sistema de ficheros completo de memoria, de una forma temporal, usando el sistema de ficheros <em>tmpfs</em>. Otra opción es la de tener un sistema de ficheros temporal, en donde podamos dejar ficheros cuya persistencia no sea necesaria entre reinicios.</p>
+<p><a class="article" href="/2015/11/creando-sistemas-de-ficheros-temporales-con-tmpfs.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/category/operaciones.html">&laquo;&laquo;</a>
+	<a href="/category/operaciones/page/6.html">&laquo;</a>
+	<a href="/category/operaciones.html">1</a>
+	<a href="/category/operaciones/page/2.html">2</a>
+	<a href="/category/operaciones/page/3.html">3</a>
+	<a href="/category/operaciones/page/4.html">4</a>
+	<a href="/category/operaciones/page/5.html">5</a>
+	<a href="/category/operaciones/page/6.html">6</a>
+	<a class="active" href="/category/operaciones/page/7.html">7</a>
+	<a href="/category/operaciones/page/8.html">8</a>
+	<a href="/category/operaciones/page/8.html">&raquo;</a>
+	<a href="/category/operaciones/page/8.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

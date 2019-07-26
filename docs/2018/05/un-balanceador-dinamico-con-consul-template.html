@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un balanceador dinámico con consul-template - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un balanceador dinámico con consul-template</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-05-07
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/consul.html">consul</a> / <a href="/tag/service-discovery.html">service discovery</a> / <a href="/tag/balanceador.html">balanceador</a>
+</p>
+
+<p>Aquellos que leéis mis artículos habitualmente ya sabéis lo que es un balanceador de carga, especialmente los de peticiones HTTP; en especial conocemos <strong>nginx</strong> y <strong>haproxy</strong>. La parte mala de estos servicios es que la configuración es estática e inmutable, y en un mundo <em>cloud</em>, eso no es lo ideal.</p>
+
+<p>En el momento en que pasamos de servidores tradicionales al modelo <em>cloud</em>, nos damos cuenta que no es importante que el servidor X o el servidor Y funcionen; lo que queremos es <strong>dar un servicio</strong>, y no nos importan los servidores que sean; incluso podemos aumentar o decrementar su número con facilidad.</p>
+
+<p>En estos casos, es muy conveniente tener un servicio de <em>discovery</em>, que nos sepa decir qué servidores tenemos y qué servicios hay alojados en ellos; <strong>Consul</strong> es uno de ellos, que ya vimos con anterioridad.</p>
+
+<p>Sin embargo, seguimos teniendo que reconfigurar los balanceadores manualmente y recargando su configuración. Para ello se creó <strong>consul-template</strong>, que no es más que un proceso que se dedica a construir ficheros de configuración cuando <strong>consul</strong> le indica que ha habido un cambio relevante; en este momento, <strong>consul-template</strong> regenerará la configuración del servicio y opcionalmente lanzará un comando indicado.</p>
+
+<p>Juntando nuestro servicio de balanceador con <strong>consul-template</strong> podemos conseguir fácilmente la ilusión de un balancear dinámico: <strong>consul-template</strong> regenerará la configuración del balanceador y lanzará el comando necesario para que el balanceador la recargue.</p>
+
+<h2 id="un-ejemplo-balanceando-peticiones-web-con-haproxy">Un ejemplo: balanceando peticiones web con HAProxy</h2>
+
+<p>Como decisión de diseño, y para simplificar vamos a ver el siguiente escenario:</p>
+
+<ul>
+<li>Tenemos un servidor web en <em>localhost:8001</em>.</li>
+<li>Tenemos un servidor web en <em>localhost:8002</em>.</li>
+<li>Vamos a exponer en <em>localhost:80</em> las peticiones, con <strong>HAProxy</strong> y con un algoritmo de <em>round-robin</em>.</li>
+<li>El balanceador es un contenedor <strong>Docker</strong>.</li>
+<li><strong>consul-template</strong> también ejecuta como un contendor <strong>Docker</strong>.</li>
+</ul>
+
+<p>De hecho, todo esto también sirve para otros servicios, como por ejemplo, <strong>nginx</strong>.</p>
+
+<h3 id="ejecutando-consul">Ejecutando consul</h3>
+
+<p>Lo primero es ejecutar un proceso <strong>consul</strong> con los servicios declarados y con sus respectivos <em>checks</em>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/services/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web1&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8001 },
+    { &quot;id&quot;: &quot;web2&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8002 }
+  ],
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;web1&quot;, &quot;service_id&quot;: &quot;web1&quot;, &quot;http&quot;: &quot;http://localhost:8001/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; },
+    { &quot;id&quot;: &quot;web2&quot;, &quot;service_id&quot;: &quot;web2&quot;, &quot;http&quot;: &quot;http://localhost:8002/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; }
+  ]
+}
+gerard@atlantis:~/projects/services/consul$
+</code></pre>
+
+<p>Es especialmente crítico que ambos servicios y ambos <em>checks</em> tengan identificadores diferentes, porque sino, <strong>consul</strong> no los percibe como cosas diferentes.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/services/consul$ ./consul agent -dev --advertise 10.0.2.15 -client 0.0.0.0 -config-file consul.json
+==&gt; Starting Consul agent...
+==&gt; Consul agent running!
+           Version: 'v1.0.6'
+           Node ID: '7d05eed1-f9db-2b02-499f-1bcdb37bf73c'
+         Node name: 'atlantis'
+        Datacenter: 'dc1' (Segment: '&lt;all&gt;')
+            Server: true (Bootstrap: false)
+       Client Addr: [0.0.0.0] (HTTP: 8500, HTTPS: -1, DNS: 8600)
+      Cluster Addr: 10.0.2.15 (LAN: 8301, WAN: 8302)
+           Encrypt: Gossip: false, TLS-Outgoing: false, TLS-Incoming: false
+
+==&gt; Log data will now stream in as it occurs:
+...
+</code></pre>
+
+<p>Y lo dejamos funcionado.</p>
+
+<h3 id="el-balanceador-y-consul-template">El balanceador y consul-template</h3>
+
+<p>El balanceador no tiene ningún misterio; se trata de un <strong>haproxy</strong> normal y corriente, con la única peculiaridad de que la carpeta <em>/etc/haproxy/</em> es un volúmen, de forma que el contenedor de <strong>consul-template</strong> lo pueda exportar y escribir en él. De esta forma podemos &ldquo;dar un cambiazo&rdquo; al fichero de configuración desde otro contenedor.</p>
+
+<p>Estaría bien tener en la imagen del balanceador un <em>script</em> que supiera como recargar la configuración del balanceador de forma fina y delicada, de forma que el otro contenedor simplemente ejecutaría un <code>docker exec</code> para &ldquo;pedirle&rdquo; que lo hiciera, sin entrar en detalles de como se hace. Para agilizar el artículo, nos limitaremos a hacer un <code>docker restart</code>, que no es ideal, pero nos vale de momento.</p>
+
+<p>Por su parte, el contenedor que ejecuta <strong>consul-template</strong> tampoco tiene ningún misterio. Se limita a exportar la carpeta de configuración de <strong>haproxy</strong> y ejecutar <strong>consul-template</strong>, de forma continua y limitándose a crear <code>/etc/haproxy/haproxy.cfg</code> a partir de la información del <strong>consul</strong> local y la plantilla suministrada.</p>
+
+<p>Si se diera el caso de un cambio en el servicio implicado, <strong>consul-template</strong> regeneraría la configuración de <strong>haproxy</strong>; como <em>bonus</em>, va a reiniciar el contenedor de <strong>haproxy</strong> para que este aplique la nueva configuración. No es la mejor manera de hacer las cosas, pero el &ldquo;como reinicar un <strong>haproxy</strong>&rdquo; no es la parte relevante del artículo.</p>
+
+<p><strong>TRUCO</strong>: Para más información de como controlar un contenedor alojado en el mismo <em>host</em> en que corre el nuestro, podemos seguir <a href="/2018/04/controlando-docker-desde-un-contenedor.html">este otro artículo</a>.</p>
+
+<p>El contenedor de <strong>consul-template</strong> solo tiene lo necesario para usar el comando <code>docker</code> y el mismo <code>consul-template</code>. Los añado como referencia:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ tree templater_build/
+templater_build/
+├── consul-template
+└── Dockerfile
+
+0 directories, 2 files
+gerard@atlantis:~/projects/balancer$ cat templater_build/Dockerfile
+FROM alpine:3.7
+RUN apk add --no-cache docker &amp;&amp; \
+    rm /usr/bin/docker-proxy &amp;&amp; \
+    rm /usr/bin/docker-containerd-shim &amp;&amp; \
+    rm /usr/bin/docker-runc &amp;&amp; \
+    rm /usr/bin/docker-containerd-ctr &amp;&amp; \
+    rm /usr/bin/docker-containerd &amp;&amp; \
+    rm /usr/bin/dockerd
+COPY consul-template /usr/bin/
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>También añado como referencia el <em>docker-compose.yml</em> con el que se levantan ambos contenedores.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ cat docker-compose.yml
+version: '2'
+services:
+  loadbalancer:
+    image: sirrtea/haproxy:alpine
+    container_name: balancer
+    hostname: balancer
+    network_mode: host
+    volumes:
+      - /etc/haproxy
+  templater:
+    image: templater
+    container_name: templater
+    hostname: templater
+    network_mode: host
+    volumes:
+      - ./haproxy.ctmpl:/tmp/haproxy.ctmpl:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    volumes_from:
+      - loadbalancer
+    command: consul-template -template &quot;/tmp/haproxy.ctmpl:/etc/haproxy/haproxy.cfg:docker restart balancer&quot;
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>Fijáos especialmente en:</p>
+
+<ul>
+<li>El volumen en <em>/etc/haproxy/</em>, para poder compartir el fichero de configuración.</li>
+<li>El volumen <em>/var/run/docker.sock</em> para controlar el servidor <strong>docker</strong> del <em>host</em>.</li>
+<li>La plantilla, que también se añade como volumen.</li>
+<li>Y como curiosidad, el comando <strong>consul-template</strong> necesario, con el comando de <em>restart</em> del contendor <em>balancer</em>.</li>
+</ul>
+
+<p>La plantilla de <strong>haproxy</strong> tampoco tiene ninguna complejidad&hellip;</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ cat haproxy.ctmpl
+global
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+
+defaults
+    mode http
+
+listen stats
+    bind *:8080
+    stats enable
+    stats uri /
+
+listen web
+    bind *:80
+    balance roundrobin
+{{ range service &quot;web&quot; }}
+    server {{ .ID }} {{ .Address }}:{{ .Port }}
+{{ end }}
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<h3 id="resultado">Resultado</h3>
+
+<p>Com ambos servicios <em>web</em> funcionando todo va como se espera (también lo podemos comprobar en la página de estadísticas de <strong>haproxy</strong>, en el puerto 8080):</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ docker exec balancer cat /etc/haproxy/haproxy.cfg | grep server
+    server web1 10.0.2.15:8001
+    server web2 10.0.2.15:8002
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web1
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web1
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>Si se cae, por ejemplo, el servicio <em>web1</em> en el puerto 8001, <strong>consul</strong> lo detecta. En este momento, <strong>consul-template</strong> regenera la configuración y reinica el contenedor <em>balancer</em>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ docker exec balancer cat /etc/haproxy/haproxy.cfg | grep server
+    server web2 10.0.2.15:8002
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>Se cae el servicio <em>web2</em>, y nos quedamos sin servicio completamente, pero la configuración queda como se espera:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ docker exec balancer cat /etc/haproxy/haproxy.cfg | grep server
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+&lt;html&gt;&lt;body&gt;&lt;h1&gt;503 Service Unavailable&lt;/h1&gt;
+No server is available to handle this request.
+&lt;/body&gt;&lt;/html&gt;
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>Solo nos quedaría restablecer el servicio tanto en <em>web1</em> como en <em>web2</em>, y verificar que el servicio global se restablece:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/balancer$ docker exec balancer cat /etc/haproxy/haproxy.cfg | grep server
+    server web1 10.0.2.15:8001
+    server web2 10.0.2.15:8002
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web1
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web1
+gerard@atlantis:~/projects/balancer$ curl http://localhost:80/
+web2
+gerard@atlantis:~/projects/balancer$
+</code></pre>
+
+<p>El siguiente paso sería añadir nuevos nodos con <strong>consul</strong> para observar como la configuración de <strong>hoproxy</strong> crece. De esta forma, no tendremos que preocuparnos de la configuración del balanceador nunca más; solamente de tener la plantilla actualizada si añadimos más aplicaciones.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

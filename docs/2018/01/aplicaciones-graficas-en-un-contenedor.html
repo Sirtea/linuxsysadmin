@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Aplicaciones gráficas en un contenedor - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Aplicaciones gráficas en un contenedor</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-01-08
+	<strong>Tiempo de lectura</strong>: 2 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/escritorio.html">escritorio</a>
+</p>
+
+<p>A veces nos encontramos en un ordenador que no tenemos preparado para usar nuestras aplicaciones habituales, o simplemente no es el nuestro, o no queremos ensuciarlo para probar aplicaciones nuevas. Si disponemos de <strong>docker</strong>, es posible ejecutarlas compartiendo solamente el <em>unix socket</em> del servidor gráfico para verlas en nuestra pantalla.</p>
+
+<p>El fichero <em>Dockerfile</em> no es distinto del que usaríamos para una aplicación sin entorno gráfico, bastando instalar el programa que queramos y confiando en que el sistema de dependencias del gestor de paquetes consiga lo que este necesite.</p>
+
+<p>En este caso pongo un editor de lenguaje de marcado <em>markdown</em>, pero se podría poner un navegador, un juego o lo que queramos.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/retext$ cat Dockerfile 
+FROM debian:jessie
+RUN apt-get update &amp;&amp; \
+    apt-get install -y retext &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+RUN useradd gerard
+USER gerard
+CMD [&quot;/usr/bin/retext&quot;]
+gerard@sirius:~/docker/retext$ 
+</code></pre>
+
+<p>Construimos la imagen de la misma forma en la que lo hacemos habitualmente, con el mismo comando <em>docker build</em> habitual:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/retext$ docker build -t retext .
+Sending build context to Docker daemon 2.048 kB
+Step 1 : FROM debian:jessie
+ ---&gt; 19134a8202e7
+Step 2 : RUN apt-get update &amp;&amp;     apt-get install -y retext &amp;&amp;     rm -rf /var/lib/apt/lists/*
+ ---&gt; Running in bb0cdc51af3e
+...
+ ---&gt; 1150d6a6a3e2
+Removing intermediate container bb0cdc51af3e
+Step 3 : RUN useradd gerard
+ ---&gt; Running in 97e1de7b50d3
+ ---&gt; 4d8f69d5f570
+Removing intermediate container 97e1de7b50d3
+Step 4 : USER gerard
+ ---&gt; Running in 29bb618fc788
+ ---&gt; 1a7388f29cda
+Removing intermediate container 29bb618fc788
+Step 5 : CMD /usr/bin/retext
+ ---&gt; Running in fefaa04ee25e
+ ---&gt; af856bcf0c49
+Removing intermediate container fefaa04ee25e
+Successfully built af856bcf0c49
+gerard@sirius:~/docker/retext$ 
+</code></pre>
+
+<p>Si intentamos ejecutar esta imagen, veremos que falla; el contenedor no tiene acceso a los dispositivos, ni al <em>unix socket</em> en donde este se ejecuta. Tampoco tenemos definida la variable de sistema <em>DISPLAY</em>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/retext$ docker run --rm retext
+QXcbConnection: Could not connect to display 
+gerard@sirius:~/docker/retext$ 
+</code></pre>
+
+<p>Por suerte podemos añadir ambos mediante <em>flags</em> durante la ejecución del contenedor. Vamos a añadir el <em>unix socket</em> del servidor gráfico mediante un volumen, y vamos a definir la variable <em>DISPLAY</em> en función de la que tengamos en la máquina anfitrión.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/docker/retext$ docker run --rm -e &quot;DISPLAY=$DISPLAY&quot; -v /tmp/.X11-unix:/tmp/.X11-unix retext
+...
+</code></pre>
+
+<p>Y ya podremos ver la aplicación corriendo como una ventana más en nuestra pantalla, sin problemas ni complicaciones.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

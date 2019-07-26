@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Una unidad de red remota con SSHFS - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Una unidad de red remota con SSHFS</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-09-10
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/unidad.html">unidad</a> / <a href="/tag/remota.html">remota</a> / <a href="/tag/ssh.html">ssh</a> / <a href="/tag/sshfs.html">sshfs</a>
+</p>
+
+<p>Es muy cómodo dejar un fichero en una carpeta local y saber que ese fichero está a salvo, en la nube; seguramente los que utilizáis un servicio de sincronización en la nube váis a estar de acuerdo. La empresas no suelen permitirlo, pero podéis utilizar un servicio local por <strong>SSH</strong>.</p>
+
+<p>El ingenio se llama <strong>SSHFS</strong> y lanza las operaciones de lectura y escritura contra una máquina remota que solamente debe ofrecer <strong>SSH</strong>, de forma que para nosotros parece que se trate de un sistema de ficheros local.</p>
+
+<h2 id="el-servidor">El servidor</h2>
+
+<p>Para utilizar <strong>SSHFS</strong> solo necesitamos un servidor que ofrezca <strong>SSH</strong>, aunque también funciona por <strong>SFTP</strong>. Como comodidad adicional, vamos a utilizar <a href="/2016/05/autenticacion-ssh-por-claves.html">autenticacíon por claves</a>. Como conisderación de seguridad, vamos a enjaular al usuario que guarde los datos y lo vamos a lmitar a <strong>SFTP</strong>.</p>
+
+<p><strong>NOTA</strong>: Se asume que el servidor ya tiene el servidor <strong>SSH</strong> instalado; de no ser así, basta con hacer un <code>sudo apt install openssh-server</code>.</p>
+
+<p>Lo primero es crear un usuario para que <strong>SSHFS</strong> pueda entrar al servidor por <strong>SSH</strong>/<strong>SFTP</strong>:</p>
+
+<pre><code class="language-bash">gerard@server:~$ sudo adduser nas
+...
+gerard@server:~$
+</code></pre>
+
+<p>Le asignamos la parte pública de la clave <strong>SSH</strong> en el fichero <code>~/.ssh/authorized_keys</code> para evitar que tengamos que introducir la contraseña cada vez que montemos la carpeta remota en el cliente, y para evitar ataques de fuerza bruta.</p>
+
+<pre><code class="language-bash">nas@server:~$ cat .ssh/authorized_keys
+ssh-rsa ...
+nas@server:~$
+</code></pre>
+
+<p>En este punto, ya podríamos entrar, pero como hemos decidido enjaular, tenemos que ajustar algunos permisos:</p>
+
+<ul>
+<li>La carpeta en donde lo enjaulemos (su <em>home</em>) debe pertenecer a <strong>root</strong></li>
+<li>Esto nos obliga a tener una carpeta de trabajo en donde nuestro usuario pueda escribir</li>
+<li>Vamos a cambiar el propietario de la carpeta <code>.ssh</code> para evitar que este usuario <a href="/2018/08/cambiando-la-posicion-del-fichero-authorized-keys.html">la pueda eliminar</a></li>
+</ul>
+
+<p>Con todo esto, la carpeta nos va a quedar así:</p>
+
+<pre><code class="language-bash">nas@server:/home$ tree -I gerard -augp
+.
+└── [drwxr-xr-x root     root    ]  nas
+    ├── [drwxr-xr-x nas      nas     ]  archives
+    └── [drwxr-xr-x root     root    ]  .ssh
+        └── [-rw-r--r-- root     root    ]  authorized_keys
+
+3 directories, 1 file
+nas@server:/home$
+</code></pre>
+
+<p>Estamos listos para enjaular; modificamos el fichero <code>/etc/ssh/sshd_config</code> para enjaular a este usuario:</p>
+
+<pre><code class="language-bash">gerard@server:~$ cat /etc/ssh/sshd_config
+...
+Match User nas
+        ChrootDirectory /home/%u
+        ForceCommand internal-sftp
+gerard@server:~$
+</code></pre>
+
+<p>Solo nos queda recargar el servicio <strong>SSH</strong> para que lea la nueva configuración.</p>
+
+<pre><code class="language-bash">gerard@server:~$ sudo service ssh restart
+gerard@server:~$
+</code></pre>
+
+<h2 id="el-cliente">El cliente</h2>
+
+<p>Para poder montar el sistema de ficheros remoto, se necesita el paquete <strong>sshfs</strong>, así que lo instalamos.</p>
+
+<pre><code class="language-bash">gerard@client:~$ sudo apt-get install sshfs
+...
+gerard@client:~$
+</code></pre>
+
+<p>Necesitamos una carpeta en donde montar el sistema de ficheros remoto, que llamaremos <code>NAS</code>; como no la tengo, la creo:</p>
+
+<pre><code class="language-bash">gerard@client:~$ mkdir NAS
+gerard@client:~$
+</code></pre>
+
+<p>Para montar la carpeta remota solo necesitamos un comando; asumimos que la parte privada de la clave <strong>SSH</strong> está en <code>.ssh/id_rsa</code>.</p>
+
+<pre><code class="language-bash">gerard@client:~$ sshfs nas@server:/archives NAS -o idmap=user
+gerard@client:~$
+</code></pre>
+
+<p>A partir de ahora podemos trabajar en la carpeta como si de una carpeta local se tratara, por ejemplo:</p>
+
+<pre><code class="language-bash">gerard@client:~$ cd NAS/
+gerard@client:~/NAS$ echo 123 &gt; file
+gerard@client:~/NAS$ touch emptyfile
+gerard@client:~/NAS$ ls -lh
+total 4,0K
+-rw-r--r-- 1 nas nas 0 ago  8 12:25 emptyfile
+-rw-r--r-- 1 nas nas 4 ago  8 12:25 file
+gerard@client:~/NAS$
+</code></pre>
+
+<p>Y como es de esperar, estos ficheros han acabado en el servidor:</p>
+
+<pre><code class="language-bash">gerard@server:~$ tree -augp /home/nas/
+/home/nas/
+├── [drwxr-xr-x nas      nas     ]  archives
+│   ├── [-rw-r--r-- nas      nas     ]  emptyfile
+│   └── [-rw-r--r-- nas      nas     ]  file
+└── [drwxr-xr-x root     root    ]  .ssh
+    └── [-rw-r--r-- root     root    ]  authorized_keys
+
+2 directories, 3 files
+gerard@server:~$
+</code></pre>
+
+<p>En el momento que nos cansemos de utilizar la unidad de red, solo tenemos que desmontarla, y la seguiremos viendo con lo que tenía antes del montaje.</p>
+
+<pre><code class="language-bash">gerard@client:~$ fusermount -u NAS
+gerard@client:~$ ls -lh NAS/
+total 0
+gerard@client:~$
+</code></pre>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

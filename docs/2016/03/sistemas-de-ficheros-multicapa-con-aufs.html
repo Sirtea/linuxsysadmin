@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Sistemas de ficheros multicapa con aufs - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Sistemas de ficheros multicapa con aufs</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-03-28
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/mount.html">mount</a> / <a href="/tag/aufs.html">aufs</a> / <a href="/tag/squashfs.html">squashfs</a> / <a href="/tag/debootstrap.html">debootstrap</a>
+</p>
+
+<p>Trabajando con contenedores tenemos una parte que se repite: el sistema de ficheros base, que copiamos siempre. Otras veces nos puede interesar hacer un sistema capaz de descartar los cambios desde un punto inicial. Podemos crear una capa base de solo lectura y añadir otra capa de cambios con <strong>aufs</strong>.</p>
+
+<p>La idea es crear un sistema de ficheros que sea el resultado de mezclar otros dos: una capa de solo lectura y una capa de cambios, que podría ser de lectura y escritura. Esta nueva capa puede, a su vez, servir de base para otro sistema de ficheros.</p>
+
+<p>De hecho, esta técnica de &ldquo;apilado&rdquo; se utiliza en la distribución de pendrive llamada <a href="http://www.slax.org/">Slax</a>. Mediante el apilado de módulos, mas una capa final de cambios, consiguen crear un sistema de ficheros linux entero, con una capa de cambios que se puede descartar en cualquier momento.</p>
+
+<p>Empezaremos con un sistema de ficheros simulado en una carpeta, que llamaremos <em>base</em>. También pondremos una carpeta <em>unified</em> que va a ser el sistema de ficheros resultante, y una carpeta <em>changes</em> que va a alojar los cambios del sistema de ficheros respecto al sistema <em>base</em>.</p>
+
+<pre><code class="language-bash">root@server:~# tree
+.
+├── base
+│   ├── bin
+│   │   └── hello.sh
+│   └── conf
+│       └── hello.conf
+├── changes
+└── unified
+
+5 directories, 2 files
+root@server:~#
+</code></pre>
+
+<p>Para esta demostración nos vale poca cosa, por ejemplo un binario y su configuración. En casos algo mas complejos podría tratarse de una jaula entera de sistema operativo.</p>
+
+<p>La &ldquo;aplicación&rdquo; y su configuración son simples, se muestran como guía, para ver como lo evolucionamos.</p>
+
+<pre><code class="language-bash">root@server:~# cat base/bin/hello.sh
+#!/bin/bash
+
+source conf/hello.conf
+
+echo &quot;Hello ${NAME}!&quot;
+root@server:~# cat base/conf/hello.conf
+NAME=&quot;Gerard&quot;
+root@server:~#
+</code></pre>
+
+<p>Ahora vamos a crear el sistema combinado en la carpeta <em>unified</em>, usando la <em>base</em> como capa de solo lectura, y la carpeta <em>changes</em> como la capa de lectura escritura.</p>
+
+<pre><code class="language-bash">root@server:~# mount -t aufs -o br:changes=rw:base=ro none unified
+root@server:~#
+</code></pre>
+
+<p>Podemos ver que la carpeta <em>unified</em> es una unión de la capa base con la de cambios. Puesto que no hay cambios, por ahora las carpetas coinciden en contenido.</p>
+
+<pre><code class="language-bash">root@server:~# tree
+.
+├── base
+│   ├── bin
+│   │   └── hello.sh
+│   └── conf
+│       └── hello.conf
+├── changes
+└── unified
+    ├── bin
+    │   └── hello.sh
+    └── conf
+        └── hello.conf
+
+7 directories, 4 files
+root@server:~#
+</code></pre>
+
+<p>De ahora en adelante, solo queda trabajar con el sistema de ficheros <em>unified</em>, así que vamos a trabajar en esa carpeta.</p>
+
+<pre><code class="language-bash">root@server:~# cd unified/
+root@server:~/unified#
+</code></pre>
+
+<p>Si ejecutamos el binario, vemos que reacciona como se supone que debe hacerlo.</p>
+
+<pre><code class="language-bash">root@server:~/unified# ./bin/hello.sh
+Hello Gerard!
+root@server:~/unified#
+</code></pre>
+
+<p>En un momento dado, vemos que queremos modificar un fichero, por ejemplo, el de configuración, cambiando el parámetro <strong>NAME</strong>.</p>
+
+<pre><code class="language-bash">root@server:~/unified# cat conf/hello.conf
+NAME=&quot;Gerard Monells&quot;
+root@server:~/unified#
+</code></pre>
+
+<p>Efectivamente, el resultado es el esperado.</p>
+
+<pre><code class="language-bash">root@server:~/unified# ./bin/hello.sh
+Hello Gerard Monells!
+root@server:~/unified#
+</code></pre>
+
+<p>Ahora vamos a crear nuevas carpetas y nuevos ficheros, por ejemplo, una carpeta <em>data</em> con un fichero <em>greetings</em>.</p>
+
+<pre><code class="language-bash">root@server:~/unified# mkdir data
+root@server:~/unified# ./bin/hello.sh &gt; data/greetings
+root@server:~/unified#
+</code></pre>
+
+<p>Volvemos al nivel de carpetas anteriores, para investigar lo que está pasando.</p>
+
+<pre><code class="language-bash">root@server:~/unified# cd ..
+root@server:~#
+</code></pre>
+
+<p>Podemos ver que el sistema <em>base</em> ha quedado intacto. De la misma forma, todas las modificaciones respecto a la base se han almacenado en la carpeta <em>changes</em>. En conjunto, nos queda la carpeta <em>unified</em> con la suma de ambos.</p>
+
+<pre><code class="language-bash">root@server:~# tree
+.
+├── base
+│   ├── bin
+│   │   └── hello.sh
+│   └── conf
+│       └── hello.conf
+├── changes
+│   ├── conf
+│   │   └── hello.conf
+│   └── data
+│       └── greetings
+└── unified
+    ├── bin
+    │   └── hello.sh
+    ├── conf
+    │   └── hello.conf
+    └── data
+        └── greetings
+
+10 directories, 7 files
+root@server:~#
+</code></pre>
+
+<p>Es fácil intuir que el fichero <em>greetings</em> es el de la capa de cambios, ya que no hay otro. En el caso del fichero <em>hello.conf</em> modificado, se ha modificado el de la capa de cambios, y es el que vemos en el punto de montaje <em>unified</em>, aunque hayan dos.</p>
+
+<pre><code class="language-bash">root@server:~# cat base/conf/hello.conf
+NAME=&quot;Gerard&quot;
+root@server:~# cat unified/conf/hello.conf
+NAME=&quot;Gerard Monells&quot;
+root@server:~# cat changes/conf/hello.conf
+NAME=&quot;Gerard Monells&quot;
+root@server:~#
+</code></pre>
+
+<p><strong>TRUCO</strong>: el sistema de ficheros de solo lectura <em>base</em> no tiene porque estar en una carpeta; podría tratarse se un sistema de fichero simulado montado en un fichero, montado mediante un <strong>mount -o loop</strong>; por ejemplo, un sistema de ficheros <strong>squashfs</strong>.</p>
+
+<p>De hecho, como la capa <em>base</em> no se modifica, nada nos impide crear otro sistema de ficheros, a base de sumar esta misma <em>base</em> con otra capa de cambios.</p>
+
+<pre><code class="language-bash">root@server:~# mkdir changes2 unified2
+root@server:~# mount -t aufs -o br:changes2=rw:base=ro none unified2
+root@server:~#
+</code></pre>
+
+<p>Y con esto tenemos dos sistemas de ficheros, <em>unified</em> y <em>unified2</em>, que comparten una capa <em>base</em> común.</p>
+
+<pre><code class="language-bash">root@server:~# tree
+.
+├── base
+│   ├── bin
+│   │   └── hello.sh
+│   └── conf
+│       └── hello.conf
+├── changes
+│   ├── conf
+│   │   └── hello.conf
+│   └── data
+│       └── greetings
+├── changes2
+├── unified
+│   ├── bin
+│   │   └── hello.sh
+│   ├── conf
+│   │   └── hello.conf
+│   └── data
+│       └── greetings
+└── unified2
+    ├── bin
+    │   └── hello.sh
+    └── conf
+        └── hello.conf
+
+14 directories, 9 files
+root@server:~#
+</code></pre>
+
+<p>En este caso no supone mucho ahorro, ya que la capa base es pequeña, pero&hellip; ¿os imagináis que la capa base es una jaula entera resultado de un <strong>debootstrap</strong>?</p>
+
+<p>De hecho, esta capa <em>base</em> compartida no hay que copiarla, con lo que ganamos tiempo al crear una jaula grande, y además, si lo juntamos con <strong>squashfs</strong> podemos ahorrar bastante espacio.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

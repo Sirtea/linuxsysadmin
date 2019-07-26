@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Markdown en el navegador: la librería javascript Marked - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Markdown en el navegador: la librería javascript Marked</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-07-15
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/html.html">html</a> / <a href="/tag/markdown.html">markdown</a> / <a href="/tag/marked.html">marked</a>
+</p>
+
+<p>En otros artículos hablé de una librería <em>javascript</em> que nos permitía escribir documentación de forma fácil, escribiendo en el fichero <code>.html</code> el contenido en lenguaje de marcado <strong>markdown</strong>. Se trataba de <a href="/2016/12/documentacion-facil-con-markdown-y-strapdownjs.html">Strapdown</a> y le he dado mucho uso desde entonces; aunque soy minimalista y me gusta ir a lo básico.</p>
+
+<p>Y es que este proyecto es muy claro en los créditos de <a href="https://strapdownjs.com/">su página web</a>; basan su trabajo en:</p>
+
+<blockquote>
+<p>Marked - Fast Markdown parser in JavaScript<br />
+Google Code Prettify - Syntax highlighting in JavaScript<br />
+Twitter Bootstrap - Beautiful, responsive CSS framework<br />
+Bootswatch - Additional Bootstrap themes</p>
+</blockquote>
+
+<p>Si asumimos que no necesitamos iluminación de sintaxis, y queremos evitar el <em>framework bootstrap</em> por su pesadez, lo lógico es usar directamente la librería de <strong>markdown</strong>; esto también nos da más control sobre los <em>tags</em> que deben interpretarse como <strong>markdown</strong> y reemplazarse por el HTML generado.</p>
+
+<p>Lo primero para entender como funciona es ir a <a href="https://marked.js.org/#/README.md">su documentación</a>. El primer ejemplo es de lo más simple y no entraña ninguna complicación:</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;/&gt;
+  &lt;title&gt;Marked in the browser&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div id=&quot;content&quot;&gt;&lt;/div&gt;
+  &lt;script src=&quot;https://cdn.jsdelivr.net/npm/marked/marked.min.js&quot;&gt;&lt;/script&gt;
+  &lt;script&gt;
+    document.getElementById('content').innerHTML =
+      marked('# Marked in browser\n\nRendered by **marked**.');
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>Lo que debemos entender es que el contenido <strong>markdown</strong> se entrega a una función llamada <code>marked</code> que devuelve el contenido HTML. Este contenido es utilizado para llenar el <em>innerHTML</em> del elemento que queramos utilizar para pintarlo.</p>
+
+<p>Este ejemplo ha decidido no utilizar complicaciones; uso un contenido básico, lo paso a la función y lo pongo en el elemento con <code>id=content</code>. Esto se hace inmediatamente y no hay ni editores, ni repintado mientras escribimos ni nada. Si os interesa, esto lo tenéis que implementar vosotros.</p>
+
+<p>Para intentar emular el funcionamiento de <strong>Strapdown</strong> necesitamos tomar algunas decisiones de diseño:</p>
+
+<ul>
+<li>El contenido no cambia, así que ya nos viene bien que se pinte al principio.</li>
+<li>El contenido está escrito en un elemento HTML y se va a reemplazar por el equivalente en HTML.</li>
+<li>Ya puestos a pedir, podemos querer poner varias zonas de contenido <strong>markdown</strong>, por ejemplo, los que tengan <code>class=markdown</code>.</li>
+</ul>
+
+<p>Con estas premisas, no es difícil modificar el ejemplo para que haga lo que nos interesa. Solo habrían dos grandes cambios que hacer:</p>
+
+<ul>
+<li>Iterar todos los posibles elementos con <code>class=markdown</code>, que pueden ser varios.</li>
+<li>Reemplazar los <code>innerHTML</code> de los elementos <strong>markdown</strong> por el HTML resultante de <code>marked(innerHTML)</code>.</li>
+</ul>
+
+<p>De esta manera, quedaría algo como esto:</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;/&gt;
+  &lt;title&gt;Lorem Ipsum&lt;/title&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot; /&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;style.css&quot; /&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;div class=&quot;markdown&quot;&gt;
+
+# Tenebor nunc praedictaque
+
+## Constitit forte delubraque gladio soporem dum odium
+
+Lorem markdownum gratare stellamque senis quiescere auxiliaria tuos tetigere
+horrenda reposcunt, vulnera aether deus saevior merguntque cortex spatii;
+sucoque? Falcato omnes, laborum quem quaeris
+[nomen](http://www.praequestus.com/loqui.html) cede dolore, nebulas *Pandione*.
+
+  &lt;/div&gt;
+  &lt;script src=&quot;https://cdn.jsdelivr.net/npm/marked/marked.min.js&quot;&gt;&lt;/script&gt;
+  &lt;script&gt;
+    var l = document.getElementsByClassName('markdown');
+    var i;
+    for (i = 0; i &lt; l.length; i++) {
+      l[i].innerHTML = marked(l[i].innerHTML);
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>De esta forma solo tenemos que implementar un estilo propio y añadir un título más adecuado. Esto se consigue cambiando el HTML base, y posiblemente creando un fichero <code>style.css</code> a nuestro gusto. En mi caso seguí los consejos de <a href="/2018/10/trucos-simples-de-css-para-que-tu-pagina-se-vea-aceptable.html">otro artículo</a>.</p>
+
+<p><strong>TRUCO</strong>: Para el contenido de ejemplo he utilizado una herramienta web externa, que bien merece una mención: <a href="https://jaspervdj.be/lorem-markdownum/">https://jaspervdj.be/lorem-markdownum/</a>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

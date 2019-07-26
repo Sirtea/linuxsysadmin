@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Evitando usar virtualenv mediante el uso de PYTHONPATH - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Evitando usar virtualenv mediante el uso de PYTHONPATH</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-01-22
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/virtualenv.html">virtualenv</a> / <a href="/tag/pip.html">pip</a>
+</p>
+
+<p>Soy un gran fan de <strong>python</strong> y siempre ando trasteando con alguna librería nueva, en vistas a un <em>script</em> para simplificar mi trabajo, o simplemente como un <em>wekeend project</em>. Me es infinitamente útil usar <strong>virtualenv</strong>, pero genera una carpeta que ocupa demasiado y contiene algo más que solamente las librerías.</p>
+
+<p>De hecho, solo tenemos que comprobar lo que ocupa un <em>virtualenv</em> vacío:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ virtualenv env
+New python executable in /home/gerard/test/env/bin/python
+Installing setuptools, pip, wheel...done.
+gerard@aldebaran:~/test$ du -sh env/
+16M	env/
+gerard@aldebaran:~/test$ 
+</code></pre>
+
+<p>Por el propio funcionamiento de <strong>python</strong>, las carpetas de librerías son relativas al binario del mismo lenguaje, así que no es de extrañar que <em>virtualenv</em> ponga un binario en cada entorno; activar este entorno se limita a poner la carpeta <em>bin/</em> del <em>virtualenv</em> en el <em>PATH</em>. A esto le añadimos las herramientas <em>pip</em> y <em>easy_install</em>, y tenemos un montón de espacio desperdiciado.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ find env/ -type f | xargs ls -lrSh 2&gt;/dev/null | tail
+-rw-r--r-- 1 gerard gerard 114K mar 22 15:13 env/lib/python2.7/site-packages/pkg_resources/__init__.pyc
+-rw-r--r-- 1 gerard gerard 114K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/pkg_resources/__init__.pyc
+-rw-r--r-- 1 gerard gerard 115K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/html5lib/html5parser.py
+-rw-r--r-- 1 gerard gerard 119K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/html5lib/html5parser.pyc
+-rw-r--r-- 1 gerard gerard 219K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/pyparsing.py
+-rw-r--r-- 1 gerard gerard 221K mar 22 15:13 env/lib/python2.7/site-packages/pyparsing.pyc
+-rw-r--r-- 1 gerard gerard 222K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/pyparsing.pyc
+-rw-r--r-- 1 gerard gerard 226K mar 22 15:13 env/lib/python2.7/site-packages/pyparsing.py
+-rw-r--r-- 1 gerard gerard 337K mar 22 15:13 env/lib/python2.7/site-packages/pip/_vendor/requests/cacert.pem
+-rwxr-xr-x 1 gerard gerard 3,7M mar 22 15:13 env/bin/python
+gerard@aldebaran:~/test$ 
+</code></pre>
+
+<p>Las carpetas desde las que se cargan los módulos y librerías de <strong>python</strong> no son inmutables; se pueden añadir en <em>runtime</em> a la lista <em>sys.path</em> o se puede indicar en las variables de entorno del sistema, como podemos ver en <a href="https://docs.python.org/2/using/cmdline.html#envvar-PYTHONPATH">la documentación</a>. Solo necesitamos una manera de instalarlas en una carpeta propia, y esto es precisamente lo que nos permite el <em>flag &ndash;target</em> de <em>pip</em>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ pip install -t libs mongoengine
+Collecting mongoengine
+Collecting six (from mongoengine)
+  Using cached six-1.10.0-py2.py3-none-any.whl
+Collecting pymongo&gt;=2.7.1 (from mongoengine)
+  Using cached pymongo-3.4.0-cp27-cp27mu-manylinux1_x86_64.whl
+Installing collected packages: six, pymongo, mongoengine
+Successfully installed mongoengine-0.11.0 pymongo-3.4.0 six-1.10.0
+gerard@aldebaran:~/test$ 
+</code></pre>
+
+<p>Y eso nos instala las librerías con sus dependencias en la carpeta <em>libs/</em>, que va a crear si hace falta.</p>
+
+<p><strong>NOTA</strong>: Si el paquete instalaba binarios, no va a hacerlo, ya que no dispone de tal carpeta para dejarlo; este método no sería posible.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ tree -d libs/
+libs/
+├── bson
+├── gridfs
+├── mongoengine
+│   ├── base
+│   └── queryset
+├── mongoengine-0.11.0.dist-info
+├── pymongo
+├── pymongo-3.4.0.dist-info
+└── six-1.10.0.dist-info
+
+9 directories
+gerard@aldebaran:~/test$ du -sh libs/
+3,2M	libs/
+gerard@aldebaran:~/test$ 
+</code></pre>
+
+<p>A pesar de la reducción de tamaño en disco, esto por sí solo no nos sirve de nada; si no le indicamos donde tiene que buscar <strong>mongoengine</strong>, el intérprete va a fallar importándolo:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ python
+Python 2.7.9 (default, Jun 29 2016, 13:08:31) 
+[GCC 4.9.2] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import mongoengine
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+ImportError: No module named mongoengine
+&gt;&gt;&gt; 
+</code></pre>
+
+<p>Para usar esa carpeta de librerías, solo necesitamos que el intérprete de <strong>python</strong> sepa donde están, sea por la variable de entorno o modificando la lista de carpetas <em>sys.path</em> en <em>runtime</em>.</p>
+
+<p>Veamos ambos casos, empezando con la opción en <em>runtime</em>:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ python
+Python 2.7.9 (default, Jun 29 2016, 13:08:31) 
+[GCC 4.9.2] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import mongoengine
+Traceback (most recent call last):
+  File &quot;&lt;stdin&gt;&quot;, line 1, in &lt;module&gt;
+ImportError: No module named mongoengine
+&gt;&gt;&gt; import sys
+&gt;&gt;&gt; sys.path.append('libs')
+&gt;&gt;&gt; import mongoengine
+&gt;&gt;&gt; 
+</code></pre>
+
+<p>Y solo queda hacerlo mediante el uso de la variable de entorno <em>PYTHONPATH</em>, sea exportándola para su uso futuro, o modificándola solo para el proceso acompañante:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/test$ PYTHONPATH=libs python
+Python 2.7.9 (default, Jun 29 2016, 13:08:31) 
+[GCC 4.9.2] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import mongoengine
+&gt;&gt;&gt; 
+&gt;&gt;&gt; exit()
+gerard@aldebaran:~/test$ export PYTHONPATH=libs
+gerard@aldebaran:~/test$ python
+Python 2.7.9 (default, Jun 29 2016, 13:08:31) 
+[GCC 4.9.2] on linux2
+Type &quot;help&quot;, &quot;copyright&quot;, &quot;credits&quot; or &quot;license&quot; for more information.
+&gt;&gt;&gt; import mongoengine
+&gt;&gt;&gt; 
+</code></pre>
+
+<p>Ahora toca elegir cual de las dos formas os gusta más. Yo suelo utilizar la variable de entorno cuando ejecuto un <em>script</em> de <em>bash</em>, sino lo hago mediante <em>python</em>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

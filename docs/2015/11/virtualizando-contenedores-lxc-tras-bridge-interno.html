@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Virtualizando contenedores LXC tras bridge interno - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Virtualizando contenedores LXC tras bridge interno</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-11-23
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/virtualizacion.html">Virtualización</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/lxc.html">lxc</a> / <a href="/tag/bridge.html">bridge</a> / <a href="/tag/firehol.html">firehol</a>
+</p>
+
+<p>En un artículo anterior propusimos virtualizar contenedores en la red de la máquina <em>host</em>. Sin embargo, puede ser mas interesante esconder los contenedores detrás de una máquina que haga las funciones de <em>host</em> y de <em>firewall</em>. Expondremos una serie de puertos tras la misma dirección <em>IP</em> mediante el protocolo <em>NAT</em>.</p>
+
+<p>Para conseguir este objetivo, se van a usar las siguientes tecnologías:</p>
+
+<ul>
+<li><strong>Debian jessie</strong>: Es necesario usar alguna distribución de linux para hacer funcionar LXC</li>
+<li><strong>LXC</strong>: Tecnología que permite aislar los contenedores entre sí y darles entidad propia</li>
+<li><strong>Bridges</strong>: Un bridge es en software el equivalente a un switch hardware</li>
+<li><strong>Firehol</strong>: Una serie de scripts para construir firewalls basados en iptables de forma fácil</li>
+</ul>
+
+<p>En cuanto a las capacidades hardware, vamos a hacer el tutorial con un equipo de capacidades modestas, virtualizado en una máquina virtual VirtualBox.</p>
+
+<ul>
+<li><strong>CPUs</strong>: 1</li>
+<li><strong>Memoria</strong>: 256 Mb</li>
+<li><strong>Disco</strong>: 2 Gb</li>
+<li><strong>Red</strong>: 1 interfaz (<em>eth0</em>) <em>host-only</em> o <em>bridged</em> con IP fija</li>
+</ul>
+
+<p>Partimos de una distribución <em>Debian jessie</em> instalada con un CD <em>netinstall</em> y con el único paquete instalado <em>openssh-server</em>, para mi comodidad.</p>
+
+<h2 id="preparar-el-servidor">Preparar el servidor</h2>
+
+<p>El primer paso consiste en instalar las tecnologías usadas:</p>
+
+<pre><code class="language-bash">root@lxc:~# apt-get install bridge-utils firehol lxc
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias       
+Leyendo la información de estado... Hecho
+...
+Configurando lxc (1:1.0.6-6+deb8u2) ...
+Configurando dh-python (1.20141111-2) ...
+Procesando disparadores para libc-bin (2.19-18+deb8u1) ...
+Procesando disparadores para systemd (215-17+deb8u2) ...
+root@lxc:~# 
+</code></pre>
+
+<p>Ahora vamos a modificar la configuración de red, para habilitar el <em>bridge</em> en el que vamos a conectar el resto de contenedores virtualizados. Como dato importante, se define una interfaz falsa en la directiva <em>bridge_ports</em> para que la <em>unit</em> de red lo levante automáticamente.</p>
+
+<p><strong>ANTES</strong>:</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/network/interfaces
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+	address 192.168.56.4
+	netmask 255.255.255.0
+	gateway 192.168.56.1
+root@lxc:~# 
+</code></pre>
+
+<p><strong>DESPUES</strong>:</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/network/interfaces
+source /etc/network/interfaces.d/*
+
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+	address 192.168.56.4
+	netmask 255.255.255.0
+	gateway 192.168.56.1
+
+auto lxc0
+iface lxc0 inet static
+	bridge_ports dummy
+	address 10.0.0.1
+	netmask 255.255.255.0
+root@lxc:~# 
+</code></pre>
+
+<p>Ahora toca reiniciar el servicio de red, para que el nuevo <em>bridge</em> quede configurado como debe estarlo.</p>
+
+<pre><code class="language-bash">root@lxc:~# service networking restart
+root@lxc:~# 
+</code></pre>
+
+<p>El siguiente paso consiste en poner las reglas de <em>firewall</em> necesarias para proteger al equipo anfitrión y para permitirle actuar como <em>gateway</em> para los contenedores tras el <em>bridge</em>.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf 
+interface eth0 world
+	policy drop
+	protection strong
+	server ssh accept
+	client all accept
+
+interface lxc0 lan
+	policy drop
+	client all accept
+
+router lan2world inface lxc0 outface eth0
+	masquerade
+	route all accept
+root@lxc:~# 
+</code></pre>
+
+<p>Hay que modificar otro fichero para permitir el inicio del <em>firewall</em>:</p>
+
+<p><strong>ANTES</strong>:</p>
+
+<pre><code class="language-bash">root@lxc:~# grep START /etc/default/firehol 
+#To enable firehol at startup set START_FIREHOL=YES
+START_FIREHOL=NO
+root@lxc:~# 
+</code></pre>
+
+<p><strong>DESPUES</strong>:</p>
+
+<pre><code class="language-bash">root@lxc:~# grep START /etc/default/firehol 
+#To enable firehol at startup set START_FIREHOL=YES
+START_FIREHOL=YES
+root@lxc:~# 
+</code></pre>
+
+<p>Y para acabar, reiniciamos el servicio <em>firehol</em>.</p>
+
+<pre><code class="language-bash">root@lxc:~# service firehol restart
+...
+root@lxc:~# 
+</code></pre>
+
+<h2 id="creación-de-contenedores">Creación de contenedores</h2>
+
+<p>La creación de contenedores pasa por usar las herramientas estándar de la distribución, a lo solo tendremos que modificar algunas configuraciones propias de nuestra red.</p>
+
+<p>Creamos un contenedor <em>webserver</em> como demostración. La primera que se crea es un poco lenta porque hace un <em>debootstrap</em> de una distribución <em>Debian estable</em> para crear una cache en <em>/var/cache/lxc</em>; las siguientes se benefician de esta caché y solo la actualizan, acelerando el proceso.</p>
+
+<pre><code class="language-bash">root@lxc:~# lxc-create -n webserver -t debian
+debootstrap is /usr/sbin/debootstrap
+Checking cache download in /var/cache/lxc/debian/rootfs-jessie-i386 ... 
+Downloading debian minimal ...
+...
+
+I: Base system installed successfully.
+Download complete.
+Copying rootfs to /var/lib/lxc/webserver/rootfs...
+...
+Current default time zone: 'Europe/Madrid'
+Local time is now:      Mon Nov 23 16:29:36 CET 2015.
+Universal Time is now:  Mon Nov 23 15:29:36 UTC 2015.
+
+Root password is 'E3+K9SpU', please change !
+root@lxc:~# 
+</code></pre>
+
+<p>Acabada la generación del contenedor, vamos a configurarle algunos parámetros; que tenga una interfaz <em>eth0</em> activa y enchufada al bridge <em>lxc0</em>, y que el contenedor se inicie automáticamente en cada reinicio del anfitrión.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /var/lib/lxc/webserver/config 
+...
+lxc.start.auto = 1
+lxc.network.type = veth
+lxc.network.flags = up
+lxc.network.link = lxc0
+lxc.network.name = eth0
+root@lxc:~# 
+</code></pre>
+
+<p>Y para que su interfaz de red sea funcional, vamos a configurarle una dirección IP. Todo esto se hace en los ficheros habituales, teniendo en cuenta que un contenedor es una jaula, y que esta se encuentra en <em>/var/lib/lxc/webserver/rootfs/</em></p>
+
+<pre><code class="language-bash">root@lxc:~# cat /var/lib/lxc/webserver/rootfs/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+	address 10.0.0.2
+	netmask 255.255.255.0
+	gateway 10.0.0.1
+root@lxc:~# 
+</code></pre>
+
+<p>El contenedor ya está funcional, y se puede levantar:</p>
+
+<pre><code class="language-bash">root@lxc:~# lxc-start -n webserver -d
+root@lxc:~# 
+</code></pre>
+
+<p>Supongamos que este nuevo contenedor tiene un servidor web y queremos hacerlo disponible en puerto 80 del <em>host</em>, mediante el protocolo <em>NAT</em>. También se necesita definir una regla de <em>forward</em> para permitir ese tráfico. Se reinicia el servicio <em>firehol</em> para aplicar las nuevas reglas.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf 
+dnat 10.0.0.2:80 proto tcp dst 192.168.56.4 dport 80
+
+interface eth0 world
+	policy drop
+	protection strong
+	server ssh accept
+	client all accept
+
+interface lxc0 lan
+	policy drop
+	client all accept
+
+router lan2world inface lxc0 outface eth0
+	masquerade
+	route all accept
+
+router world2lan inface eth0 outface lxc0
+	route http accept dst 10.0.0.2
+root@lxc:~# service firehol restart
+...
+root@lxc:~# 
+</code></pre>
+
+<p>Ahora podemos acceder al servidor web instalado en el contenedor <em>webserver</em> mediante el puerto 80 del <em>host</em>.</p>
+
+<p>Supongamos que tenemos otro contenedor con un servidor de aplicaciones escuchando en el puerto 8080 con dirección 10.0.0.3 y pretendemos que el contenedor original haga de <em>proxy HTTP</em>. Esta funcionalidad requiere que el contenedor <em>webserver</em> pueda conectarse al puerto 8080 del nuevo contenedor <em>appserver</em>. Esta regla de <em>forward</em> aplica a todas las conexiones que inician y finalizan en el <em>bridge</em>.</p>
+
+<pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf 
+dnat 10.0.0.2:80 proto tcp dst 192.168.56.4 dport 80
+
+interface eth0 world
+	policy drop
+	protection strong
+	server ssh accept
+	client all accept
+
+interface lxc0 lan
+	policy drop
+	client all accept
+
+router lan2world inface lxc0 outface eth0
+	masquerade
+	route all accept
+
+router world2lan inface eth0 outface lxc0
+	route http accept dst 10.0.0.2
+
+router internal inface lxc0 outface lxc0
+	route webcache accept src 10.0.0.2 dst 10.0.0.3
+root@lxc:~# 
+</code></pre>
+
+<p>Y con eso tenemos nuestro <em>proxy HTTP</em> funcionando.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

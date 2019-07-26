@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Generadores de contenido web estáticos - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Generadores de contenido web estáticos</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-03-13
+	<strong>Tiempo de lectura</strong>: 9 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/html.html">html</a> / <a href="/tag/generador-estatico.html">generador estático</a> / <a href="/tag/hugo.html">hugo</a>
+</p>
+
+<p>Antes de la masiva invasión de <strong>PHP</strong> y <strong>mysql</strong> en todos los proveedores de internet, existían solamente las páginas <strong>HTML</strong> estáticas. Los servidores eran más simples y tenían menos superficie de ataque, aunque mantener las páginas web era un auténtica pesadilla; para eso se han creado los generadores web estáticos.</p>
+
+<p>Cuando solicitamos una página web a un servidor dinámico, existe un código fuente que se suele encargar de conseguir los datos de una base de datos y mezclarlos con un tema para generar la página, todo en tiempo de <em>runtime</em>. Este modelo es relativamente lento y exige la existencia de una base de datos y de un procesado en el servidor, aunque suele ofrecer una bonita interfaz para añadir contenido <em>online</em> desde casi cualquier sitio.</p>
+
+<p>Este modelo es muy adecuado para páginas y <strong>APIs</strong> con un contenido rápidamente cambiante, pero para una página tipo <em>blog</em> es poco eficiente. Si tenemos en cuenta que un <em>blog</em> se actualiza relativamente poco, pero se lee teóricamente mucho, entonces necesitamos reducir el tiempo de <em>renderizado</em> de la página, incluso suprimiéndolo.</p>
+
+<p>Sin embargo, a alguien se le ocurrió una idea nueva: ¿que pasaría si cuando un editor cambia su contenido, generara <strong>TODAS</strong> las páginas posibles y el servidor se limitara a servir esos ficheros previamente generados?</p>
+
+<p>En este caso, solamente necesitaríamos un servidor web normal, como por ejemplo <em>Apache</em> o <em>Nginx</em>, e incluso se podría alojar gratuitamente en servicios que sirvan páginas <strong>HTML</strong> estáticas, como por ejemplo, en <em>GitHub</em>.</p>
+
+<p><strong>NOTA</strong>: La combinación de <em>GitHub Pages</em> con el generador estático <em>Pelican</em> es lo que utiliza este <em>blog</em> para llegar al público general.</p>
+
+<p>La clave de éxito para simplificar el mantenimiento de cualquier página web consiste en separar el contenido de la presentación, de forma que un editor no necesita conocer <strong>HTML</strong> para crear su web, mientras que un diseñador se puede limitar a crear temas. También es interesante usar un formato de ficheros para no depender de una base de datos.</p>
+
+<p>Con esto en mente, la mayoría de los generadores estáticos son mas o menos iguales: se trata de un <em>software</em> que se dedica a generar todas las páginas web a partir de un contenido (normalmente en ficheros) y de unas plantillas (el tema). Como la lista es gigantesca, vamos a dejar a otros que la mantengan, pero ejemplo en <a href="https://www.staticgen.com/">StaticGen - Top Open-Source Static Site Generators</a>.</p>
+
+<h2 id="un-caso-práctico-con-hugo">Un caso práctico con Hugo</h2>
+
+<p>Ojeando el <em>ranking</em>, vemos que la lista es muy larga y elegir una de estas soluciones no es fácil. Vamos a ser prácticos: no quiero instalar <strong>ruby</strong> en mi máquina, así que usaremos el siguiente, que es un binario solitario y no ensucia mi entorno de trabajo; además presume de ser rápido. Así pues, el candidato es <a href="http://gohugo.io/">Hugo</a>.</p>
+
+<p>Otros enlaces de interés para seguir este artículo se localizan en la documentación, concretamente en <a href="http://gohugo.io/overview/installing/">Installing</a> y en <a href="http://gohugo.io/overview/installing/">Quickstart</a>. Encontraréis una buena documentación de cada aspecto del funcionamiento en la barra lateral de cualquier página de documentación.</p>
+
+<h3 id="instalación">Instalación</h3>
+
+<p>En mi caso, la <em>release</em> que necesito es <a href="https://github.com/spf13/hugo/releases/download/v0.18.1/hugo_0.18.1_Linux-64bit.tar.gz">https://github.com/spf13/hugo/releases/download/v0.18.1/hugo_0.18.1_Linux-64bit.tar.gz</a>. Así que la descargo. El fichero comprimido lleva el binario y otros ficheros de documentación.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~$ tar tf hugo_0.18.1_Linux-64bit.tar.gz 
+hugo_0.18.1_linux_amd64/hugo_0.18.1_linux_amd64
+hugo_0.18.1_linux_amd64/README.md
+hugo_0.18.1_linux_amd64/LICENSE.md
+gerard@aldebaran:~$ 
+</code></pre>
+
+<p>Lo descomprimimos y lo ponemos en algún lugar del <em>path</em> por comodidad, asegurando que tiene permisos de ejecución y que lo ejecutamos sin problemas:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~$ tar xf hugo_0.18.1_Linux-64bit.tar.gz 
+gerard@aldebaran:~$ cp hugo_0.18.1_linux_amd64/hugo_0.18.1_linux_amd64 ~/bin/hugo
+gerard@aldebaran:~$ chmod a+x bin/hugo 
+gerard@aldebaran:~$ hugo version
+Hugo Static Site Generator v0.18.1 BuildDate: 2017-02-14T13:43:15+01:00
+gerard@aldebaran:~$ 
+</code></pre>
+
+<h3 id="creación-de-una-nueva-web">Creación de una nueva web</h3>
+
+<p>Nuestra nueva web necesita una estructura de carpetas muy concreta que podemos crear con un simple comando, indicando la carpeta contenedora.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ hugo new site site1
+Congratulations! Your new Hugo site is created in /home/gerard/workspace/site1.
+
+Just a few more steps and you're ready to go:
+
+1. Download a theme into the same-named folder.
+   Choose a theme from https://themes.gohugo.io/, or
+   create your own with the &quot;hugo new theme &lt;THEMENAME&gt;&quot; command.
+2. Perhaps you want to add some content. You can add single files
+   with &quot;hugo new &lt;SECTIONNAME&gt;/&lt;FILENAME&gt;.&lt;FORMAT&gt;&quot;.
+3. Start the built-in live server via &quot;hugo server&quot;.
+
+Visit https://gohugo.io/ for quickstart guide and full documentation.
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>O de forma similar, para usar la carpeta actual:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ mkdir site2
+gerard@aldebaran:~/workspace$ cd site2
+gerard@aldebaran:~/workspace/site2$ hugo new site .
+Congratulations! Your new Hugo site is created in /home/gerard/workspace/site2.
+
+Just a few more steps and you're ready to go:
+
+1. Download a theme into the same-named folder.
+   Choose a theme from https://themes.gohugo.io/, or
+   create your own with the &quot;hugo new theme &lt;THEMENAME&gt;&quot; command.
+2. Perhaps you want to add some content. You can add single files
+   with &quot;hugo new &lt;SECTIONNAME&gt;/&lt;FILENAME&gt;.&lt;FORMAT&gt;&quot;.
+3. Start the built-in live server via &quot;hugo server&quot;.
+
+Visit https://gohugo.io/ for quickstart guide and full documentation.
+gerard@aldebaran:~/workspace/site2$ cd ..
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>Así nos queda el esqueleto de nuestra carpeta contenedora:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ tree -F
+.
+├── archetypes/
+├── content/
+├── data/
+├── layouts/
+├── static/
+├── themes/
+└── config.toml
+
+6 directories, 1 file
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p>Ahora necesitamos un tema para <em>renderizar</em> nuestra web. Podemos crear un tema propio siguiendo la documentación, si así lo deseamos; para no extendernos, voy a utilizar uno que ya existe y que podemos encontrar en el sitio de <a href="http://themes.gohugo.io/">temas de Hugo</a>. Por defecto no viene ningún tema, así que las páginas saldrían en blanco.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ (cd themes; git clone https://github.com/comfusion/after-dark)
+Cloning into 'after-dark'...
+remote: Counting objects: 542, done.
+remote: Total 542 (delta 0), reused 0 (delta 0), pack-reused 542
+Receiving objects: 100% (542/542), 6.26 MiB | 941.00 KiB/s, done.
+Resolving deltas: 100% (296/296), done.
+Checking connectivity... done.
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p>Si miramos en la carpeta <code>themes/</code>, veremos que ha aparecido una nueva carpeta con el tema deseado; el nombre de la carpeta es el parámetro que vamos a usar para indicar que tema usaremos.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ ls themes/
+after-dark
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p>Es un buen momento para modificar la configuración del sitio, siendo especialmente importante indicar el tema a usar. Si no lo hacemos, tendremos que indicarlo como parámetro cada vez que invoquemos el resto de comandos.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ cat config.toml 
+languageCode = &quot;en-us&quot;
+title = &quot;My New Hugo Site&quot;
+baseurl = &quot;http://example.org/&quot;
+theme = &quot;after-dark&quot;
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: Para cambiar el tema de nuestra web, solo hace falta poner un tema nuevo en la carpeta <code>themes/</code> y configurar el fichero con el nuevo tema. Esto nos permite probar temas diferentes; de hecho, todas las páginas van a ser reconstruidas con el nuevo tema. Si solo queremos ver que tal queda un tema, no hace falta modificar el fichero de configuración; con ejecutar <code>hugo</code> con el <em>flag</em> <code>--theme &lt;tema&gt;</code> nos bastaría.</p>
+
+<h3 id="generando-contenido">Generando contenido</h3>
+
+<p>La mecánica básica de trabajo es muy simple: creamos un nuevo contenido, levantamos el servidor de desarrollo y nos limitamos a ir viendo como cambia la página tal como vamos modificando y guardando el contenido.</p>
+
+<p>El servidor de desarrollo es una herramienta muy útil, y no hay ningún motivo por el que no esté permanentemente corriendo mientras trabajamos:</p>
+
+<ul>
+<li>Levanta un servidor web local que sirve las páginas desde memoria</li>
+<li>Reconstruye el contenido en memoria cada vez que un fichero cambia</li>
+<li>Sustituye todas las ocurrencias del parámetro <code>baseurl</code> por <code>localhost</code>, para su funcionamiento local</li>
+</ul>
+
+<p>Esto significa que se generará ningún fichero en disco. Para eso hay otros comandos.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ hugo server
+Started building sites ...
+Built site for language en:
+0 draft content
+0 future content
+0 expired content
+0 regular pages created
+1 other pages created
+0 non-page files copied
+0 paginator pages created
+0 tags created
+0 categories created
+total in 14 ms
+Watching for changes in /home/gerard/workspace/site1/{data,content,layouts,static,themes}
+Serving pages from memory
+Web Server is available at http://localhost:1313/ (bind address 127.0.0.1)
+Press Ctrl+C to stop
+</code></pre>
+
+<p>Ahora creamos una nueva página, por ejemplo un <em>post</em> nuevo:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ hugo new post/lorem-ipsum.md
+/home/gerard/workspace/site1/content/post/lorem-ipsum.md created
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p>Y lo editamos a placer. Me voy a limitar a usar un generador de texto <em>markdown</em>, que se encuentra <a href="https://jaspervdj.be/lorem-markdownum/">aquí</a>.</p>
+
+<pre><code class="language-bash">+++
+description = &quot;no description&quot;
+date = &quot;2017-02-14T15:51:57+01:00&quot;
+title = &quot;Gratia retia iamque&quot;
+tags = [&quot;lorem&quot;, &quot;ipsum&quot;]
+categories = [&quot;uncathegorized&quot;]
+draft = false
++++
+
+
+
+## Mihi arguit hastam securaque face vigilans obruta
+
+Lorem markdownum amoris illis, spicea, daedalus intonsum procul certo dubioque, inmitibus. Verti frondescere et natura Hymettia carmine *candidus Agenorides* perdere.
+
+    swappableEbookHard.metaSkinNybble(simmApple);
+    desktopWebMouse = page(analog_rt_regular, eSession, menu_oem);
+    var prompt = dns_megabit(softShell(duplexMediaYoutube, netiquette, fontBrouterPng), 2);
+
+## Imagine sub nomine occursu
+
+Parvas pater. Ter modo quassaque collo. Aequora chori nec tumulum *gemitus quibus*.
+
+Odiumque duo, aera prolem mox silvas poteratque sagittis quoque crine fert. Longo ferarum temptaminis stagna vultum et urbe Peripha, Aeginam. Ne O acuto tam Thetis solita cognati robora sit tellure, et Alcyone moenia vitiorum. Solis iam omnes Lucina non suis *utroque novis* sagittam suo carchesia Achivi repleri ingratus quem.
+
+## Iactasque caelatus me foret aequi
+
+Has serta relictis, non Lucina, Phylius falsa adflata sudore. [Fago inserit palpitat](http://romamtot.io/hos) rubentia adspicit et dolore *refert ita*, et. Quod suppressis novat sororis ubique astu; pedibus spectabat dixere loquax comitem, nobis effugit; tibi cibo nunc oppugnant.
+
+Inania agat cum vidi cruribus et lanas nepotem Tethyn, umbris Agenorides stamina omnes sed fecit absumitur acclinia. Morati femina deam thyrsos vultus aequales suo deum faciem draconis diurnis liquor contentus.
+
+Sine in robora aureus ignavis bella vaga super multa saepe atque tot **sceleratior sunt**, est furiale. Felix flammas quiete; omnis vidi quoque sagittas cruentum prosunt tot vultus iamque! Auget comis me precibus vetus, hausit diversa an tulimus laniem amores *retro aequalique*. Molli arbore, altera nota; furore posuisset in post Midan pollice et multos poteras.
+</code></pre>
+
+<p>Vemos que el servidor de desarrollo ha detectado el cambio y ha regenerado el contenido:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ hugo server
+...
+Change detected, rebuilding site
+2017-02-14 15:56 +0100
+Source changed /home/gerard/workspace/site1/content/post/lorem-ipsum.md
+Built site for language en:
+0 draft content
+0 future content
+0 expired content
+1 regular pages created
+7 other pages created
+1 non-page files copied
+5 paginator pages created
+2 tags created
+1 categories created
+total in 8 ms
+</code></pre>
+
+<p>Y si apuntamos nuestro navegador a la URL sugerida <a href="http://localhost:1313/">http://localhost:1313/</a> podremos ver nuestro sitio web con las modificaciones pertinentes.</p>
+
+<p>A lo largo de la vida de la página, vamos a repetir este paso muchas veces, tal como queramos ir añadiendo más páginas.</p>
+
+<h3 id="listos-para-publicar">Listos para publicar</h3>
+
+<p>Finalmente estamos contentos con el contenido y decidimos que está listo para ser generado como ficheros <strong>HTML</strong> para su publicación. Esto se consigue con el uso del comando <code>hugo</code> sin mas parámetros.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/site1$ hugo
+Started building sites ...
+Built site for language en:
+0 draft content
+0 future content
+0 expired content
+1 regular pages created
+7 other pages created
+0 non-page files copied
+5 paginator pages created
+2 tags created
+1 categories created
+total in 27 ms
+gerard@aldebaran:~/workspace/site1$ 
+</code></pre>
+
+<p>Y esto nos deja los ficheros en la carpeta <code>public/</code> para que los publiquemos según nuestro método de despliegue favorito, sea <strong>FTP</strong>, <strong>rsync</strong>, o cualquier otro método. Encuentro especialmente interesante el <a href="https://gohugo.io/tutorials/github-pages-blog/">uso de GitHub</a> para alojar la web.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Monitorización y service discovery con Consul - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Monitorización y service discovery con Consul</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-04-23
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/consul.html">consul</a> / <a href="/tag/service-discovery.html">service discovery</a> / <a href="/tag/monitoring.html">monitoring</a>
+</p>
+
+<p>Hace poco me topé con una excelente pieza de <em>software</em> llamada <strong>Consul</strong>. Se trata de un binario que proporciona varios servicios: <em>node autodiscovery</em>, <em>service autodiscovery</em>, <em>health checking</em> y almacén de valores <em>key-value</em>. Todo ello mostrado en una interfaz web y suministrando un servidor DNS y una API que podemos usar.</p>
+
+<p>La idea es que todo servidor de tu infraestructura ejecuta un agente de <strong>Consul</strong>, y tras un protocolo de <em>gossip</em>, todos saben el estado general de nuestra infraestructura.</p>
+
+<p>Aunque es muy interesante tener uno o varios <em>server nodes</em> y varios <em>client nodes</em>, esto queda abierto para un artículo posterior. De momento nos vamos a limitar a tener un <em>server node</em> para demostración y desarrollo local.</p>
+
+<h2 id="instalación">Instalación</h2>
+
+<p><strong>Consul</strong> no necesita instalación; es un solo binario estático que solo tenemos que descargar de la <a href="https://www.consul.io/downloads.html">página de descargas</a> y ejecutar.</p>
+
+<p>En mi caso, y dada mi arquitectura <strong>Linux</strong> de 64 bits, me descargo el apropiado:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ wget https://releases.hashicorp.com/consul/1.0.3/consul_1.0.3_linux_amd64.zip
+--2018-02-02 13:29:34--  https://releases.hashicorp.com/consul/1.0.3/consul_1.0.3_linux_amd64.zip
+Conectando con 192.168.62.4:3128... conectado.
+Petición Proxy enviada, esperando respuesta... 200 OK
+Longitud: 11102212 (11M) [application/zip]
+Grabando a: “consul_1.0.3_linux_amd64.zip”
+
+consul_1.0.3_linux_amd64.zip    100%[=======================================================&gt;]  10,59M  1,29MB/s    in 6,4s
+
+2018-02-02 13:29:41 (1,66 MB/s) - “consul_1.0.3_linux_amd64.zip” guardado [11102212/11102212]
+
+gerard@atlantis:~/projects/consul$
+</code></pre>
+
+<p>Es un fichero <em>.zip</em> que solamente contiene el binario indicado.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ unzip -l consul_1.0.3_linux_amd64.zip
+Archive:  consul_1.0.3_linux_amd64.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+ 46660030  2018-01-24 16:06   consul
+---------                     -------
+ 46660030                     1 file
+gerard@atlantis:~/projects/consul$
+</code></pre>
+
+<p>Solo necesitamos extraer el contenido del fichero <em>.zip</em> y ponerlo en algún lugar del <em>path</em>, o simplemente ejecutarlo con el formato <code>./consul</code> que es lo que yo voy a hacer.</p>
+
+<p><strong>TRUCO</strong>: El binario viene con los símbolos de <em>debug</em>. Se puede reducir de 45mb a 26mb haciendo un <code>strip consul</code>.</p>
+
+<h2 id="ejecución-en-modo-de-desarrollo">Ejecución en modo de desarrollo</h2>
+
+<p>Todos los agentes de consul son servidores o clientes de un <em>cluster</em> más grande. Sin embargo, y con el único objeto de probar y escribir una configuración útil, se nos ofrece la posibilidad de levantar el agente en modo de desarrollo.</p>
+
+<p>Esto significa que ejecuta en memoria, sin necesidad de una carpeta local para escribir ninguna información de <em>runtime</em>, que se levanta como un <em>cluster</em> de un solo nodo y que levanta la interfaz web, lo que nos viene de perlas para la demostración.</p>
+
+<p><strong>NOTA</strong>: En un artículo futuro hablaremos de un <em>cluster</em> adecuado que implique varios nodos.</p>
+
+<p>Así sin más, lanzamos el comando; no es necesario nada más para algo simple.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ ./consul agent -dev
+==&gt; Starting Consul agent...
+==&gt; Consul agent running!
+           Version: 'v1.0.3'
+           Node ID: '2feeb781-3422-98ef-1938-e5b8494de0dc'
+         Node name: 'atlantis'
+        Datacenter: 'dc1' (Segment: '&lt;all&gt;')
+            Server: true (Bootstrap: false)
+       Client Addr: [127.0.0.1] (HTTP: 8500, HTTPS: -1, DNS: 8600)
+      Cluster Addr: 127.0.0.1 (LAN: 8301, WAN: 8302)
+           Encrypt: Gossip: false, TLS-Outgoing: false, TLS-Incoming: false
+
+==&gt; Log data will now stream in as it occurs:
+...
+</code></pre>
+
+<p><strong>TRUCO</strong>: Se recomienda usar el <em>flag</em> <code>-advertise</code> para que sepa cual es la dirección que queremos usar para el <em>cluster</em>. <strong>Consul</strong> intenta detectarla por sí mismo, pero es fácil que no lo haga como esperamos; es mejor indicarlo explícitamente.</p>
+
+<p>Esto nos levanta otros dos servicios en <em>localhost</em> y en diferentes puertos (tanto la IP como los puertos son configurables):</p>
+
+<ul>
+<li>Un servidor DNS en el puerto 8600</li>
+<li>Una bonita interfaz web en el puerto 8500, y una API en el mismo puerto</li>
+</ul>
+
+<p>Probemos el DNS; solo hay que saber que el nombre en el DNS se saca añadiendo al <em>hostname</em> el infijo <em>.node</em> y el sufijo <em>.consul</em> (configurable también).</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ dig @127.0.0.1 -p 8600 atlantis.node.consul
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Debian &lt;&lt;&gt;&gt; @127.0.0.1 -p 8600 atlantis.node.consul
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 4332
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;atlantis.node.consul.          IN      A
+
+;; ANSWER SECTION:
+atlantis.node.consul.   0       IN      A       10.0.2.15
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.1#8600(127.0.0.1)
+;; WHEN: Thu Feb 08 12:28:38 CET 2018
+;; MSG SIZE  rcvd: 65
+
+gerard@atlantis:~$
+</code></pre>
+
+<p>La interfaz web la podemos abrir en un navegador en <a href="http://localhost:8500/">http://localhost:8500/</a> y sería algo como esto:</p>
+
+<p><img src="https://1npo9l3lml0zvr6w62acc3t1-wpengine.netdna-ssl.com/wp-content/uploads/2017/06/consul-ui.png" alt="aaa" /></p>
+
+<h2 id="declarando-servicios">Declarando servicios</h2>
+
+<p>Vamos a levantar el agente de la misma forma, pero con el <em>flag</em> <code>-config-file</code>, lo que nos permite poner una configuración específica a nuestras necesidades.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ ./consul agent -dev -advertise 10.0.2.15 --config-file consul.json
+==&gt; Starting Consul agent...
+==&gt; Consul agent running!
+           Version: 'v1.0.3'
+           Node ID: '183c31b0-33aa-e4f4-ef77-fb844b371403'
+         Node name: 'atlantis'
+        Datacenter: 'dc1' (Segment: '&lt;all&gt;')
+            Server: true (Bootstrap: false)
+       Client Addr: [127.0.0.1] (HTTP: 8500, HTTPS: -1, DNS: 8600)
+      Cluster Addr: 10.0.2.15 (LAN: 8301, WAN: 8302)
+           Encrypt: Gossip: false, TLS-Outgoing: false, TLS-Incoming: false
+
+==&gt; Log data will now stream in as it occurs:
+...
+</code></pre>
+
+<p>El fichero de configuración declara servicios, en formato JSON; este es el ejemplo que he usado:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8001 },
+    { &quot;id&quot;: &quot;api&quot;, &quot;name&quot;: &quot;api&quot;, &quot;port&quot;: 8002 }
+  ]
+}
+gerard@atlantis:~/projects/consul$
+</code></pre>
+
+<p>Ambos servicios van a aparecer en la interfaz web y en la resolución DNS:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ dig @127.0.0.1 -p 8600 web.service.consul
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Debian &lt;&lt;&gt;&gt; @127.0.0.1 -p 8600 web.service.consul
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 21560
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;web.service.consul.            IN      A
+
+;; ANSWER SECTION:
+web.service.consul.     0       IN      A       10.0.2.15
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.1#8600(127.0.0.1)
+;; WHEN: Thu Feb 08 12:40:37 CET 2018
+;; MSG SIZE  rcvd: 63
+
+gerard@atlantis:~$ dig @127.0.0.1 -p 8600 api.service.consul
+
+; &lt;&lt;&gt;&gt; DiG 9.10.3-P4-Debian &lt;&lt;&gt;&gt; @127.0.0.1 -p 8600 api.service.consul
+; (1 server found)
+;; global options: +cmd
+;; Got answer:
+;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 6767
+;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 1
+;; WARNING: recursion requested but not available
+
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;api.service.consul.            IN      A
+
+;; ANSWER SECTION:
+api.service.consul.     0       IN      A       10.0.2.15
+
+;; Query time: 0 msec
+;; SERVER: 127.0.0.1#8600(127.0.0.1)
+;; WHEN: Thu Feb 08 12:40:38 CET 2018
+;; MSG SIZE  rcvd: 63
+
+gerard@atlantis:~$
+</code></pre>
+
+<p><strong>TRUCO</strong>: Si los servicios se declaran en varios nodos del <em>cluster</em>, el DNS nos va a devolver varias respuestas, indicando todas las direcciones IP en donde esté el servicio.</p>
+
+<h2 id="declarando-health-checks">Declarando health checks</h2>
+
+<p>Los <em>health checks</em> nos permiten indicar a <strong>consul</strong> si el nodo o sus servicios están funcionales. Esto se refleja en la web y en la resolución DNS, de forma que no se nos responde una IP si esta no está bien.</p>
+
+<p>Hay varios modelos de <em>checks</em>, de acuerdo con <a href="https://www.consul.io/docs/agent/checks.html">la documentación</a>. Además, estos <em>checks</em> pueden estar opcionalemente ligados a un servicio.</p>
+
+<ul>
+<li>Si falla un <em>check</em> ligado a un servicio, dicho servicio se da por malo.</li>
+<li>Si falla un <em>check</em> que no está ligado a ningún servicio, el nodo (servidor) entero se da por malo.</li>
+</ul>
+
+<p>Veamos un ejemplo:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/projects/consul$ cat consul.json
+{
+  &quot;services&quot;: [
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;port&quot;: 8001 },
+    { &quot;id&quot;: &quot;api&quot;, &quot;name&quot;: &quot;api&quot;, &quot;port&quot;: 8002 }
+  ],
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;ssh&quot;, &quot;tcp&quot;: &quot;localhost:22&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; },
+    { &quot;id&quot;: &quot;web&quot;, &quot;name&quot;: &quot;web&quot;, &quot;service_id&quot;: &quot;web&quot;, &quot;http&quot;: &quot;http://localhost:8001/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; },
+    { &quot;id&quot;: &quot;api&quot;, &quot;name&quot;: &quot;api&quot;, &quot;service_id&quot;: &quot;api&quot;, &quot;http&quot;: &quot;http://localhost:8002/&quot;, &quot;interval&quot;: &quot;5s&quot;, &quot;timeout&quot;: &quot;5s&quot; }
+  ]
+}
+gerard@atlantis:~/projects/consul$
+</code></pre>
+
+<p>En este caso, los <em>checks</em> ligados a servicios son el de web y el de la API. Esto se consigue mediante el parámetro <em>service_id</em>, que referencia al parámetro <em>id</em> del servicio.</p>
+
+<p>Supongamos que el <em>check</em> del servicio web falla, lo que simularemos parando el servidor web.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ dig @127.0.0.1 -p 8600 atlantis.node.consul +short
+10.0.2.15
+gerard@atlantis:~$ dig @127.0.0.1 -p 8600 web.service.consul +short
+gerard@atlantis:~$ dig @127.0.0.1 -p 8600 api.service.consul +short
+10.0.2.15
+gerard@atlantis:~$
+</code></pre>
+
+<p>Como podemos apreciar, el servicio web que no está funcionando, no se computa por <strong>consul</strong> como bueno, por lo que lo quita de las respuestas. Eso no afecta a los otros servicios o al nodo mismo.</p>
+
+<p>Así pues, si tenemos el servicio en 4 servidores y uno se cae, <strong>consul</strong> lo sabrá; y por lo tanto, solo va a devolver los 3 que quedan activos. Lo mismo pasa cuando el servicio se recupere.</p>
+
+<p>Si consumimos directamente este DNS, podemos ahorrarnos un balanceador; cada cliente es responsable de elegir una de las direcciones de la respuesta aleatoriamente.</p>
+
+<h2 id="conclusión">Conclusión</h2>
+
+<p>Teniendo una foto del estado de nuestros servicios, las posibilidades son infinitas:</p>
+
+<ul>
+<li>Podemos monitorizar directamente con la interfaz web</li>
+<li>Podemos consumir la API de <strong>consul</strong> con fines de automatización reactiva (por ejemplo notificando de alguna manera desde un <em>script</em>)</li>
+<li>Podemos limitarnos a usar el DNS</li>
+<li>Incluso podemos generar las configuraciones de un balanceador de forma automática usando la API, aunque eso es otra historia.</li>
+</ul>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

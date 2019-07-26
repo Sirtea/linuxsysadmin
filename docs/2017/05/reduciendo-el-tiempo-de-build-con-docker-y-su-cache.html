@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Reduciendo el tiempo de build con Docker y su caché - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Reduciendo el tiempo de build con Docker y su caché</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-05-08
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/dockerfile.html">dockerfile</a> / <a href="/tag/cache.html">cache</a>
+</p>
+
+<p>Cuando construimos imágenes <strong>docker</strong>, muchas veces no somos conscientes del poder de la caché integrada. Si reordenamos algunas instrucciones y aplicamos algún truco, podemos evitarnos el hecho de reconstruir muchas de esas capas, llegando a reducir el tiempo de <em>rebuild</em> a prácticamente cero, siempre y cuando no hayan grandes cambios.</p>
+
+<p>Esa es una reflexión que me hice el otro día. Es verdad que con la caché integrada me ahorro de descargar la imagen base y de instalar algunas dependencias habituales, pero usando la cabeza descubrí que puedo conseguir mucho más.</p>
+
+<p>Es muy habitual que tenga que construir proyectos que usen <strong>python</strong>, pero me molesta un poco tener que perder el tiempo en el comando <strong>pip</strong> instalando dependencias; hay que tener en cuenta que casi nunca cambian entre diferentes versiones y es un tiempo que no sería necesario.</p>
+
+<p>Así que hice el ejercicio de reordenar las instrucciones en mi <em>Dockerfile</em>, moviendo al principio aquellas instrucciones que raramente provocarán cambios, y dejando al final aquellas que es más frecuente que cambien, y por lo tanto, que necesiten ser reconstruidas.</p>
+
+<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
+
+<p>Para empezar, vamos a usar un aplicación simple, concretamente un <em>hello world</em> estándar con un <em>microframework</em> llamado <strong>bottle</strong>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ tree
+.
+├── app
+│   ├── app.py
+│   └── requirements.txt
+└── Dockerfile
+
+1 directory, 3 files
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Realmente la aplicación es lo de menos, siendo este ejemplo extrapolable a cada <em>framework</em> o librería que se necesite; se incluyen por tener el ejemplo completo.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ cat app/app.py 
+from bottle import Bottle
+
+app = Bottle()
+
+@app.get('/')
+def hello():
+    return 'Hello world!'
+gerard@aldebaran:~/docker/myapp$ cat app/requirements.txt 
+bottle==0.12.13
+gerard@aldebaran:~/docker/myapp$ cat app/app.py 
+from bottle import Bottle
+
+app = Bottle()
+
+@app.get('/')
+def hello():
+    return 'Hello world!'
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Para construir la imagen, usamos un <em>Dockerfile</em> muy estándar y nada complejo:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ cat Dockerfile
+FROM alpine:3.5
+RUN apk add --no-cache py-gunicorn py2-pip
+COPY app/ /srv/app/
+RUN pip install -r /srv/app/requirements.txt
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;--user=nobody&quot;, &quot;--group=nobody&quot;, &quot;--workers=2&quot;, &quot;--chdir=/srv/app&quot;, &quot;app:app&quot;]
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Así que construimos nuestra imagen, con el comando habitual:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker build -t myapp:1.0 .
+Sending build context to Docker daemon  5.632kB
+...  
+Successfully built 46611b6a730f
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>No es difícil comprobar lo que pasa cuando modificamos un poco nuestra aplicación, que en este caso se localiza entera en <em>app.py</em>: se reconstruyen todos los pasos a partir del tercero (el COPY).</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker build -t myapp:1.1 .
+Sending build context to Docker daemon  5.632kB
+Step 1/5 : FROM alpine:3.5
+ ---&gt; 4a415e366388
+Step 2/5 : RUN apk add --no-cache py-gunicorn py2-pip
+ ---&gt; Using cache
+ ---&gt; fa57ea0220f9
+Step 3/5 : COPY app/ /srv/app/
+ ---&gt; dcaa218d663e
+Removing intermediate container 800e88f3a533
+Step 4/5 : RUN pip install -r /srv/app/requirements.txt
+ ---&gt; Running in 29914cddfb3d
+Collecting bottle==0.12.13 (from -r /srv/app/requirements.txt (line 1))
+  Downloading bottle-0.12.13.tar.gz (70kB)
+Installing collected packages: bottle
+  Running setup.py install for bottle: started
+    Running setup.py install for bottle: finished with status 'done'
+Successfully installed bottle-0.12.13
+You are using pip version 9.0.0, however version 9.0.1 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+ ---&gt; 4e294d8038a8
+Removing intermediate container 29914cddfb3d
+Step 5/5 : CMD gunicorn --bind=0.0.0.0:8080 --user=nobody --group=nobody --workers=2 --chdir=/srv/app app:app
+ ---&gt; Running in 6021cfceff96
+ ---&gt; b781e46aec9c
+Removing intermediate container 6021cfceff96
+Successfully built b781e46aec9c
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>A partir de aquí, vamos a intentar mejorar eso.</p>
+
+<h3 id="reordenamos-las-capas-las-menos-probables-de-cambio-antes">Reordenamos las capas: las menos probables de cambio, antes</h3>
+
+<p>En este ejemplo, no hay mucho que cambiar; solo hay una instrucción que es siempre la misma (el CMD), pero que se reconstruye porque las anteriores también lo hacen. En este caso, solo le indica el comando de <em>runtime</em>, y para esto no se depende ni del COPY, ni del <em>pip install</em>, así que puede ir antes de ambas.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ cat Dockerfile
+FROM alpine:3.5
+RUN apk add --no-cache py-gunicorn py2-pip
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;--user=nobody&quot;, &quot;--group=nobody&quot;, &quot;--workers=2&quot;, &quot;--chdir=/srv/app&quot;, &quot;app:app&quot;]
+COPY app/ /srv/app/
+RUN pip install -r /srv/app/requirements.txt
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>En este punto no nos queda más remedio que reconstruir las 3 capas de nuevo, pero vemos que los <em>builds</em> sucesivos (con la aplicación modificada) no van a provocar cambio en esa capa.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker build -t myapp:1.2 .
+Sending build context to Docker daemon  5.632kB
+...  
+Successfully built b9ca6021019e
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Cambiamos nuestra aplicación, y vemos que el paso CMD no se reconstruye:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker build -t myapp:1.3 .
+Sending build context to Docker daemon  5.632kB
+...  
+Step 3/5 : CMD gunicorn --bind=0.0.0.0:8080 --user=nobody --group=nobody --workers=2 --chdir=/srv/app app:app
+ ---&gt; Using cache
+ ---&gt; 0e99aa9dd9cf
+...  
+Successfully built b4289c56e7cb
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Y con esto nos ahorramos reconstruir capas que realmente no cambian, pero ven forzada su reconstrucción porque las capas anteriores sí lo hacen. En un caso más complejo, el beneficio se notaría más que en este pequeño ejemplo.</p>
+
+<h3 id="copias-parciales-para-ahorrarnos-capas">Copias parciales para ahorrarnos capas</h3>
+
+<p>El ejemplo anterior ha supuesto una mejora, pero vemos un hecho curioso: el <em>pip install</em> es el paso más lento en una reconstrucción y no sería necesario en caso de no cambiar las dependencias de nuestra aplicación, que es la mayoría de veces. Entonces, ¿Porqué se tiene que rehacer cada vez, para obtener exactamente el mismo resultado?</p>
+
+<p>Simplemente se hace porque al copiar la carpeta, <strong>docker</strong> detecta un cambio <em>en alguno</em> de los ficheros, y por diseño, invalida la capa equivalente. Esto causa una invalidación de caché en cascada y obliga a las siguientes instrucciones a rehacerse.</p>
+
+<p>El truco consiste en copiar solamente el fichero de requisitos, con la esperanza de que no haya cambiado, lo que nos ahorraría el <em>pip install</em>, ya que no invalidaría las capas de caché. El resto de la aplicación se puede copiar después.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ cat Dockerfile
+FROM alpine:3.5
+RUN apk add --no-cache py-gunicorn py2-pip
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;--user=nobody&quot;, &quot;--group=nobody&quot;, &quot;--workers=2&quot;, &quot;--chdir=/srv/app&quot;, &quot;app:app&quot;]
+COPY app/requirements.txt /srv/app/
+RUN pip install -r /srv/app/requirements.txt
+COPY app/ /srv/app/
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Construimos la imagen dos veces, una para crear la nueva estructura de capas (el precio de la primera construcción), y la otra para ver el beneficio de la nueva aproximación.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker build -t myapp:1.4 .
+Sending build context to Docker daemon  5.632kB
+...  
+Successfully built c64016c758a4
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>Y a partir de ahora, cada cambio de código que no implique un cambio en el <em>requirements.txt</em>, solo implicará copiar ese código sobre la capa que ya contiene nuestras dependencias, ahorrándonos el <em>pip install</em>, y convirtiendo el proceso de <em>build</em> en algo casi instantáneo.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ time docker build -t myapp:1.5 .
+Sending build context to Docker daemon  5.632kB
+Step 1/6 : FROM alpine:3.5
+ ---&gt; 4a415e366388
+Step 2/6 : RUN apk add --no-cache py-gunicorn py2-pip
+ ---&gt; Using cache
+ ---&gt; fa57ea0220f9
+Step 3/6 : CMD gunicorn --bind=0.0.0.0:8080 --user=nobody --group=nobody --workers=2 --chdir=/srv/app app:app
+ ---&gt; Using cache
+ ---&gt; 0e99aa9dd9cf
+Step 4/6 : COPY app/requirements.txt /srv/app/
+ ---&gt; Using cache
+ ---&gt; 32595afecfc4
+Step 5/6 : RUN pip install -r /srv/app/requirements.txt
+ ---&gt; Using cache
+ ---&gt; e37068fe5c99
+Step 6/6 : COPY app/ /srv/app/
+ ---&gt; d31b7abdbfb2
+Removing intermediate container 01e78f27475d
+Successfully built d31b7abdbfb2
+
+real	0m0.330s
+user	0m0.004s
+sys	0m0.004s
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>De hecho, podemos ver que las capas compartidas entre las versiones con este nuevo truco se comparten casi todas. Esto hace que las nuevas versiones apenas ocupen espacio en disco (117 bytes en el ejemplo), siendo una capa con solamente nuestro código.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/myapp$ docker history myapp:1.4
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+c64016c758a4        7 minutes ago       /bin/sh -c #(nop) COPY dir:244f5d5a6f7ec84...   117B                
+e37068fe5c99        7 minutes ago       /bin/sh -c pip install -r /srv/app/require...   573kB               
+32595afecfc4        7 minutes ago       /bin/sh -c #(nop) COPY file:2f968d5854b929...   16B                 
+0e99aa9dd9cf        21 minutes ago      /bin/sh -c #(nop)  CMD [&quot;gunicorn&quot; &quot;--bind...   0B                  
+fa57ea0220f9        31 minutes ago      /bin/sh -c apk add --no-cache py-gunicorn ...   48.4MB              
+4a415e366388        6 weeks ago         /bin/sh -c #(nop) ADD file:730030a984f5f0c...   3.99MB              
+gerard@aldebaran:~/docker/myapp$ docker history myapp:1.5
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+d31b7abdbfb2        3 minutes ago       /bin/sh -c #(nop) COPY dir:36a1b0f6acdabc2...   117B                
+e37068fe5c99        7 minutes ago       /bin/sh -c pip install -r /srv/app/require...   573kB               
+32595afecfc4        7 minutes ago       /bin/sh -c #(nop) COPY file:2f968d5854b929...   16B                 
+0e99aa9dd9cf        21 minutes ago      /bin/sh -c #(nop)  CMD [&quot;gunicorn&quot; &quot;--bind...   0B                  
+fa57ea0220f9        31 minutes ago      /bin/sh -c apk add --no-cache py-gunicorn ...   48.4MB              
+4a415e366388        6 weeks ago         /bin/sh -c #(nop) ADD file:730030a984f5f0c...   3.99MB              
+gerard@aldebaran:~/docker/myapp$ 
+</code></pre>
+
+<p>La parte mala, es que el fichero <em>requirements.txt</em> se copia dos veces en nuestra imagen, en ambos COPY. Con un poco de trabajo podría evitarse eso pero, puesto que ocupa relativamente poco, es un precio que estoy dispuesto a pagar para tener <em>builds</em> instantáneos.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

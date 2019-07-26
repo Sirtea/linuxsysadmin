@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Seguridad - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Category: seguridad</h1>
+
+<h2 class="article"><a href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Protegiendo sistemas Linux con una autenticación de dos factores</a></h2>
+<p>El otro día tuve un auditor de seguridad imponiendo sus criterios arbitrarios; quería que cierto servidor seguro no fuera accesible si no era con una autenticación de 2 factores. Aunque personalmente no lo veo útil, me tocó ceder a sus exigencias y aquí he anotado como lo hice: con <strong>libpam-google-authenticator</strong>.</p>
+<p><a class="article" href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/08/verificando-contrasenas-manualmente-en-linux.html">Verificando contraseñas manualmente en Linux</a></h2>
+<p>El otro día recibí una petición inusual; un usuario no se acordaba de su contraseña y quería que se la descifrara de los ficheros de sistema. Como eso no es factible, y tras mi negativa, él me dijo que no sabía si era una de una lista, lo que comprobé.</p>
+<p><a class="article" href="/2018/08/verificando-contrasenas-manualmente-en-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/un-almacen-de-passwords-web-seguro-con-vaultier.html">Un almacén de passwords web seguro con vaultier</a></h2>
+<p>Cada vez que trabajo en un cliente me pasa lo mismo; las claves de acceso y las contraseñas de las diferentes herramientas y de los diferentes servidores están guardadas de forma caótica e inaccesible. Puesto que trabajamos en un equipo distribuido, me gusta tener esto publicado en remoto pero seguro.</p>
+<p><a class="article" href="/2018/02/un-almacen-de-passwords-web-seguro-con-vaultier.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/01/un-escaner-ssl-con-sslyze.html">Un escáner SSL con sslyze</a></h2>
+<p>El otro día cayó en mis manos un escaneo de la plataforma para uno de los servicios que gestiono. No voy a dar detalles al respecto en virtud del acuerdo de confidencialidad que mantengo con ellos, pero consideré interesante una de las herramientas que usaron para testear el dominio SSL.</p>
+<p><a class="article" href="/2017/01/un-escaner-ssl-con-sslyze.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Crear jaulas de forma fácil basadas en Debian y Ubuntu con debootstrap</a></h2>
+<p>Cuando creamos jaulas nos enfrentamos siempre al mismo dilema: usar una imagen de dudoso origen o perder nuestro tiempo investigando y buscando librerías que falten. Sin embargo, hay una forma mejor, que es descargar un sistema básico con herramientas oficiales que nos van a dar hasta un gestor de paquetes.</p>
+<p><a class="article" href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Reduciendo el tamaño de nuestros binarios con musl libc</a></h2>
+<p>Cuando construimos jaulas, por el motivo que sea, vemos que no quedan pequeñas. El problema es el conjunto de librerías que hay que poner en el caso de los binarios <em>dinámicos</em>, o el exceso de tamaño en el caso de los <em>estáticos</em>. Cambiando la librería base, podemos reducir su tamaño.</p>
+<p><a class="article" href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/creando-una-jaula-centos.html">Creando una jaula CentOS</a></h2>
+<p>Algunas veces nos puede interesar levantar procesos o demonios en entornos controlados, por ejemplo en una jaula, o para crear un contenedor. Otras veces, por comodidad o conocimiento, nos puede interesar cambiar la distribución, por ejemplo, servicios <em>CentOS</em> en un servidor <em>Ubuntu</em>. Hoy vamos a construir una jaula con <em>CentOS</em>.</p>
+<p><a class="article" href="/2016/01/creando-una-jaula-centos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/01/enjaulado-de-usuarios-para-uso-de-rsync.html">Enjaulado de usuarios para uso de rsync</a></h2>
+<p>Todos nos hemos encontrado alguna vez con una web, sea en <em>HTML</em> o en <em>PHP</em>, que se compone de centenares o miles de ficheros, y que hay que ir actualizando cada vez que cambian unos pocos ficheros. En estos casos la capacidad incremental de la herramienta <strong>rsync</strong> puede ayudarnos mucho.</p>
+<p><a class="article" href="/2016/01/enjaulado-de-usuarios-para-uso-de-rsync.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/10/ocultando-puertos-con-port-knocking.html">Ocultando puertos con port knocking</a></h2>
+<p>En este artículo vamos a enseñar como ocultar un puerto tras el firewall, de forma que solamente se abra tras utilizar el protocolo <em>port knocking</em>. Las tecnologías usadas van a ser <em>firehol</em> como firewall y el demonio <em>knockd</em> ocultando el <em>SSH</em>, aunque vamos a permitir acceder al puerto de HTTP.</p>
+<p><a class="article" href="/2015/10/ocultando-puertos-con-port-knocking.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/category/seguridad.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

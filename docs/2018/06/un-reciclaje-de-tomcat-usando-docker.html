@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un reciclaje de Tomcat usando Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un reciclaje de Tomcat usando Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-06-25
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/tomcat.html">tomcat</a> / <a href="/tag/docker.html">docker</a>
+</p>
+
+<p>Hace poco he cambiado de trabajo por motivos personales. En mi nueva posición me he encontrado con un cambio en las tecnologías usadas; lo que me he encontrado es algo que hacía tiempo que no tocaba: basan sus sistemas en <strong>Java</strong> y <strong>Tomcat</strong>. He necesitado un ligero reciclaje en ellos.</p>
+
+<p>Por supuesto, no voy a perder el tiempo en instalar un servidor y luego el <strong>Tomcat</strong> pertinente; experiencias pasadas nos demuestran que es mucho más fácil utilizar imágenes <strong>Docker</strong>, que son fáciles de usar y no necesitan tiempo de <em>setup</em>.</p>
+
+<p>Vamos a partir de la imagen de <strong>Tomcat</strong> oficial que podemos encontrar <a href="https://hub.docker.com/_/tomcat/">aquí</a>. Uno de los grandes aciertos de los que mantienen las imágenes es que, por muchos <em>tags</em> que generen, todos funcionan bajo los mismos parámetros; esto nos permite hacer pruebas con el <em>tag</em> de <em>Alpine Linux</em>, y luego -si fuera necesario- saltar a algunos de los <em>tags</em> basados en <em>Debian</em>.</p>
+
+<p>En los ejemplos también se hace uso de un fichero <em>.war</em> de prueba, llamado <em>sample.war</em>, que he sacado de <a href="https://tomcat.apache.org/tomcat-7.0-doc/appdev/sample/">aquí</a>, concretamente <a href="https://tomcat.apache.org/tomcat-7.0-doc/appdev/sample/sample.war">este</a>. Lo que hace nuestra aplicación es irrelevante en este momento, y solamente lo vamos a utilizar para probar su disponibilidad.</p>
+
+<p>El concepto que debemos tener claro en una instalación de <strong>Tomcat</strong> es la carpeta en la que está instalado, marcada por la variable de entorno CATALINA_HOME; el resto es relativo a esta carpeta. En esta imagen concreta tenemos:</p>
+
+<ul>
+<li><strong>Carpeta base</strong>: CATALINA_HOME &rarr; /usr/local/tomcat</li>
+<li><strong>Carpeta de aplicaciones</strong>: CATALINA_HOME/webapps &rarr; /usr/local/tomcat/webapps</li>
+<li><strong>Carpeta de logs</strong>: CATALINA_HOME/logs &rarr; /usr/local/tomcat/logs</li>
+</ul>
+
+<h2 id="un-despliegue-básico">Un despliegue básico</h2>
+
+<p>La opción más fácil para exponer nuestras aplicaciones es dejarlas simplemente en la carpeta de aplicaciones y reiniciar el servidor de aplicaciones. No es la opción más correcta desde el punto de vista de la disponibilidad, pero con un uso inteligente de los balanceadores es una opción válida.</p>
+
+<p>La idea de fondo es que <strong>Tomcat</strong> descomprime el fichero <em>.war</em> en el momento de levantarse. Solo tenemos que asegurar que el fichero <em>.war</em> está en su sitio. Para ir rápido, no voy a generar imágenes nuevas y voy a inyectar el <em>.war</em> mediante el uso de volúmenes.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat docker-compose.yml
+version: '3'
+services:
+  appserver:
+    image: tomcat:alpine
+    container_name: appserver
+    hostname: appserver
+    ports:
+      - &quot;8080:8080&quot;
+    volumes:
+      - ./tomcat/sample.war:/usr/local/tomcat/webapps/sample.war:ro
+    restart: always
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<p>Solo nos queda levantar el servicio, pudiendo encontrar el resultado en <a href="http://localhost:8080/sample/">http://localhost:8080/sample/</a>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ docker-compose up -d
+Creating network &quot;tomcat_default&quot; with the default driver
+Creating appserver ... done
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<h2 id="exponiendo-el-manager">Exponiendo el manager</h2>
+
+<p>Cuando tenemos una aplicación es natural que hayan evolutivos y se necesite cambiar el fichero. Como <strong>Tomcat</strong> maneja varias aplicaciones, un reinicio las afecta a todas y causa un <em>downtime</em> importante, por no mencionar que el tiempo para levantar el servicio se dispara.</p>
+
+<p>Afortunadamente, <strong>Tomcat</strong> nos ofrece una aplicación que tiene como única finalidad, administrar otras aplicaciones. Es el <em>manager</em> y lo podemos localizar en <a href="http://localhost:8080/manager/html">http://localhost:8080/manager/html</a>, o siguiendo un botón desde la página inicial en <a href="http://localhost:8080/">http://localhost:8080/</a>.</p>
+
+<p>Este <em>manager</em> se puede acceder definiendo un usuario en <code>conf/tomcat-users.xml</code>, y por defecto permite entrar a los usuario en la máquina local. Este comportamiento se puede cambiar mediante un fichero de contexto, que pondremos en <code>conf/Catalina/localhost/&lt;aplicación&gt;.xml</code>. Veamos como habilitar el <em>manager</em> y el <em>host-manager</em>, mediante el añadido de los ficheros de configuración usando volúmenes:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat docker-compose.yml
+version: '3'
+services:
+  appserver:
+    image: tomcat:alpine
+    container_name: appserver
+    hostname: appserver
+    ports:
+      - &quot;8080:8080&quot;
+    volumes:
+      - ./tomcat/tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml:ro
+      - ./tomcat/context.xml:/usr/local/tomcat/conf/Catalina/localhost/manager.xml:ro
+      - ./tomcat/context.xml:/usr/local/tomcat/conf/Catalina/localhost/host-manager.xml:ro
+    restart: always
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat tomcat/tomcat-users.xml
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;tomcat-users xmlns=&quot;http://tomcat.apache.org/xml&quot;
+              xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+              xsi:schemaLocation=&quot;http://tomcat.apache.org/xml tomcat-users.xsd&quot;
+              version=&quot;1.0&quot;&gt;
+  &lt;role rolename=&quot;manager-gui&quot;/&gt;
+  &lt;role rolename=&quot;admin-gui&quot;/&gt;
+  &lt;user username=&quot;manager&quot; password=&quot;manager1234&quot; roles=&quot;manager-gui,admin-gui&quot;/&gt;
+&lt;/tomcat-users&gt;
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat tomcat/context.xml
+&lt;Context privileged=&quot;true&quot; antiResourceLocking=&quot;false&quot;
+         docBase=&quot;${catalina.home}/webapps/manager&quot;&gt;
+    &lt;Valve className=&quot;org.apache.catalina.valves.RemoteAddrValve&quot; allow=&quot;^.*$&quot; /&gt;
+&lt;/Context&gt;
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<p><strong>TRUCO</strong>: Como el contenido del fichero <code>context.xml</code> vale para habilitar ambas aplicaciones, podemos crear la ilusión dentro del contenedor de que son 2 ficheros, aunque realmente se trata del mismo.</p>
+
+<p>Con esto deberíamos ser capaces de acceder al <em>manager</em> y al <em>host-manager</em>.</p>
+
+<h2 id="añadiendo-virtualhosts">Añadiendo virtualhosts</h2>
+
+<p>Cada aplicación que pongamos en <strong>Tomcat</strong> acaba disponible en <code>http://dominio:8080/&lt;aplicacion&gt;/</code>. Esto nos plantea una serie de cuestiones:</p>
+
+<ul>
+<li>Como montamos una aplicación por (sub)dominio?</li>
+<li>Como nos libramos de la coletilla <code>/&lt;aplicacion&gt;/</code>?</li>
+<li>Como añado autenticación básica?</li>
+<li>Como tratamos una terminación SSL?</li>
+</ul>
+
+<p>El servidor de aplicaciones <strong>Tomcat</strong> no se encarga de eso. Si bien es cierto que se puede encargar de la parte de SSL, es una configuración complicada; la parte de los dominios se debería tratar en la aplicación misma, con lo que es trabajo extra y la limpieza de la URL es imposible.</p>
+
+<p>En estos casos, la recomendación es tener un <em>proxy reverso</em> delante que cree estas ilusiones de forma fácil y confiable; mi recomendación personal es poner un <strong>nginx</strong>, que resume todo el truco en un fichero de configuración y que podemos inyectar también como un volumen.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat docker-compose.yml
+version: '3'
+services:
+  webserver:
+    image: sirrtea/nginx:alpine
+    container_name: webserver
+    hostname: webserver
+    ports:
+      - &quot;8080:80&quot;
+    volumes:
+      - ./nginx/sample.conf:/etc/nginx/conf.d/sample.conf:ro
+    depends_on:
+      - appserver
+    restart: always
+  appserver:
+    image: tomcat:alpine
+    container_name: appserver
+    hostname: appserver
+    volumes:
+      - ./tomcat/sample.war:/usr/local/tomcat/webapps/sample.war:ro
+    restart: always
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ cat nginx/sample.conf
+server {
+        listen 80;
+        server_name sample.example.com;
+        location / {
+                proxy_pass http://appserver:8080/sample/;
+        }
+}
+gerard@atlantis:~/workspace/tomcat$
+</code></pre>
+
+<p>Tras levantar el conjunto de contenedores con <em>docker-compose</em>, sucede la magia:</p>
+
+<ul>
+<li>Solo llegaremos al <strong>Tomcat</strong> mediante el dominio <code>sample.example.com</code>, puerto 80</li>
+<li>Todas las peticiones hechas a <code>/loremipsum</code> van parar a <code>appserver:8080/sample/loremipsum</code></li>
+<li>El <strong>Nginx</strong> consume la parte de la aplicación <code>/sample</code> en la URL</li>
+<li>No hay SSL en este ejemplo, pero ponerlo no entraña ninguna dificultad extra</li>
+<li>No se ha puesto autenticación básica, pero tampoco cuesta demasiado</li>
+</ul>
+
+<p>Con esto podemos ocultar el <em>manager</em> y otras aplicaciones, que podríamos exponer mediante otros (sub)dominios, o puertos; eso nos permite hacer un uso inteligente de un <em>firewall</em> para evitar la exposición de partes privadas de nuestro proyecto.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

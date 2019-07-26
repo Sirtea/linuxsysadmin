@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>jessie - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: jessie</h1>
+
+<h2 class="article"><a href="/2016/02/un-proxy-dns-con-dnsmasq.html">Un proxy DNS con dnsmasq</a></h2>
+<p>A veces nos puede interesar disponer de una servidor <strong>DNS</strong> para nombrar las máquinas de nuestra red privada, sin la complejidad de <strong>BIND</strong>. Otras, queremos acelerar el acceso a internet desde nuestra red; es interesante ver el tiempo que se pierde en la resolución <strong>DNS</strong>. Para eso disponemos de <strong>dnsmasq</strong>.</p>
+<p><a class="article" href="/2016/02/un-proxy-dns-con-dnsmasq.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/utilizando-apt-cacher-ng-para-agilizar-la-instalacion-de-paquetes.html">Utilizando apt-cacher-ng para agilizar la instalación de paquetes</a></h2>
+<p>Hace tiempo veo que tras usar muchas maquinas virtuales <em>Debian</em> para el uso diario y para las demostraciones de este blog, el ancho de banda usado para bajar los paquetes se dispara. La mayoría de veces se trata de los mismos paquetes, para instalar las mismas aplicaciones, servicios o actualizaciones.</p>
+<p><a class="article" href="/2015/12/utilizando-apt-cacher-ng-para-agilizar-la-instalacion-de-paquetes.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/construyendo-un-raid-10-en-linux.html">Construyendo un RAID 10 en linux</a></h2>
+<p>El otro día estaba habilitando un servidor de <em>mongodb</em> para un entorno de producción. Como me interesaba mejorar el rendimiento de los accesos a disco y no disponía de discos SSD con una durabilidad aceptable, me propuse montar un <em>array de discos</em> en configuración de <strong>RAID 10</strong>, como se recomienda.</p>
+<p><a class="article" href="/2015/12/construyendo-un-raid-10-en-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/construyendo-una-replica-set-en-mongodb.html">Construyendo una replica set en mongodb</a></h2>
+<p>Muchas veces nos interesa obtener alta disponibilidad en los servicios que gestionamos. No hay nada mas desagradable que una llamada a las tantas de la noche porque se ha caído un nodo de una base de datos y no damos servicio. Para eso <em>mongodb</em> nos ofrece el mecanismo de replicación.</p>
+<p><a class="article" href="/2015/12/construyendo-una-replica-set-en-mongodb.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/12/creacion-de-un-livecd-con-debian.html">Creación de un livecd con Debian</a></h2>
+<p>Tras ver como las actualizaciones de mis máquinas virtuales <em>VirtualBox</em> expandían mis discos <em>.vdi</em> sin control, quise pasar la herramienta <em>zerofree</em> y un compactado con la herramienta oficial <em>VBoxManage</em>. No quería instalar <em>zerofree</em> de forma permanente y no pude encontrar un <em>livecd</em> que lo tuviera, así que decidí crear uno.</p>
+<p><a class="article" href="/2015/12/creacion-de-un-livecd-con-debian.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/virtualizando-contenedores-lxc-tras-bridge-interno.html">Virtualizando contenedores LXC tras bridge interno</a></h2>
+<p>En un artículo anterior propusimos virtualizar contenedores en la red de la máquina <em>host</em>. Sin embargo, puede ser mas interesante esconder los contenedores detrás de una máquina que haga las funciones de <em>host</em> y de <em>firewall</em>. Expondremos una serie de puertos tras la misma dirección <em>IP</em> mediante el protocolo <em>NAT</em>.</p>
+<p><a class="article" href="/2015/11/virtualizando-contenedores-lxc-tras-bridge-interno.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/escribiendo-units-en-systemd.html">Escribiendo units en systemd</a></h2>
+<p>Cuando se anunció <em>systemd</em> me llamó la atención que además de las funciones estándares de otros sistemas de <em>init</em> (por ejemplo <em>sysvinit</em>), también se ofrecían otras funcionalidades normalmente delegadas a otros procesos, como por ejemplo, la posibilidad de reiniciar procesos automáticamente o de lanzar procesos temporales al estilo de <em>cron</em>.</p>
+<p><a class="article" href="/2015/11/escribiendo-units-en-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/11/restart-automatico-de-servicios-con-systemd.html">Restart automático de servicios con systemd</a></h2>
+<p>Cuando estamos gestionando un servidor, es posible que se caiga alguno de sus servicios. Esto es especialmente molesto cuando nos interesa tener un <em>uptime</em> elevado. Para conseguirlo, se han utilizado diferentes maneras, desde poner personas a monitorizar en modo 24x7 hasta herramientas auxiliares como gestores tipo <em>runit</em>, <em>supervisor</em> o <em>monit</em>.</p>
+<p><a class="article" href="/2015/11/restart-automatico-de-servicios-con-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/10/ocultando-puertos-con-port-knocking.html">Ocultando puertos con port knocking</a></h2>
+<p>En este artículo vamos a enseñar como ocultar un puerto tras el firewall, de forma que solamente se abra tras utilizar el protocolo <em>port knocking</em>. Las tecnologías usadas van a ser <em>firehol</em> como firewall y el demonio <em>knockd</em> ocultando el <em>SSH</em>, aunque vamos a permitir acceder al puerto de HTTP.</p>
+<p><a class="article" href="/2015/10/ocultando-puertos-con-port-knocking.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2015/10/virtualizando-contenedores-lxc-con-acceso-red-local.html">Virtualizando contenedores LXC con acceso a la red local</a></h2>
+<p>En este tutorial se propone montar un servidor de contenedores LXC, de forma que todos los contenedores queden expuestos a la misma red que el servidor que los aloja. Para protegerlos de posibles ataques de esta red, pondremos un firewall basado en <em>iptables</em> mediante una capa de abstracción llamada <em>firehol</em>.</p>
+<p><a class="article" href="/2015/10/virtualizando-contenedores-lxc-con-acceso-red-local.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/jessie.html">&laquo;&laquo;</a>
+	<a href="/tag/jessie.html">&laquo;</a>
+	<a href="/tag/jessie.html">1</a>
+	<a class="active" href="/tag/jessie/page/2.html">2</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

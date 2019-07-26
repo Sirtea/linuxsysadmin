@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Restart automático de servicios con systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Restart automático de servicios con systemd</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-11-05
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/nginx.html">nginx</a>
+</p>
+
+<p>Cuando estamos gestionando un servidor, es posible que se caiga alguno de sus servicios. Esto es especialmente molesto cuando nos interesa tener un <em>uptime</em> elevado. Para conseguirlo, se han utilizado diferentes maneras, desde poner personas a monitorizar en modo 24x7 hasta herramientas auxiliares como gestores tipo <em>runit</em>, <em>supervisor</em> o <em>monit</em>.</p>
+
+<p>Con la entrada en escena de <em>systemd</em> en la mayoría de distribuciones grandes de <em>linux</em> este problema se ha acabado; el mismo proceso que hace de <strong>init</strong> puede encargarse de mantener los procesos levantados, y reiniciarlos en caso de caída.</p>
+
+<p>En este tutorial pretendo hacer que un servicio estándar se vea beneficiado de un <strong>override</strong>, que permita el inicio automático de un servicio cuando se cae, sin tener que reescribir la <strong>unit</strong> que se encarga del servicio o proceso.</p>
+
+<p>Partimos de un servidor básico <em>Linux</em> con <em>systemd</em>. En este caso vamos a utilizar la última versión estable de <em>Debian</em>, a la que le vamos a instalar un servicio estándar como <em>nginx</em> que nos va a servir como conejillo de indias.</p>
+
+<pre><code class="language-bash">root@server:~# apt-get install nginx-light
+root@server:~# 
+</code></pre>
+
+<h2 id="procedimiento">Procedimiento</h2>
+
+<p>Como comprobación previa, observemos como este <strong>restart</strong> automático no funciona; tenemos el servicio en ejecución, lo matamos y observamos que no se levanta de nuevo, por mucho que esperemos.</p>
+
+<pre><code class="language-bash">root@server:~# ps faux | grep nginx
+root       685  0.0  0.8   4556  2240 pts/0    S+   11:41   0:00          \_ grep nginx
+root       662  0.0  0.7   6356  1856 ?        Ss   11:41   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data   663  0.1  0.9   6504  2456 ?        S    11:41   0:00  \_ nginx: worker process                           
+www-data   664  0.0  0.9   6504  2456 ?        S    11:41   0:00  \_ nginx: worker process                           
+www-data   665  0.0  0.9   6504  2456 ?        S    11:41   0:00  \_ nginx: worker process                           
+www-data   666  0.1  0.9   6504  2456 ?        S    11:41   0:00  \_ nginx: worker process                           
+root@server:~# kill 662
+root@server:~# ps faux | grep nginx
+root       691  0.0  0.8   4556  2220 pts/0    S+   11:41   0:00          \_ grep nginx
+root@server:~# 
+</code></pre>
+
+<p>Ahora necesitamos localizar el nombre de la <strong>unit</strong> que se encarga de ese servicio, puesto que la carpeta de <strong>overrides</strong> debe llamarse igual.</p>
+
+<pre><code class="language-bash">root@server:~# systemctl list-units -a | grep nginx
+  nginx.service    loaded    inactive dead    A high performance web server and a reverse proxy server
+root@server:~# 
+</code></pre>
+
+<p>Como curiosidad, este fichero se encuentra en <em>/lib/systemd/system/</em>, siguiendo las convenciones del empaquetado de <em>Debian</em>. Alternativamente, podemos localizar los ficheros instalados por un paquete con el comando <em>dpkg -L nginx-light</em>.</p>
+
+<pre><code class="language-bash">root@server:~# ls -lh /lib/systemd/system/nginx.service 
+-rw-r--r-- 1 root root 986 dic  1  2014 /lib/systemd/system/nginx.service
+root@server:~# 
+</code></pre>
+
+<p>En caso de ser una <strong>unit</strong> escrita por nosotros, se encontraría en <em>/etc/systemd/system/</em>. Esta es la convención:</p>
+
+<ul>
+<li><em>/lib/systemd/system/</em> &rarr; <strong>units</strong> de sistema, puestas por los paquetes instalados</li>
+<li><em>/etc/systemd/system/</em> &rarr; <strong>units</strong> o <strong>overrides</strong> puestos por el usuario (nosotros)</li>
+</ul>
+
+<p>Para añadir nuevas directivas (<strong>overrides</strong>) a una <strong>unit</strong> sin reescribirla entera, basta con crear una carpeta con su mismo nombre, concatenando <strong>.d</strong>. Dentro podemos poner tantos ficheros <em>.conf</em> como creamos necesarios, añadiendo las directivas que queramos añadir o modificar.</p>
+
+<pre><code class="language-bash">root@server:~# mkdir /etc/systemd/system/nginx.service.d
+root@server:~# cat /etc/systemd/system/nginx.service.d/autorestart.conf
+[Service]
+Restart=always
+RestartSec=1
+root@server:~# 
+</code></pre>
+
+<p>En este caso, se ha indicado que queremos un <strong>restart</strong> siempre, sean cuales sean las circunstancias en las que se cayó el proceso, y que espere 1 segundo antes de intentarlo. Por como está hecho <em>systemd</em>, <strong>no</strong> va a levantar un servicio que hemos parado invocando el comando <em>systemctl</em>.</p>
+
+<p>Para que los cambios en el fichero de configuración se apliquen es necesario recargar las configuraciones, indicando a <em>systemd</em> que tienen que recargarlas.</p>
+
+<pre><code class="language-bash">root@server:~# systemctl daemon-reload
+root@server:~# 
+</code></pre>
+
+<h2 id="comprobación">Comprobación</h2>
+
+<p>Básicamente vamos a repetir el paso de la comprobación; se localiza el proceso <strong>master</strong> y se finaliza (por ejemplo, con un <strong>SIGTERM</strong> normal).</p>
+
+<pre><code class="language-bash">root@server:~# ps faux | grep nginx
+root       782  0.0  0.8   4556  2252 pts/0    S+   11:56   0:00          \_ grep nginx
+root       776  0.0  0.7   6356  1936 ?        Ss   11:56   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data   777  0.0  1.0   6504  2536 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   778  0.0  1.0   6504  2536 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   779  0.0  1.0   6504  2536 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   780  0.0  1.0   6504  2536 ?        S    11:56   0:00  \_ nginx: worker process                           
+root@server:~# kill 776
+root@server:~# ps faux | grep nginx
+root       787  0.0  0.9   4556  2280 pts/0    S+   11:56   0:00          \_ grep nginx
+root@server:~# 
+</code></pre>
+
+<p>Ahora solo hay que esperar el paso de los segundos configurados, y volver a ver si el servicio está corriendo; aunque en este esperé algo menos de lo configurado; la paciencia no es una de mis virtudes&hellip;</p>
+
+<pre><code class="language-bash">root@server:~# ps faux | grep nginx
+root       789  0.0  0.8   4556  2192 pts/0    S+   11:56   0:00          \_ grep nginx
+root@server:~# ps faux | grep nginx
+root       791  0.0  0.9   4556  2280 pts/0    S+   11:56   0:00          \_ grep nginx
+root@server:~# ps faux | grep nginx
+root       802  0.0  0.8   4556  2236 pts/0    S+   11:56   0:00          \_ grep nginx
+root       796  0.0  0.7   6356  1932 ?        Ss   11:56   0:00 nginx: master process /usr/sbin/nginx -g daemon on; master_process on;
+www-data   797  0.0  1.0   6504  2592 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   798  0.0  1.0   6504  2592 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   799  0.0  1.0   6504  2592 ?        S    11:56   0:00  \_ nginx: worker process                           
+www-data   800  0.0  1.0   6504  2532 ?        S    11:56   0:00  \_ nginx: worker process                           
+root@server:~# 
+</code></pre>
+
+<p>Y con esto tenemos nuestro <strong>autorestart</strong> para este servicio.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

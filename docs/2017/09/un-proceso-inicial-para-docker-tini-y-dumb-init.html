@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un proceso inicial para docker: tini y dumb-init - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Un proceso inicial para docker: tini y dumb-init</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-09-11
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/dockerfile.html">Dockerfile</a> / <a href="/tag/tini.html">tini</a> / <a href="/tag/dumb-init.html">dumb-init</a>
+</p>
+
+<p>Siempre nos han vendido que <strong>docker</strong> ejecuta un solo proceso, y que este puede ser cualquiera. Sin embargo, este proceso se ejecuta con PID 1, que es un poco especial y que tiene unas responsabilidades adicionales. Si no queremos implementarlas, podemos usar alguna solución que ya lo haga para nosotros.</p>
+
+<p>Entre estas responsabilidades, podemos citar 3 que se consideran básicas:</p>
+
+<ul>
+<li>Tiene que adoptar y controlar todos aquellos procesos que quedan huérfanos debido a una mala gestión de su anterior padre</li>
+<li>No puede dejar que ningún proceso <em>zombie</em> quede sin su correspondiente <em>wait</em></li>
+<li>Debe ser capaz de progresar las señales de terminación a sus procesos hijos</li>
+</ul>
+
+<p>Muchos de los binarios que utilizamos habitualmente no incumplen estas responsabilidades, sea por una buena gestión, o porque directamente no levantan procesos hijos.</p>
+
+<p>El problema es cuando alguno de estos procesos sí que incumple. En estos casos <strong>docker</strong> puede enviar señales de acabado, y viendo que no todos los procesos han acabado, tiene que entrar tras 10 segundos a arreglar el desaguisado. Aunque <strong>docker</strong> hace un trabajo magnífico en este aspecto, el resultado es un contenedor que es caro de apagar, en cuanto a tiempo se refiere.</p>
+
+<p>Y es por eso que han habido varios intentos de crear un proceso <strong>init</strong> que pueda levantar otro proceso único, pero cumpliendo con las responsabilidades que se le presuponen. Entre estos binarios, me gustaría mencionar dos: <strong>tini</strong> y <strong>dumb-init</strong>.</p>
+
+<h2 id="el-problema">El problema</h2>
+
+<p>Vamos a hacer este ejemplo con un servicio afectado por el problema, para su fácil demostración. No se trata de un servicio raro o de uso minoritario, sino que estamos hablando de <strong>haproxy</strong>.</p>
+
+<p>Vamos a partir del más simple de los balanceadores basados en <strong>haproxy</strong> y <strong>alpine linux</strong>, con una configuración mínima (por no decir nula).</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ cat context/Dockerfile
+FROM alpine:3.6
+RUN apk add --no-cache haproxy
+COPY haproxy.cfg /etc/haproxy/
+CMD [&quot;haproxy&quot;, &quot;-f&quot;, &quot;/etc/haproxy/haproxy.cfg&quot;, &quot;-db&quot;]
+gerard@docker:~/docker/docker-init$ cat context/haproxy.cfg
+global
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+
+defaults
+    mode http
+
+listen stats
+    bind *:8080
+    stats enable
+    stats uri /
+
+#listen web
+#    bind *:80
+#    balance roundrobin
+#    server web1 web1:80 check
+#    server web2 web2:80 check
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>La vamos a construir siguiendo los comandos habituales:</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ docker build -t balancer context/
+Sending build context to Docker daemon 3.072 kB
+...
+Successfully built 499dc4873adb
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Lo que vamos a ver es que la imagen no se detiene en un tiempo adecuado. Para ellos vamos a automatizar su levantamiento y su parada con <strong>docker-compose</strong> y vamos a cronometrar lo segundo. Os adjunto el fichero <em>docker-compose.yml</em>, aunque es relativamente simple.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ cat docker-compose.yml
+version: '2'
+services:
+  balancer:
+    image: balancer
+    container_name: balancer
+    hostname: balancer
+gerard@docker:~/docker/docker-init$ docker-compose up -d
+Creating network &quot;dockerinit_default&quot; with the default driver
+Creating balancer
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Y podemos ver que este contenedor tan simple no acaba decentemente, teniendo que esperar 10 segundos para que <strong>docker</strong> elimine el resto, cosa que es molesta y puede llevar a problemas futuros.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ time docker-compose down
+Stopping balancer ... done
+Removing balancer ... done
+Removing network dockerinit_default
+
+real    0m10,486s
+user    0m0,348s
+sys     0m0,028s
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<h2 id="la-solución">La solución</h2>
+
+<p>Ambas soluciones propuestas (<strong>tini</strong> y <strong>dumb-init</strong>) funcionan de la misma forma: ejecutan el comando que se les pasa en los argumentos. De esta forma, el comando &ldquo;peligroso&rdquo; se ejecuta con PID diferente de 1, siendo el PID 1 el mismo <em>init</em>. Podemos anteponer el <em>init</em> sin muchas modificaciones; basta con instalar el <em>init</em> y usar la directiva <code>ENTRYPOINT</code> para anteponer el nuevo <em>init</em>. Veamos ambos como ejemplo.</p>
+
+<h3 id="usando-tini">Usando tini</h3>
+
+<p>Podemos instalar el paquete <strong>tini</strong> sin añadir una nueva línea en el <em>Dockerfile</em>, aprovechando el <code>apk add</code> del mismo <strong>haproxy</strong>. Prefijamos nuestro <code>CMD</code> con el binario <strong>tini</strong> mediante el uso de <code>ENTRYPOINT</code> y listo.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ cat context/Dockerfile.2
+FROM alpine:3.6
+RUN apk add --no-cache haproxy tini
+COPY haproxy.cfg /etc/haproxy/
+ENTRYPOINT [&quot;tini&quot;, &quot;--&quot;]
+CMD [&quot;haproxy&quot;, &quot;-f&quot;, &quot;/etc/haproxy/haproxy.cfg&quot;, &quot;-db&quot;]
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Construimos la nueva imagen, y tras modificar el <em>docker-compose.yml</em>, la levantamos. Modificad el parámetro <em>image</em> en el <em>docker-compose.yml</em>, para reflejar el nuevo <em>tag</em>.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ docker build -t balancer:v2 -f context/Dockerfile.2 context/
+Sending build context to Docker daemon  5.12 kB
+...
+Successfully built 179697bbd3ed
+gerard@docker:~/docker/docker-init$ docker-compose up -d
+Creating network &quot;dockerinit_default&quot; with the default driver
+Creating balancer
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Y midiendo el tiempo de parada, vemos que el problema ha desaparecido:</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ time docker-compose down
+Stopping balancer ... done
+Removing balancer ... done
+Removing network dockerinit_default
+
+real    0m0,473s
+user    0m0,284s
+sys     0m0,020s
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<h3 id="usando-dumb-init">Usando dumb-init</h3>
+
+<p>Este caso es análogo al anterior, sin más cambios que el nombre del paquete a instalar y el binario del <code>ENTRYPOINT</code>. Es importante notar que a pesar de partir del primer ejemplo, el resultado es prácticamente idéntico al segundo.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ cat context/Dockerfile.3
+FROM alpine:3.6
+RUN apk add --no-cache haproxy dumb-init
+COPY haproxy.cfg /etc/haproxy/
+ENTRYPOINT [&quot;dumb-init&quot;, &quot;--&quot;]
+CMD [&quot;haproxy&quot;, &quot;-f&quot;, &quot;/etc/haproxy/haproxy.cfg&quot;, &quot;-db&quot;]
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Construimos la nueva imagen, y tras modificar el <em>docker-compose.yml</em>, la levantamos, justo como antes. Tened la precaución de usar nuevo <em>tag</em> en el <em>docker-compose.yml</em>.</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ docker build -t balancer:v3 -f context/Dockerfile.3 context/
+Sending build context to Docker daemon  5.12 kB
+...
+Successfully built 928c992c5251
+gerard@docker:~/docker/docker-init$ docker-compose up -d
+Creating network &quot;dockerinit_default&quot; with the default driver
+Creating balancer
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Y midiendo el tiempo de parada, vemos que el problema también desaparece:</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ time docker-compose down
+Stopping balancer ... done
+Removing balancer ... done
+Removing network dockerinit_default
+
+real    0m0,520s
+user    0m0,252s
+sys     0m0,060s
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<h2 id="conclusión">Conclusión</h2>
+
+<p>El hecho de tener procesos <em>zombie</em> es más una molestia que un problema real, al menos mientras <strong>docker</strong> pueda limpiar lo que quede al final. Sin embargo, las buenas maneras, y un proceso ágil de despliegue, nos sugieren encarecidamente que tratemos estos detalles de forma adecuada.</p>
+
+<p>En cuanto al peso adicional en las imágenes por poner nuestros procesos <em>init</em>, podemos ver que es casi nula:</p>
+
+<pre><code class="language-bash">gerard@docker:~/docker/docker-init$ docker images
+REPOSITORY          TAG                 IMAGE ID            CREATED              SIZE
+balancer            v3                  928c992c5251        About a minute ago   5.674 MB
+balancer            v2                  179697bbd3ed        5 minutes ago        5.651 MB
+balancer            latest              499dc4873adb        9 minutes ago        5.631 MB
+alpine              3.6                 7328f6f8b418        7 days ago           3.966 MB
+gerard@docker:~/docker/docker-init$
+</code></pre>
+
+<p>Así pues, en caso de duda, ponerlo siempre nos puede ahorrar algunos dolores de cabeza, aunque por ahora los desconozcamos.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

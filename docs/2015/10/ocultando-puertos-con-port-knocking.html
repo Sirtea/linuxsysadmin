@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ocultando puertos con port knocking - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Ocultando puertos con port knocking</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2015-10-29
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/firehol.html">firehol</a> / <a href="/tag/port-knocking.html">port knocking</a> / <a href="/tag/ssh.html">ssh</a> / <a href="/tag/nmap.html">nmap</a>
+</p>
+
+<p>En este artículo vamos a enseñar como ocultar un puerto tras el firewall, de forma que solamente se abra tras utilizar el protocolo <em>port knocking</em>. Las tecnologías usadas van a ser <em>firehol</em> como firewall y el demonio <em>knockd</em> ocultando el <em>SSH</em>, aunque vamos a permitir acceder al puerto de HTTP.</p>
+
+<p>El protocolo de <em>port knocking</em> es un sistema en el que para abrir la conectividad en un puerto se debe primero abrir una secuencia concreta a otros puertos, sean <em>TCP</em> o <em>UDP</em>.</p>
+
+<p>Para conseguir este objetivo, se van a usar las siguientes tecnologías:</p>
+
+<ul>
+<li><strong>Debian jessie</strong>: Como distribución base; podría ser cualquier otra</li>
+<li><strong>Firehol</strong>: Scripts para levantar un firewall basado en <em>iptables</em></li>
+</ul>
+
+<p>El hardware va a ser uno con capacidades limitadas, virtualizado en VirtualBox.</p>
+
+<ul>
+<li><strong>CPUs</strong>: 1</li>
+<li><strong>Memoria</strong>: 256 Mb</li>
+<li><strong>Disco</strong>: 2 Gb</li>
+<li><strong>Red</strong>: 1 interfaz (<em>eth0</em>) <em>host-only</em> o <em>bridged</em> con IP fija</li>
+</ul>
+
+<p>La instalación base es una <em>Debian</em> mínima instalada con el CD netinstall, con todo desmarcado y con el servidor de <em>SSH</em> previamente instalado.</p>
+
+<h2 id="instalación-del-servidor">Instalación del servidor</h2>
+
+<p>Para empezar, vamos a instalar los dos servicios implicados:</p>
+
+<pre><code class="language-bash">root@server:~# apt-get install firehol knockd
+...
+root@server:~# 
+</code></pre>
+
+<p>Configuramos las reglas del firewall, de acuerdo a la documentación relacionada con <em>port knocking</em>. Se define un nivel de protección máximo, ya que se trata de la interfaz que deberá estar accesible desde internet; esto nos evita la mayoría de ataques conocidos en la capa 3 y 4.</p>
+
+<p>En cuanto a las conectividad, vamos a permitir que este servidor acceda a servicios <em>DNS</em> y <em>HTTP</em>, que es lo justo para actualizarse. Como servidor vamos a permitir el acceso a <em>HTTP</em> (ya que en el ejemplo, esta máquina va a servir como servidor <em>HTTP</em>) y a <em>SSH</em> siempre y cuando se cumpla con el protocolo de seguridad.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/firehol/firehol.conf 
+version 5
+
+interface any world
+    protection strong
+    client &quot;dns http&quot; accept
+    server http accept
+    server ssh accept with knock hidden
+root@server:~# 
+</code></pre>
+
+<p>Acto seguido vamos a definir las reglas para que se abra el <em>knock hidden</em> (que corresponde con el puerto <em>SSH</em>) si se completa la secuencia de <em>knock</em>. En este caso concreto, se indica una secuencia de los puertos <em>TCP</em> 123, 456 y 789; aunque es posible definir puertos <em>UDP</em>, dejamos sin indicarlo, que nos los va a definir como <em>TCP</em>.</p>
+
+<p>Como medida de seguridad vamos a indicar un tiempo máximo de 10 segundos para completar la secuencia de <em>knock</em> y un autocierre del puerto a los 5 segundos (aunque firehol va a permitir las conexiones que se hayan establecido en esos 5 segundos).</p>
+
+<p>Es especialmente interesante ver que la regla incluye la dirección origen, con lo que la apertura de puerto solo será visible desde la máquina que completó la secuencia de <em>knock</em>.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/knockd.conf 
+[options]
+    UseSyslog
+
+[SSH]
+    sequence      = 123,456,789
+    seq_timeout   = 10
+    start_command = iptables -A knock_hidden -s %IP% -j ACCEPT
+    cmd_timeout   = 5
+    stop_command  = iptables -D knock_hidden -s %IP% -j ACCEPT
+root@server:~# 
+</code></pre>
+
+<p>Como medida de seguridad, <em>Debian</em> tiene una protección para levantar ambos servicios, así que tenemos que indicarle que queremos que se puedan levantar, editando otros ficheros de configuración.</p>
+
+<pre><code class="language-bash">root@server:~# cat /etc/default/knockd 
+...
+START_KNOCKD=1
+...
+root@server:~# cat /etc/default/firehol 
+...
+START_FIREHOL=YES
+...
+root@server:~# 
+</code></pre>
+
+<p>Finalmente podemos levantar los servicios de <em>port knocking</em> y de <em>firewall</em>, usando las herramientas estándares que nos ofrece la distribución.</p>
+
+<pre><code class="language-bash">root@server:~# service knockd restart
+root@server:~# service firehol restart
+root@server:~# 
+</code></pre>
+
+<h2 id="comprobación-de-funcionamiento">Comprobación de funcionamiento</h2>
+
+<p>Para comprobar el funcionamiento basta con comprobar que el puerto está normalmente cerrado. Personalmente he usado <em>nmap</em>, aunque se podría usar <em>netcat</em> o <em>telnet</em>.</p>
+
+<pre><code class="language-bash">gerard@workstation:~$ nmap -PN 192.168.56.3 -p 22
+
+Starting Nmap 5.21 ( http://nmap.org ) at 2015-10-28 17:33 CET
+Nmap scan report for server (192.168.56.3)
+Host is up.
+PORT   STATE    SERVICE
+22/tcp filtered ssh
+
+Nmap done: 1 IP address (1 host up) scanned in 2.13 seconds
+gerard@workstation:~$ 
+</code></pre>
+
+<p>Vemos que sale <strong>filtered</strong>, que significa que el firewall lo está bloqueando. Ahora vamos a lanzar la secuencia de <em>knock</em> usando el helper <strong>knock</strong>, que en <em>Debian</em> se encuentra en el mismo paquete <em>knockd</em>. Acto seguido, el puerto de <em>SSH</em> queda abierto (en otras palabras: escuchando). Ahora sería posible iniciar sesión por <em>SSH</em> en la máquina.</p>
+
+<pre><code class="language-bash">gerard@workstation:~$ knock 192.168.56.3 123 456 789
+gerard@workstation:~$ nmap -PN 192.168.56.3 -p 22
+
+Starting Nmap 5.21 ( http://nmap.org ) at 2015-10-28 17:34 CET
+Nmap scan report for server (192.168.56.3)
+Host is up (0.0011s latency).
+PORT   STATE SERVICE
+22/tcp open  ssh
+
+Nmap done: 1 IP address (1 host up) scanned in 0.07 seconds
+gerard@workstation:~$ 
+</code></pre>
+
+<p>Finalmente comprobamos que, transcurridos los 5 segundos configurados, el puerto vuelve a verse como <strong>filtrado</strong>, con lo que no se puede establecer nuevas conexiones en este puerto.</p>
+
+<pre><code class="language-bash">gerard@workstation:~$ nmap -PN 192.168.56.3 -p 22
+
+Starting Nmap 5.21 ( http://nmap.org ) at 2015-10-28 17:34 CET
+Nmap scan report for server (192.168.56.3)
+Host is up.
+PORT   STATE    SERVICE
+22/tcp filtered ssh
+
+Nmap done: 1 IP address (1 host up) scanned in 2.08 seconds
+gerard@workstation:~$ 
+</code></pre>
+
+<p>Y con esto queda protegido el acceso por <em>SSH</em> a la máquina.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

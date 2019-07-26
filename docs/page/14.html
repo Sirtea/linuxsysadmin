@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Levantando túneles SSH con systemd</a></h2>
+<p>Ya vimos en un <a href="/2016/10/creando-tuneles-con-ssh.html">artículo anterior</a> como levantar túneles <strong>SSH</strong> para llegar a través del protocolo <strong>SSH</strong>, a destinos que no están alcanzables normalmente. Esto está muy bien para aplicaciones puntuales, pero si tenemos que usar esos túneles una temporada, y deseamos que se mantengan levantados, ya es mas difícil.</p>
+<p><a class="article" href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/11/visualizando-graficamente-el-estado-de-nuestro-servidor-con-telegraf-influxdb-y-chronograf.html">Visualizando gráficamente el estado de nuestro servidor con Telegraf, InfluxDB y Chronograf</a></h2>
+<p>No hay nada mas visualmente atractivo que ver nuestros servidores en tiempo real mediante gráficos temporales, y existen algunas buenas herramientas ya hechas. Necesitaremos un agente que recolecte los datos del servidor y los envíe a una base de datos temporales, para que se pueden dibujar en una página web.</p>
+<p><a class="article" href="/2016/11/visualizando-graficamente-el-estado-de-nuestro-servidor-con-telegraf-influxdb-y-chronograf.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/creando-tuneles-con-ssh.html">Creando túneles con SSH</a></h2>
+<p>Todos conocemos las bondades de <strong>SSH</strong> cuando se trata de acceder a un servidor remoto con una sesión interactiva. Sin embargo, pocos conocen otra habilidad que este servicio nos ofrece: encapsular tráfico de cualquier protocolo a través de un túnel <strong>SSH</strong>, cifrando nuestro tráfico y pasando potencialmente por otro puerto.</p>
+<p><a class="article" href="/2016/10/creando-tuneles-con-ssh.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/microservicios-con-docker-compose.html">Microservicios con docker-compose</a></h2>
+<p><strong>Docker</strong> es una gran herramienta para levantar contenedores aislados, pero en el mundo real nos encontramos con despliegues mas complejos, que requieren varias imágenes trabajando en conjunto. En este caso, levantar los contenedores puede ser una auténtica pesadilla. Para automatizar estos casos podemos utilizar un <em>orquestador</em>, como por ejemplo, <strong>docker-compose</strong>.</p>
+<p><a class="article" href="/2016/10/microservicios-con-docker-compose.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/python-como-una-calculadora-estadistica.html">Python como una calculadora estadística</a></h2>
+<p>El otro día me encontraba en mi trabajo con otra petición muy especial: se necesitaba un <em>check</em> para <strong>Nagios</strong> que contara las apariciones de cierto tipo de errores en un fichero de <em>log</em>. Ese <em>check</em> debía saltar en función de cuán alejado estaba el valor de las últimas 100 muestras.</p>
+<p><a class="article" href="/2016/10/python-como-una-calculadora-estadistica.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/separando-el-build-y-el-runtime-con-contenedores-docker.html">Separando el build y el runtime con contenedores Docker</a></h2>
+<p>Cuando montamos un contenedor <strong>Docker</strong> para servir una aplicación cualquiera, solemos poner un montón de dependencias necesarias solamente para compilar el paquete o para empaquetar sus librerías. Esto supone un gasto innecesario en espacio y en tiempo de ejecución; usando contenedores desechables podemos agilizar este proceso de forma altamente considerable.</p>
+<p><a class="article" href="/2016/10/separando-el-build-y-el-runtime-con-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/disparando-acciones-en-respuesta-a-modificaciones-en-el-sistema-de-fichero-con-incron.html">Disparando acciones en respuesta a modificaciones en el sistema de fichero con incron</a></h2>
+<p>El otro día recibí una petición diferente en mi trabajo. Se necesitaba monitorizar una carpeta, de forma que cuando alguien dejara ficheros, se lanzara una tarea para procesarlos. Tras buscar un poco por internet, topé con una herramienta tipo <em>cron</em>, que ejecutaba comandos ante eventos en el sistema de ficheros.</p>
+<p><a class="article" href="/2016/10/disparando-acciones-en-respuesta-a-modificaciones-en-el-sistema-de-fichero-con-incron.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Lanzando playbooks de Ansible desde Jenkins</a></h2>
+<p>Somos muchos los amantes del terminal para ejecutar nuestras tareas, sea con <strong>Ansible</strong> o con otras herramientas. A veces nos puede convenir dotar la herramienta de un entorno gráfico o web para que lo hagan otras personas. Aunque ya existe como producto <strong>Ansible Tower</strong>, su precio es prohibitivo para muchos.</p>
+<p><a class="article" href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Crear jaulas de forma fácil basadas en Debian y Ubuntu con debootstrap</a></h2>
+<p>Cuando creamos jaulas nos enfrentamos siempre al mismo dilema: usar una imagen de dudoso origen o perder nuestro tiempo investigando y buscando librerías que falten. Sin embargo, hay una forma mejor, que es descargar un sistema básico con herramientas oficiales que nos van a dar hasta un gestor de paquetes.</p>
+<p><a class="article" href="/2016/09/crear-jaulas-de-forma-facil-basadas-en-debian-y-ubuntu-con-debootstrap.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/imagenes-docker-reusables-mediante-configuraciones-dinamicas.html">Imágenes docker reusables mediante configuraciones dinámicas</a></h2>
+<p>Muchos de los servicios que necesitamos son siempre los mismos, cambiando solamente algunos parámetros. Incluso los mismos servicios pueden sufrir variaciones en su configuración, por ejemplo, un balanceador al que se añaden o quitan <em>hosts</em>. Siguiendo las prácticas de <a href="http://12factor.net/es/">12factor</a> podemos ahorrar trabajo, mediante el uso de variables de entorno.</p>
+<p><a class="article" href="/2016/09/imagenes-docker-reusables-mediante-configuraciones-dinamicas.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/13.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a href="/page/7.html">7</a>
+	<a href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a href="/page/11.html">11</a>
+	<a href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a class="active" href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/15.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

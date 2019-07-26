@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Haciendo backups con BorgBackup - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Haciendo backups con BorgBackup</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-05-20
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/backup.html">backup</a> / <a href="/tag/borgbackup.html">borgbackup</a> / <a href="/tag/ssh.html">ssh</a>
+</p>
+
+<p>Es un hecho inmutable que los desastres con nuestros datos ocurren; da igual lo cuidadosos que seamos, o si el servicio se autoreplica. En algún momento puede perderse información por un fallo imprevisto, o puede que sea necesario restablecer un punto conocido, para buscar errores o para cumplir imperativos legales.</p>
+
+<p>De hecho, hacer un <em>backup</em> o una copia de respaldo es uno de los primeros requisitos cuando se trata de poner algo en producción, y fruto de esta necesidad han nacido muchas iniciativas que tratan de cubrirlas. Una de estas soluciones es <strong>BorgBackup</strong>, y sus funcionalidades atrajeron mi atención desde el principio. Más información en <a href="https://borgbackup.readthedocs.io/en/stable/">su página web</a>.</p>
+
+<h2 id="un-caso-de-ejemplo">Un caso de ejemplo</h2>
+
+<p>Supongamos que tenemos un máquina de la que necesitamos copias de seguridad, a la que llamaremos <strong>client</strong>, y un servidor de <em>backup</em> llamado <strong>bakserver</strong>. Cada uno de estos servidores tiene lo siguiente:</p>
+
+<ul>
+<li><strong>bakserver</strong> &rarr; <strong>borgbackup</strong> y SSH servidor</li>
+<li><strong>client</strong> &rarr; <strong>borgbackup</strong> y SSH cliente</li>
+</ul>
+
+<p><strong>TRUCO</strong>: El paquete <strong>borgbackup</strong> está disponible en los repositorios de las distribuciones principales, a veces como <strong>borgbackup</strong> y otras como <strong>borg</strong>.</p>
+
+<p>Puesto que <strong>borgbackup</strong> funciona usando el protocolo SSH, hemos habilitado en acceso sin claves por comodidad y con vistas a una futura automatización.</p>
+
+<p>En el servidor <strong>client</strong> tenemos una serie de carpetas que queremos guardar; concretamente, la carpeta <code>bin/</code>, <code>tools/</code> y <code>wallpapers/</code>, por poner un ejemplo.</p>
+
+<pre><code class="language-bash">client:~$ ls
+bin         tools       wallpapers
+client:~$ 
+</code></pre>
+
+<p>Para ello, vamos a utilizar <strong>borgbackup</strong> desde la máquina cliente <strong>client</strong>, que envía su respaldo al servidor central <strong>bakserver</strong>, usando el usuario <em>borg</em> que previamente hemos utilizado.</p>
+
+<p><strong>AVISO</strong>: Todos los comandos se ejecutan en la máquina cliente, siendo el servidor un simple proveedor de disco a través de SSH. Esto evita poner servicios adicionales en cada máquina.</p>
+
+<h3 id="creando-y-borrando-backups">Creando y borrando backups</h3>
+
+<p>Vamos a empezar creando el espacio de <em>backups</em> en ma máquina remota, que utilizando jerga de <strong>borgbackup</strong>, se llama <strong>repositorio</strong>. Para no complicar innecesariamente el artículo, no voy a utilizar encriptación ninguna.</p>
+
+<pre><code class="language-bash">client:~$ borg init --encryption=none borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+client:~$ 
+</code></pre>
+
+<p>En este <strong>repositorio</strong> se crean <strong>archivos</strong>, que no son otra cosa que los diferentes <em>backups</em> que vamos haciendo. Hacer un <em>backup</em> es bastante simple, con la única complicación de saber la URL destino; la documentación ayuda en este punto.</p>
+
+<pre><code class="language-bash">client:~$ borg create --stats borg@bakserver:clientrepo::initial bin/ tools/ wallpapers/
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+------------------------------------------------------------------------------
+Archive name: initial
+Archive fingerprint: 8c7050a1639a8c9e40403b0791879027c16c75d5deabe93bc2af006036a4505c
+Time (start): Mon, 2019-05-06 10:21:29
+Time (end):   Mon, 2019-05-06 10:21:29
+Duration: 0.89 seconds
+Number of files: 6
+Utilization of max. archive size: 0%
+------------------------------------------------------------------------------
+                       Original size      Compressed size    Deduplicated size
+This archive:               34.57 MB             34.71 MB             34.71 MB
+All archives:               34.57 MB             34.71 MB             34.71 MB
+
+                       Unique chunks         Total chunks
+Chunk index:                      21                   21
+------------------------------------------------------------------------------
+client:~$ 
+</code></pre>
+
+<p>Y con esto tenemos nuestro backup completo, cosa que podemos verificar listando los <strong>archivos</strong> en nuestro <strong>repositorio</strong>:</p>
+
+<pre><code class="language-bash">client:~$ borg list borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+initial                              Mon, 2019-05-06 10:23:11 [de00f6579345eccae5163d7ba5705a93790cbb0a6e451c7114462572e99fcc1b]
+client:~$ 
+</code></pre>
+
+<p>Una de las funcionalidades más útiles de <strong>borgbackup</strong> es que hace <em>backups</em> incrementales de forma muy eficiente, evitando duplicar ficheros que no cambien. Esto es lo que podemos ver si repetimos el mismo <em>backup</em>.</p>
+
+<pre><code class="language-bash">client:~$ borg create --stats borg@bakserver:clientrepo::initial_v2 bin/ tools/ wallpapers/
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+------------------------------------------------------------------------------
+Archive name: initial_v2
+Archive fingerprint: 6b8b1b34e434ab45aa038e81ad7dc9cabe7da2554c9fd5ce659b1a8351c93166
+Time (start): Mon, 2019-05-06 10:23:50
+Time (end):   Mon, 2019-05-06 10:23:50
+Duration: 0.47 seconds
+Number of files: 6
+Utilization of max. archive size: 0%
+------------------------------------------------------------------------------
+                       Original size      Compressed size    Deduplicated size
+This archive:               34.57 MB             34.71 MB                450 B
+All archives:               69.14 MB             69.41 MB             34.71 MB
+
+                       Unique chunks         Total chunks
+Chunk index:                      22                   42
+------------------------------------------------------------------------------
+client:~$ 
+</code></pre>
+
+<p>El <em>backup</em> que acabamos de hacer tiene un tamaño de 35mb, pero solo ocupa 450 bytes en el repositorio. Esto es así porque los ficheros identicos se referencian, en vez de duplicarse.</p>
+
+<pre><code class="language-bash">client:~$ borg list borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+initial                              Mon, 2019-05-06 10:23:11 [de00f6579345eccae5163d7ba5705a93790cbb0a6e451c7114462572e99fcc1b]
+initial_v2                           Mon, 2019-05-06 10:23:50 [6b8b1b34e434ab45aa038e81ad7dc9cabe7da2554c9fd5ce659b1a8351c93166]
+client:~$ 
+</code></pre>
+
+<p>De la misma forma que creamos <em>backups</em>, podemos eliminarlos. Esta es una opción no habitual, ya que <strong>borgbackup</strong> ofrece la función de retención de <em>backups</em> antiguos, con el comando <code>borg prune</code>. Borrar un <strong>archivo</strong> es tan simple como indicar el <strong>archivo</strong> a borrar:</p>
+
+<pre><code class="language-bash">client:~$ borg delete borg@bakserver:clientrepo::initial_v2
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+client:~$ 
+</code></pre>
+
+<p>Y por supuesto, solo nos quedaría el <em>backup</em> inicial, tras el borrado del segundo <em>backup</em>.</p>
+
+<pre><code class="language-bash">client:~$ borg list borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+initial                              Mon, 2019-05-06 10:23:11 [de00f6579345eccae5163d7ba5705a93790cbb0a6e451c7114462572e99fcc1b]
+client:~$ 
+</code></pre>
+
+<p>Si necesitamos una fichero comprimido de un <strong>archivo</strong> concreto, podemos hacer un <code>borg export-tar</code>, que intentará darnos el fichero con un formato adecuado al nombre del fichero de salida indicado.</p>
+
+<pre><code class="language-bash">client:~$ borg export-tar borg@bakserver:clientrepo::initial initial.tar.gz
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+client:~$ 
+</code></pre>
+
+<pre><code class="language-bash">client:~$ ls
+bin             initial.tar.gz  tools           wallpapers
+client:~$ 
+</code></pre>
+
+<p>En este caso, el fichero <code>initial.tar.gz</code> estará comprimido con <strong>gzip</strong>, cosa que <strong>borgbackup</strong> ha deducido de la extensión <code>.tar.gz</code>.</p>
+
+<h3 id="un-escenario-de-recuperación">Un escenario de recuperación</h3>
+
+<p>Vamos a cometer un error a propósito, no muy diferente del que podría hacer un usuario descuidado; borraremos todo lo que hay en nuestra carpeta personal.</p>
+
+<pre><code class="language-bash">client:~$ rm * -R
+client:~$ 
+</code></pre>
+
+<p>Entonces recibiremos la visita del susodicho usuario con sus quejas habituales e indicando que &ldquo;no ha hecho nada&rdquo;. Nada que hacer, excepto de tirar de <em>backup</em>. Le ofrecemos al usuario el listado de <em>backups</em> de los que disponemos, rezando para que alguno le valga.</p>
+
+<pre><code class="language-bash">client:~$ borg list borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+initial                              Mon, 2019-05-06 10:23:11 [de00f6579345eccae5163d7ba5705a93790cbb0a6e451c7114462572e99fcc1b]
+client:~$ 
+</code></pre>
+
+<p>Le convencemos de restablecer el <em>backup</em> <code>initial</code>, ya que no tenemos otro, y efectuamos la restauración con <code>borg extract</code>. Así de fácil:</p>
+
+<pre><code class="language-bash">client:~$ borg extract borg@bakserver:clientrepo::initial
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+client:~$ 
+</code></pre>
+
+<pre><code class="language-bash">client:~$ ls
+bin         tools       wallpapers
+client:~$ 
+</code></pre>
+
+<p>Otra opción es que se necesite restaurar el <em>backup</em> en otra carpeta o en otra máquina. También es posible.</p>
+
+<pre><code class="language-bash">client:~$ mkdir justtoinspect
+client:~$ cd justtoinspect/
+client:~/justtoinspect$ borg extract borg@bakserver:clientrepo::initial
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+client:~/justtoinspect$ ls
+bin         tools       wallpapers
+client:~/justtoinspect$ 
+</code></pre>
+
+<h3 id="otras-consideraciones">Otras consideraciones</h3>
+
+<p>Si necesitamos hacer un poco de limpieza eliminando el <strong>repositorio</strong>, es posible:</p>
+
+<pre><code class="language-bash">client:~$ borg delete borg@bakserver:clientrepo
+Using a pure-python msgpack! This will result in lower performance.
+Remote: Using a pure-python msgpack! This will result in lower performance.
+You requested to completely DELETE the repository *including* all archives it contains:
+initial                              Mon, 2019-05-06 10:23:11 [de00f6579345eccae5163d7ba5705a93790cbb0a6e451c7114462572e99fcc1b]
+Type 'YES' if you understand this and want to continue: YES
+client:~$ 
+</code></pre>
+
+<p>El punto flaco de esta solución es que se ejecuta a petición. Para hacer estos <em>backups</em> de forma automatizada necesitaremos poner algo de lógica de nuestra parte:</p>
+
+<ul>
+<li>Poner un <em>script</em> en una tarea <strong>cron</strong></li>
+<li>Lanzar el <em>backup</em>, ya sea manualmente o usando algo como <strong>ansible</strong></li>
+</ul>
+
+<p><strong>TRUCO</strong>: En todos los casos podemos poner una capa extra para simplificar el proceso, como por ejemplo <a href="https://torsion.org/borgmatic/">borgmatic</a>, que se encarga de simplificar nuestras líneas de comandos (<em>backup</em> y <em>prune</em>) utilizando un fichero de configuración simple.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

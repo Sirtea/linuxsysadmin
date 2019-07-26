@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2017/06/exponiendo-puertos-tcp-a-traves-de-un-firewall-con-ngrok.html">Exponiendo puertos TCP a través de un firewall con ngrok</a></h2>
+<p>A veces tenemos la necesidad de exponer en internet algún puerto TCP de forma temporal, para hacer <em>testing</em> o alguna <em>demo</em>. Ya vimos como podemos hacer esto mediante <a href="/2016/10/creando-tuneles-con-ssh.html">túneles SSH reversos</a>, aunque no siempre disponemos de un dominio público. En estos casos podemos usar un sistema de túneles llamado <strong>ngrok</strong>.</p>
+<p><a class="article" href="/2017/06/exponiendo-puertos-tcp-a-traves-de-un-firewall-con-ngrok.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/06/logs-en-formato-json-en-nginx.html">Logs en formato JSON en Nginx</a></h2>
+<p>Vimos en un artículo anterior como trabajar con herramientas para agregar los <em>logs</em> en un mismo servidor, para su consulta. Algunos formatos de <em>logs</em> necesitan complejas formas de <em>parseado</em> para que puedan servir de base para nuestra consulta, y en el caso de <strong>logstash</strong> nos conviene un formato <strong>JSON</strong> válido.</p>
+<p><a class="article" href="/2017/06/logs-en-formato-json-en-nginx.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/generacion-facil-de-certificados-con-easyrsa.html">Generación fácil de certificados con easyrsa</a></h2>
+<p>Ya vimos en <a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">otro artículo</a> como restringir los accesos a una web usando certificados SSL. Sin embargo, la generación de los mismos era un poco confusa. Sin embargo, existe una herramienta llamada <strong>easyrsa</strong> que nos permite generar peticiones de forma fácil, firmarlas con nuestra CA y obtener el producto final.</p>
+<p><a class="article" href="/2017/05/generacion-facil-de-certificados-con-easyrsa.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/docker-1705-con-multi-stage-build.html">Docker 17.05 con multi-stage build</a></h2>
+<p>Hacía tiempo que esperaba ansiosamente la nueva versión de <strong>docker</strong>. La raíz de tanta expectación son las mejoras que la versión candidata anunciaba, especialmente el nuevo modelo de <em>build</em>. Se ha modificado los <em>Dockerfile</em> para que puedan generar varias imágenes en un solo fichero, algunas de ellas partiendo de otras.</p>
+<p><a class="article" href="/2017/05/docker-1705-con-multi-stage-build.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/desarrollando-aplicaciones-web-con-python-y-bottle.html">Desarrollando aplicaciones web con python y bottle</a></h2>
+<p>Ya sabéis que me gusta mucho el lenguaje <strong>python</strong>. Muchos de mis ejemplos y algunas aplicaciones simples no merecen el uso de un <em>framework</em> tan grande como pueda ser <strong>django</strong>. Para estos casos me encantan los <em>microframeworks</em>, y aunque hay varias alternativas disponibles, me gusta especialmente un <em>microframework</em> llamado <strong>bottle</strong>.</p>
+<p><a class="article" href="/2017/05/desarrollando-aplicaciones-web-con-python-y-bottle.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Reduciendo el tiempo de build con Docker y su caché</a></h2>
+<p>Cuando construimos imágenes <strong>docker</strong>, muchas veces no somos conscientes del poder de la caché integrada. Si reordenamos algunas instrucciones y aplicamos algún truco, podemos evitarnos el hecho de reconstruir muchas de esas capas, llegando a reducir el tiempo de <em>rebuild</em> a prácticamente cero, siempre y cuando no hayan grandes cambios.</p>
+<p><a class="article" href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/problemas-de-log-con-docker-y-python.html">Problemas de log con docker y python</a></h2>
+<p>El otro día estaba haciendo un <em>script</em> de <strong>python</strong> que debía ejecutarse en un contenedor <strong>docker</strong>. A pesar de la cantidad de <em>verbose</em> que le puse, no era capaz de ver ningún texto cuando miraba los <em>logs</em>. Tras mucha búsqueda, finalmente encontré el culpable en la variable de entorno <strong>PYTHONUNBUFFERED</strong>.</p>
+<p><a class="article" href="/2017/05/problemas-de-log-con-docker-y-python.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/04/administrando-docker-via-web-portainer.html">Administrando Docker vía web: Portainer</a></h2>
+<p>El otro día me topé con un desarrollador que quiere desplegar sus contenedores <strong>Docker</strong> en el servidor de integración, pero no conoce la sintaxis del comando <em>docker</em> y prefiere una interfaz gráfica. Eso me llevó a investigar, buscando una opción bonita, funcional y ligera; al final, me topé con <strong>Portainer</strong>.</p>
+<p><a class="article" href="/2017/04/administrando-docker-via-web-portainer.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/04/testear-dominios-sin-tener-el-dns-con-curl.html">Testear dominios sin tener el DNS con curl</a></h2>
+<p>En mi trabajo, los problemas llegan sin previo aviso. De repente, alguien te pone en aviso que su aplicación web está caída y es inaccesible. Se trata de un problema de resolución DNS, pero queremos probarlo para estar seguros de que solo es ese el problema y no es general.</p>
+<p><a class="article" href="/2017/04/testear-dominios-sin-tener-el-dns-con-curl.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/04/una-toolbox-empaquetada-en-contenedores.html">Una toolbox empaquetada en contenedores</a></h2>
+<p>Muchas veces necesitamos herramientas para nuestro trabajo y no las usamos desde la misma máquina; otras veces no queremos instalar muchos paquetes en nuestra máquina. Tener una máquina virtual suele ser <em>overkill</em> para ejecutar algunos binarios. En este caso podemos tener nuestras imágenes <strong>docker</strong> listas para ser usadas según convenga.</p>
+<p><a class="article" href="/2017/04/una-toolbox-empaquetada-en-contenedores.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/10.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a href="/page/7.html">7</a>
+	<a href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a class="active" href="/page/11.html">11</a>
+	<a href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/12.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

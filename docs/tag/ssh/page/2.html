@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>ssh - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: ssh</h1>
+
+<h2 class="article"><a href="/2017/07/ignorando-el-proxy-de-mi-empresa-un-proxy-socks.html">Ignorando el proxy de mi empresa: un proxy SOCKS</a></h2>
+<p>Tenemos en el trabajo uno de esos <em>enginjerks</em> que lanzan acciones <em>random</em> para justificar su trabajo. Cortó el acceso a <em>Dropbox</em>, en donde tengo cosas útiles para mi trabajo. Harto de encender los datos móviles de mi móvil para ir sincronizando ficheros, me he montado un proxy <strong>SOCKS</strong> para mí.</p>
+<p><a class="article" href="/2017/07/ignorando-el-proxy-de-mi-empresa-un-proxy-socks.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/07/autenticacion-centralizada-por-claves-ssh.html">Autenticación centralizada por claves SSH</a></h2>
+<p>Ya vimos en <a href="/2016/05/autenticacion-ssh-por-claves.html">un artículo anterior</a> como autenticar las sesiones <strong>SSH</strong> mediante claves locales en la máquina. Sin embargo, esto no es práctico cuando tenemos muchos servidores, y hay que replicar esas claves en todos ellos. Hoy vamos a ver como usar un <em>script</em> que pueda sacar las claves dinámicamente.</p>
+<p><a class="article" href="/2017/07/autenticacion-centralizada-por-claves-ssh.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/06/exponiendo-puertos-tcp-a-traves-de-un-firewall-con-ngrok.html">Exponiendo puertos TCP a través de un firewall con ngrok</a></h2>
+<p>A veces tenemos la necesidad de exponer en internet algún puerto TCP de forma temporal, para hacer <em>testing</em> o alguna <em>demo</em>. Ya vimos como podemos hacer esto mediante <a href="/2016/10/creando-tuneles-con-ssh.html">túneles SSH reversos</a>, aunque no siempre disponemos de un dominio público. En estos casos podemos usar un sistema de túneles llamado <strong>ngrok</strong>.</p>
+<p><a class="article" href="/2017/06/exponiendo-puertos-tcp-a-traves-de-un-firewall-con-ngrok.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/04/auditando-las-acciones-de-los-usuarios-de-nuestro-sftp.html">Auditando las acciones de los usuarios de nuestro SFTP</a></h2>
+<p>Algunas veces me he encontrado con usuarios de alguno de mis servidores SFTP que se quejan porque &ldquo;les desaparecen archivos&rdquo;. Si estamos seguros que esas desapariciones no tienen nada que ver con nosotros, lo mas probable es que lo hayan hecho los mismos usuarios, sea manualmente o de forma automática.</p>
+<p><a class="article" href="/2017/04/auditando-las-acciones-de-los-usuarios-de-nuestro-sftp.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/01/usando-ssh-en-nuestros-scripts-python-mediante-paramiko.html">Usando SSH en nuestros scripts python mediante paramiko</a></h2>
+<p>Es muy útil lanzar comandos <strong>SSH</strong> desde un <em>script</em> de <strong>bash</strong>. Sin embargo, los <em>scripts</em> en <strong>bash</strong> se vuelve ilegibles rápidamente, y no nos ofrece el poderío de la librería <strong>python</strong>. No es de extrañar que herramientas como <strong>ansible</strong> o <strong>fabric</strong> estén escritas en <strong>python</strong>, usando una librería llamada <strong>paramiko</strong>.</p>
+<p><a class="article" href="/2017/01/usando-ssh-en-nuestros-scripts-python-mediante-paramiko.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Levantando túneles SSH con systemd</a></h2>
+<p>Ya vimos en un <a href="/2016/10/creando-tuneles-con-ssh.html">artículo anterior</a> como levantar túneles <strong>SSH</strong> para llegar a través del protocolo <strong>SSH</strong>, a destinos que no están alcanzables normalmente. Esto está muy bien para aplicaciones puntuales, pero si tenemos que usar esos túneles una temporada, y deseamos que se mantengan levantados, ya es mas difícil.</p>
+<p><a class="article" href="/2016/11/levantando-tuneles-ssh-con-systemd.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/creando-tuneles-con-ssh.html">Creando túneles con SSH</a></h2>
+<p>Todos conocemos las bondades de <strong>SSH</strong> cuando se trata de acceder a un servidor remoto con una sesión interactiva. Sin embargo, pocos conocen otra habilidad que este servicio nos ofrece: encapsular tráfico de cualquier protocolo a través de un túnel <strong>SSH</strong>, cifrando nuestro tráfico y pasando potencialmente por otro puerto.</p>
+<p><a class="article" href="/2016/10/creando-tuneles-con-ssh.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/preparando-un-servidor-de-repositorios-git.html">Preparando un servidor de repositorios GIT</a></h2>
+<p>Algunas veces tenemos necesidad de crear un proyecto con un equipo pequeño y necesitamos versionarlo en un sitio accesible para todos los participantes involucrados. El precio de soluciones en la nube suele ser prohibitivo, y montar una solución gráfica puede ser demasiado. Lo podemos hacer simplemente usando <strong>git</strong> y <strong>ssh</strong>.</p>
+<p><a class="article" href="/2016/06/preparando-un-servidor-de-repositorios-git.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/autenticacion-ssh-por-claves.html">Autenticación SSH por claves</a></h2>
+<p>A pesar de que el protocolo <strong>SSH</strong> es lo que mas seguridad ofrece hoy en día, un servidor rápido puede probar gran cantidad de contraseñas generadas mediante un generador por fuerza bruta. Para añadir mas seguridad podemos autenticar mediante claves en vez de usar contraseña, opcionalmente protegidos con una <em>passphrase</em>.</p>
+<p><a class="article" href="/2016/05/autenticacion-ssh-por-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Instalando ansible para gestionar servidores</a></h2>
+<p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
+<p><a class="article" href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/ssh.html">&laquo;&laquo;</a>
+	<a href="/tag/ssh.html">&laquo;</a>
+	<a href="/tag/ssh.html">1</a>
+	<a class="active" href="/tag/ssh/page/2.html">2</a>
+	<a href="/tag/ssh/page/3.html">3</a>
+	<a href="/tag/ssh/page/3.html">&raquo;</a>
+	<a href="/tag/ssh/page/3.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

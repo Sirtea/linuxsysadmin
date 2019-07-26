@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Problemas de log con docker y python - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Problemas de log con docker y python</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-05-01
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/buffering.html">buffering</a> / <a href="/tag/logs.html">logs</a> / <a href="/tag/salida-estandar.html">salida estándar</a>
+</p>
+
+<p>El otro día estaba haciendo un <em>script</em> de <strong>python</strong> que debía ejecutarse en un contenedor <strong>docker</strong>. A pesar de la cantidad de <em>verbose</em> que le puse, no era capaz de ver ningún texto cuando miraba los <em>logs</em>. Tras mucha búsqueda, finalmente encontré el culpable en la variable de entorno <strong>PYTHONUNBUFFERED</strong>.</p>
+
+<p>El <em>script</em> en sí mismo solo pretendía comprobar si habían eventos en una cola, para su posterior proceso. La sorpresa es que no podía ver nada cuando ejecutaba <strong>docker</strong> en modo <em>detached</em> o en <strong>docker-compose</strong>.</p>
+
+<h2 id="el-problema">El problema</h2>
+
+<p>Para reducir mucho el problema, se plantea un <em>script</em> llamado <em>poll.sh</em> que emita un mensaje en la salida estándar cada segundo, como sigue:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python
+
+from datetime import datetime
+import time
+
+while True:
+    print datetime.utcnow().strftime('%H:%M:%S')
+    time.sleep(1)
+</code></pre>
+
+<p>Podemos comprobar que hace lo que se le supone. Sin embargo, el problema aparece al crear una imagen para su ejecución con <strong>docker</strong>. Vamos a usar una imagen base de <em>DockerHub</em> para mantener la dimensión del problema bajo control.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/poller$ cat Dockerfile 
+FROM python:2-slim
+COPY poll.py /
+CMD [&quot;python&quot;, &quot;poll.py&quot;]
+gerard@aldebaran:~/docker/poller$ 
+</code></pre>
+
+<p>Tras construir la imagen, vemos que no hay salida durante su ejecución:</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/poller$ docker run --name poller -d poller
+314d32b425d1d222527678fc15c73147162d62195c56422fc90729e9b4f6594b
+gerard@aldebaran:~/docker/poller$ sleep 10
+gerard@aldebaran:~/docker/poller$ docker logs poller
+gerard@aldebaran:~/docker/poller$ 
+</code></pre>
+
+<p>Tras 10 segundos de espera, el <em>script</em> debería haber escrito unas 10 veces en la salida, y sin embargo no muestra nada.</p>
+
+<h2 id="la-causa">La causa</h2>
+
+<p>Tras mucho esperar, me di cuenta de un factor interesante: tras varios minutos, se añadían muchas líneas en la salida, con sus <em>timestamps</em> diferenciados entre sí por un segundo, más o menos.</p>
+
+<p>el primer pensamiento que viene en mi cabeza ante este comportamiento, es <em>buffering</em>; no se trata de que la salida no sale, sino que sale en paquetes grandes, que se han ido acumulando en un <em>buffer</em> para optimizar las escrituras a los dispositivos permanentes.</p>
+
+<p>Como esto no es aceptable para mi aplicación, intenté buscar en <strong>python</strong> una respuesta satisfactoria, encontrándola en <a href="https://docs.python.org/2/using/cmdline.html#cmdoption-u">la documentación</a>.</p>
+
+<p>Parece ser que <strong>python</strong> acepta una opción <em>-u</em> en la línea de comandos, o una variable de entorno <strong>PYTHONUNBUFFERED</strong> que elimina el comportamiento <em>buffereado</em> de la salida estándar.</p>
+
+<h2 id="la-solución">La solución</h2>
+
+<p>Sabiendo la causa del problema, la solución es todavía más simple: solo se trata de desactivar este comportamiento.</p>
+
+<p>Esto se consigue con alguna de las dos opciones siguientes:</p>
+
+<ul>
+<li>Podemos invocar el intérprete con el <em>flag -u</em></li>
+<li>Podemos hacer que el intérprete se ejecute en un entorno que defina la variable <strong>PYTHONUNBUFFERED</strong></li>
+</ul>
+
+<p>Así pues, y tras modificar un poco nuestro <em>Dockerfile</em>, el problema deja de existir.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/poller$ cat Dockerfile 
+FROM python:2-slim
+COPY poll.py /
+CMD [&quot;python&quot;, &quot;-u&quot;, &quot;poll.py&quot;]
+gerard@aldebaran:~/docker/poller$ 
+</code></pre>
+
+<p>Y de esta forma podemos repetir el <em>test</em> inicial, para demostrar que ya no nos ocurre de nuevo.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/docker/poller$ docker run --name poller -d poller
+bb3bdaaf5ef92e2f38a70b30163abd335920aa940eb1327716eac3fa656ad651
+gerard@aldebaran:~/docker/poller$ sleep 10
+gerard@aldebaran:~/docker/poller$ docker logs poller
+13:24:08
+13:24:09
+13:24:10
+13:24:11
+13:24:12
+13:24:13
+13:24:14
+13:24:15
+13:24:16
+13:24:17
+13:24:18
+13:24:19
+13:24:20
+13:24:21
+13:24:22
+gerard@aldebaran:~/docker/poller$ 
+</code></pre>
+
+<p>De hecho, el comportamiento es más evidente si vemos los <em>logs</em> en modo <em>follow</em>, o lo que es lo mismo, usando el <em>flag -f</em>. Con él podemos ver como salta una traza cada segundo, de forma puntual y sin retardos.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

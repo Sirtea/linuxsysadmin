@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2018/03/los-sidekick-containers-en-docker.html">Los sidekick containers en Docker</a></h2>
+<p>Algunas veces nos hemos encontrado que necesitamos ejecutar dos procesos o más para un servicio, aunque uno de ellos es el servicio principal y el otro se limita a ayudar al otro de alguna manera. Mejor que ponerlos en el mismo contenedor, podemos limitarnos a usar el patrón <em>sidekick containers</em>.</p>
+<p><a class="article" href="/2018/03/los-sidekick-containers-en-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">Un gateway con Debian, iptables y dnsmasq</a></h2>
+<p>En algunas ocasiones no nos basta con tener un servidor único. Queremos tener un conjunto de servidores que se comuniquen abiertamente entre ellos usando una red privada, pero solo queremos exponer al mundo una sola dirección IP. El resto de servidores necesitan acceso a internet a través de un representante.</p>
+<p><a class="article" href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/03/entornos-de-trabajo-en-contenedores-docker.html">Entornos de trabajo en contenedores Docker</a></h2>
+<p>Cuando usamos herramientas concretas para todos los miembros de un mismo equipo, suele ser problemático instalarlo en sus equipos. Por la ausencia de instalación y su gran reproducibilidad, es cada vez más frecuente distribuir esas herramientas en una imagen de <strong>Docker</strong>, aunque esto no garantiza estar libres de otros problemas.</p>
+<p><a class="article" href="/2018/03/entornos-de-trabajo-en-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/configurando-servidores-con-first-time-boot-scripts.html">Configurando servidores con first time boot scripts</a></h2>
+<p>Configurar servidores desde cero es una tarea muy pesada, una fuente de errores innecesaria y hace nuestros servidores difícilmente reproducibles. Los <em>setups</em> más básicos son siempre los mismos, y podemos configurar nuestros servidores para que ejecuten un <em>script</em> la primera vez que se (re)inicien, a falta de mejores herramientas.</p>
+<p><a class="article" href="/2018/02/configurando-servidores-con-first-time-boot-scripts.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/un-sistema-de-ficheros-comprimido-y-de-solo-lectura-squashfs.html">Un sistema de ficheros comprimido y de solo lectura: squashfs</a></h2>
+<p>Cuando trabajamos con tamaños de disco muy limitados, como por ejemplo en dispositivos <em>embedded</em> o <em>pendrives</em>, nos vemos obligados a reducir nuestros sistemas de ficheros. Algunos de estos sistemas de ficheros son de solo lectura, y vienen comprimidos, lo que nos permite ahorrar en espacio de disco, no en funcionalidades.</p>
+<p><a class="article" href="/2018/02/un-sistema-de-ficheros-comprimido-y-de-solo-lectura-squashfs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/tuneles-ssh-con-reinicio-automatico-con-docker.html">Túneles SSH con reinicio automático con Docker</a></h2>
+<p>Ya vimos en <a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">un artículo anterior</a> como delegar en <strong>SystemD</strong> la persistencia de túneles SSH. El otro día intenté reproducirlo sin éxito en un servidor con una versión baja de <strong>SystemD</strong>; finalmente me di cuenta de que había otra herramienta en el servidor capaz de reiniciar un túnel caído: <strong>Docker</strong>.</p>
+<p><a class="article" href="/2018/02/tuneles-ssh-con-reinicio-automatico-con-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/02/un-almacen-de-passwords-web-seguro-con-vaultier.html">Un almacén de passwords web seguro con vaultier</a></h2>
+<p>Cada vez que trabajo en un cliente me pasa lo mismo; las claves de acceso y las contraseñas de las diferentes herramientas y de los diferentes servidores están guardadas de forma caótica e inaccesible. Puesto que trabajamos en un equipo distribuido, me gusta tener esto publicado en remoto pero seguro.</p>
+<p><a class="article" href="/2018/02/un-almacen-de-passwords-web-seguro-con-vaultier.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/01/automatizando-el-setup-de-un-mongo-replica-set-en-docker.html">Automatizando el setup de un mongo replica set en docker</a></h2>
+<p>Algunas veces queremos probar nuestras aplicaciones en local y necesitamos una base de datos <strong>MongoDB</strong>; en estos casos, <strong>Docker</strong> nos presta un gran servicio. Es posible que en estos casos necesitemos un <strong>replica set</strong> para probar; aunque <strong>Docker</strong> sigue ayudando, la inicialización del <em>cluster</em> sigue siendo un tedioso proceso manual.</p>
+<p><a class="article" href="/2018/01/automatizando-el-setup-de-un-mongo-replica-set-en-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/01/evitando-usar-virtualenv-mediante-el-uso-de-pythonpath.html">Evitando usar virtualenv mediante el uso de PYTHONPATH</a></h2>
+<p>Soy un gran fan de <strong>python</strong> y siempre ando trasteando con alguna librería nueva, en vistas a un <em>script</em> para simplificar mi trabajo, o simplemente como un <em>wekeend project</em>. Me es infinitamente útil usar <strong>virtualenv</strong>, pero genera una carpeta que ocupa demasiado y contiene algo más que solamente las librerías.</p>
+<p><a class="article" href="/2018/01/evitando-usar-virtualenv-mediante-el-uso-de-pythonpath.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/01/una-plataforma-para-desplegar-contenedores-rancheros.html">Una plataforma para desplegar contenedores: RancherOS</a></h2>
+<p>Aquellos que seguís este <em>blog</em> de forma regular, habréis notado mi predilección por los contenedores <strong>docker</strong>, en gran parte porque es con lo que trabajo en mi día a día. Hartos de usar la plataforma <em>custom</em> que tenemos en la compañía buscamos una nueva, que simplifique el trabajo que hacemos.</p>
+<p><a class="article" href="/2018/01/una-plataforma-para-desplegar-contenedores-rancheros.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/6.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a class="active" href="/page/7.html">7</a>
+	<a href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a href="/page/11.html">11</a>
+	<a href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/8.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

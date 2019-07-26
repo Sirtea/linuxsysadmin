@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Creando un tema para Ghost - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Creando un tema para Ghost</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-12-05
+	<strong>Tiempo de lectura</strong>: 9 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/ghost.html">ghost</a> / <a href="/tag/blog.html">blog</a> / <a href="/tag/tema.html">tema</a>
+</p>
+
+<p>Ya vimos lo fácil que resulta de empezar un <em>blog</em> con <strong>Ghost</strong>. El tema que viene por defecto es muy simple y bastante legible, pero nos puede interesar cambiarlo, por ejemplo para poner publicidad. Existen temas de pago y gratuitos ya hechos, pero hoy voy a explicar como hacer uno.</p>
+
+<p>Vamos a partir de una instalación limpia de <strong>Ghost</strong>, pero ejemplo como se indica en <a href="/2016/11/ghost-un-motor-para-hacer-blogs.html">otro artículo</a>. Es especialmente importante desarrollar el tema en una instancia que corra en modo <em>development</em>, así no va a <em>cachear</em> las plantillas y nos va a ahorrar reiniciar el proceso.</p>
+
+<p>Es muy útil mapear la carpeta <em>/usr/lib/ghost/</em> del contenedor a una carpeta local, si estamos usando <strong>Docker</strong>. De esta manera podemos editar el tema cómodamente en nuestro sistema de ficheros y con las herramientas con las que más cómodos nos sintamos.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ docker run -d -p 2368:2368 -v /home/gerard/workspace/content:/var/lib/ghost ghost
+343d065878fb910a9f2b5b51be4a337d2e93db2e66cbff6800c2cb96a758f733
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>Una vez hayamos creado el tema, nos lo podemos descargar y aplicarlo a nuestra instancia productiva, sin necesidad de reiniciar nada. A fin de cuentas, en el fichero <em>.zip</em> solo hay plantillas y ficheros de respaldo del tema.</p>
+
+<p>Las plantillas están escritas en un motor de plantillas llamado <a href="http://handlebarsjs.com/">Handlebars</a>, y podemos encontrar un resume enfocado a <strong>Ghost</strong> en <a href="https://themes.ghost.org/docs/handlebars">la documentación</a>. Como convención, todos los ficheros <em>.hbs</em> en un tema de <strong>Ghost</strong> son plantillas en este lenguaje.</p>
+
+<p>El uso de una instancia nueva nos viene muy bien, porque tenemos un índice y un <em>post</em>, que nos permitirán ver como evoluciona nuestro <em>blog</em>, a medida que avanzamos en el artículo.</p>
+
+<ul>
+<li>Índice -&gt; <a href="http://localhost:2368/">http://localhost:2368/</a></li>
+<li>Post -&gt; <a href="http://localhost:2368/welcome-to-ghost/">http://localhost:2368/welcome-to-ghost/</a></li>
+</ul>
+
+<h2 id="un-tema-vacío">Un tema vacío</h2>
+
+<p>Vamos a crear una carpeta local temporal con los ficheros requeridos, que luego vamos a comprimir en fichero <em>.zip</em> para poder cargarlo en la interfaz de administración. Una vez <strong>Ghost</strong> ya reconozca nuestro tema, no vamos a tener que reiniciar ningún proceso nunca.</p>
+
+<p>De acuerdo a la <a href="https://themes.ghost.org/docs/structure">documentación de Ghost</a>, se necesitan un mínimo de 3 ficheros, que son el <em>package.json</em>, <em>index.hbs</em> y <em>post.hbs</em>. Podemos encontrar la descripción de cada fichero en otro apartado de <a href="https://themes.ghost.org/docs/templates">la documentación</a>.</p>
+
+<p>Voy a poner lo justo para que se pueda cargar el tema, aunque no sea muy funcional, para ir creciendo a partir de aquí.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ tree minimal_theme/
+minimal_theme/
+├── index.hbs
+├── package.json
+└── post.hbs
+
+0 directories, 3 files
+gerard@aldebaran:~/workspace$ cat minimal_theme/package.json 
+{
+  &quot;name&quot;: &quot;minimal_theme&quot;,
+  &quot;version&quot;: &quot;0.0.0&quot;
+}
+gerard@aldebaran:~/workspace$ cat minimal_theme/index.hbs 
+INDEX
+gerard@aldebaran:~/workspace$ cat minimal_theme/post.hbs 
+POST
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>Para cargarlo cómodamente desde la interfaz web, lo necesitamos en formato <em>.zip</em>. De hecho, la carpeta contenedora tampoco nos importa, así que la podemos borrar.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ cd minimal_theme/
+gerard@aldebaran:~/workspace/minimal_theme$ zip -r ../minimal_theme.zip *
+  adding: index.hbs (stored 0%)
+  adding: package.json (deflated 10%)
+  adding: post.hbs (stored 0%)
+gerard@aldebaran:~/workspace/minimal_theme$ cd ..
+gerard@aldebaran:~/workspace$ rm -R minimal_theme/
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>Es importante mencionar que el fichero <em>.zip</em> no debe contener la carpeta contenedora, sino sus ficheros. Para entendernos, los 3 ficheros deben quedar en la raíz del fichero comprimido.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace$ unzip -l minimal_theme.zip 
+Archive:  minimal_theme.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        6  2016-09-23 12:41   index.hbs
+       52  2016-09-23 12:41   package.json
+        5  2016-09-23 12:41   post.hbs
+---------                     -------
+       63                     3 files
+gerard@aldebaran:~/workspace$ 
+</code></pre>
+
+<p>Lo cargamos desde la interfaz de administración, en <em>Settings / General / Themes / Upload a theme</em>. La idea es que a partir de ahora vamos a editar el tema desde la carpeta <em>/var/lib/ghost/themes/minimal_theme/</em>; como yo he usado un volumen local, lo voy a editar cómodamente desde <em>/home/gerard/workspace/content/themes/minimal_theme/</em>. Cuando tengamos algo digno de ser guardado, lo podemos descargar en la misma sección de la interfaz administrativa, en formato <em>.zip</em>.</p>
+
+<p>En este punto, deberíamos ver una página principal con el contenido &ldquo;INDEX&rdquo; y la página del <em>post</em> de bienvenida como &ldquo;POST&rdquo;, porque la plantilla no hace nada con los objetos que recibe de <strong>Ghost</strong>. Vamos a continuar mejorando estas plantillas en los siguientes apartados.</p>
+
+<h2 id="plantilla-base-e-inyección-de-plantillas-parciales">Plantilla base e inyección de plantillas parciales</h2>
+
+<p>Las plantillas deberían sacar contenido HTML. Como ya sabemos, hay muchos elementos comunes que se van a repetir en todas las plantillas, por ejemplo, los <em>tags</em> propios de HTML, como el <em>&lt;html&gt;</em>, el <em>&lt;head&gt;</em> o el <em>&lt;body&gt;</em>.</p>
+
+<p>La solución mas elegante para este problema es la herencia de plantillas. La idea es que nuestra plantilla se va a insertar en una mas general, de forma que todas tengan un esqueleto común.</p>
+
+<p>También tenemos la opción de tener trozos de plantilla preparados para ser incluidos en otras plantillas, por ejemplo, la cabecera, el código de seguimiento o el contador de visitas. Estos trozos se llaman <em>partials</em> y tienen una carpeta con el mismo nombre.</p>
+
+<p>Para ver como funcionan ambos, vamos a crear un esqueleto HTML. Este esqueleto va a incluir un <em>partial</em> con la cabecera del <em>blog</em>. De esta forma conseguimos separar conceptos, para que sea mas legible y mas fácil de modificar a <em>posteriori</em>.</p>
+
+<p>Para ello vamos a crear nuevos ficheros, que son la plantilla base <em>default.hbs</em> y la plantilla de la cabecera en <em>partials/header.hbs</em>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ tree
+.
+├── partials
+│   └── header.hbs
+├── default.hbs
+├── index.hbs
+├── package.json
+└── post.hbs
+
+1 directory, 5 files
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>El primer paso consiste en indicar a las plantillas antes creadas que queremos que hereden de la plantilla <em>default</em>, con el símbolo <code>{{!&lt; default}}</code>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat index.hbs 
+{{!&lt; default}}
+
+INDEX
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat post.hbs 
+{{!&lt; default}}
+
+POST
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Lo siguiente es escribir una plantilla <em>default.hbs</em>. Esta plantilla debe contener la expresión <em>handlebars</em> <code>{{{body}}}</code>, que es donde se va a insertar la plantilla real.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat default.hbs 
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;Title&lt;/title&gt;
+{{ghost_head}}
+  &lt;/head&gt;
+  &lt;body&gt;
+{{&gt; header}}
+{{{body}}}
+{{ghost_foot}}
+  &lt;/body&gt;
+&lt;/html&gt;
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Vamos a fijarnos en 3 expresiones nuevas, que son <code>{{&gt; header}}</code>, <code>{{ghost_head}}</code> y <code>{{ghost_foot}}</code>. La primera sirve para insertar un <em>partial</em>, que va a ser el resultado de procesar <em>partials/header.hbs</em>. Las otras dos, aunque no son estrictamente necesarias, son recomendadas por la documentación de <strong>Ghost</strong>. Básicamente incluyen algunos <em>metatags</em> y cualquier <em>snippet</em> que pongamos como <em>Code Injection</em> en el panel de administración web.</p>
+
+<p>Solo faltaría poner algo de código en el <em>partial</em> de la cabecera para que sea útil incluirlo. Vamos a pecar otra vez de simplicidad.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat partials/header.hbs 
+&lt;h1&gt;Title&lt;/h1&gt;
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p><strong>AVISO</strong>: Si miramos el <em>blog</em> ahora, veremos que da un error 500. Esto es debido a que <strong>Ghost</strong> no ha cargado los nuevos ficheros. Como solución, basta con activar otro tema, y volver a activar el nuestro.</p>
+
+<h2 id="usando-variables-en-las-plantillas">Usando variables en las plantillas</h2>
+
+<p>Cada plantilla dispone de sus variables para que las usemos. Algunas de las variables están disponibles para todas las plantillas. De esta forma podemos generar contenido HTML real a partir de lo que hay en la base de datos de <strong>Ghost</strong>.</p>
+
+<p>Vamos a empezar con el título del <em>blog</em>, visible en el <em>tag</em> <code>title</code> de la plantilla <em>default.hbs</em> y en la cabecera <em>partials/header.hbs</em>. Para poner el título real del <em>blog</em> (tal como se define en la interfaz de administración), vamos a usar la variable <code>{{@blog.title}}</code>. Podéis encontrar todas las variables disponibles en la documentación.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat default.hbs 
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;{{@blog.title}}&lt;/title&gt;
+{{ghost_head}}
+  &lt;/head&gt;
+  &lt;body&gt;
+{{&gt; header}}
+{{{body}}}
+{{ghost_foot}}
+  &lt;/body&gt;
+&lt;/html&gt;
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat partials/header.hbs 
+&lt;h1&gt;{{@blog.title}}&lt;/h1&gt;
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Para las otras plantillas, el truco consiste en localizar que variables tenemos disponibles. Podemos encontrar el contexto para cada plantilla en la barra lateral de la configuración, en el <em>Context Reference</em>.</p>
+
+<p>En el caso de la plantilla <em>index.hbs</em>, podemos mirar en <a href="https://themes.ghost.org/docs/index-context">su contexto</a>. De ahí se deduce que tenemos una variable <em>posts</em> que solo tenemos que iterar para listar cada uno, de la forma que mas nos guste. Siguiendo el enlace a <a href="https://themes.ghost.org/docs/post-context#post-object-attributes">post object</a>, podemos ver qué campos hay para dibujar en la plantilla. Vamos a utilizar el <em>title</em> y el <em>excerpt</em> (título del <em>post</em> y un resumen del mismo).</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat index.hbs 
+{{!&lt; default}}
+
+{{#foreach posts}}
+&lt;h2&gt;{{title}}&lt;/h2&gt;
+&lt;p&gt;{{excerpt}}&lt;/p&gt;
+{{/foreach}}
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Simple, pero suficiente. Por brevedad, no se ha incluido ningún trato del la variable <code>{{pagination}}</code>. Si hacéis temas en el futuro, vais a tener que utilizarla.</p>
+
+<p>La plantilla <em>post.hbs</em>, de similar forma, obtiene la variable <em>post</em> y un ejemplo de como iterarla. Su documentación de contexto está <a href="https://themes.ghost.org/docs/post-context">aquí</a>. Vamos a pintar el título del artículo y su contenido (<em>title</em> y <em>content</em> respectivamente).</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat post.hbs 
+{{!&lt; default}}
+
+{{#post}}
+&lt;h2&gt;{{title}}&lt;/h2&gt;
+{{content}}
+{{/post}}      
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Nuevamente, un ejemplo simple y breve; no soy diseñador gráfico. Pero se entiende, ¿no?</p>
+
+<h2 id="hojas-de-estilo-javascript-y-otros-ficheros-auxiliares">Hojas de estilo, javascript y otros ficheros auxiliares</h2>
+
+<p>Cuando escribimos un tema, muchas veces necesitamos de otros ficheros, mas allá del contenido HTML. En la jerga de <strong>Ghost</strong> se llaman <em>assets</em> y nos ofrece una forma muy fácil de hacerlo. Tenemos un <em>helper</em> llamado <em>asset</em> que podemos usar. Un <em>asset</em> puede ser una hoja de estilo, un fichero <em>javascript</em>, una imagen, una fuente y en general, cualquier tipo de recurso.</p>
+
+<p>Para demostrar como se usa, vamos a incluir una hoja de estilo en nuestro tema. Como queremos que esté disponible en todas las páginas, la podemos poner en la plantilla base. La idea es que va a ser el código HTML normal, pero en vez de dar la ruta nosotros, vamos a poner <code>{{asset &quot;css/style.css&quot;}}</code>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat default.hbs 
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;es&quot;&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;{{@blog.title}}&lt;/title&gt;
+    &lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;{{asset &quot;css/style.css&quot;}}&quot; /&gt;
+{{ghost_head}}
+  &lt;/head&gt;
+  &lt;body&gt;
+{{&gt; header}}
+{{{body}}}
+{{ghost_foot}}
+  &lt;/body&gt;
+&lt;/html&gt;
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Como le hemos indicado que queremos el <em>asset</em> localizado en <em>css/style.css</em>, tenemos que crear esta estructura dentro de la carpeta <em>assets</em>, que crearemos también si no la tenemos. El fichero <em>.css</em> va a ser bastante simple, para no aburrir con detalles de diseño.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/workspace/content/themes/minimal_theme$ cat assets/css/style.css 
+body {
+    background-color: cyan;
+}
+gerard@aldebaran:~/workspace/content/themes/minimal_theme$ 
+</code></pre>
+
+<p>Sinceramente espero que seáis mejores en el diseño gráfico que yo&hellip; Aunque lo importante es que si miramos el <em>blog</em>, se ha aplicado el estilo definido. Podéis añadir mas <em>assets</em> hasta que os canséis de ello.</p>
+
+<h2 id="a-partir-de-aquí">A partir de aquí&hellip;</h2>
+
+<p>Como detalle final, solo queda decir que podéis generar mas plantillas, que van a ser cargadas en el orden de preferencia, como se indica en <a href="https://themes.ghost.org/docs/context-overview#section-context-table">la documentación</a>. Fijaos en las columnas <em>URL</em> y <em>Template</em>.</p>
+
+<p>Por ejemplo, la plantilla que se usa para la URL <em>/tag/ghost</em> sería <em>tag-ghost.hbs</em>; en caso de no haber dicha plantilla, se utilizaría <em>tag.hbs</em>; en caso de fallar ambas (como es el caso de este tutorial), se utilizaría <em>index.hbs</em> (que está porque es una de las requeridas).</p>
+
+<p>Ya tenéis todas las herramientas necesarias para escribir y para entender temas de <strong>Ghost</strong>. Con un poco de esfuerzo y ganas, os puede quedar un tema propio genial.</p>
+
+<p>En este punto, me voy a la interfaz de administración, y me descargo mi tema, a modo de <em>backup</em>. Si os interesa, os lo dejo <a href="/downloads/minimal_theme.zip">aquí</a>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

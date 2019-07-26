@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Reduciendo el tamaño de nuestros binarios con musl libc - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Reduciendo el tamaño de nuestros binarios con musl libc</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-05-16
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/musl.html">musl</a> / <a href="/tag/libc.html">libc</a> / <a href="/tag/chroot.html">chroot</a> / <a href="/tag/jaula.html">jaula</a>
+</p>
+
+<p>Cuando construimos jaulas, por el motivo que sea, vemos que no quedan pequeñas. El problema es el conjunto de librerías que hay que poner en el caso de los binarios <em>dinámicos</em>, o el exceso de tamaño en el caso de los <em>estáticos</em>. Cambiando la librería base, podemos reducir su tamaño.</p>
+
+<p>La mayoría de los binarios de un sistema <em>linux</em> necesitan una librería llamada <em>libc</em>. La que suelen poner en todas las distribuciones es la <strong>GNU libc</strong>, que es compatible con todos los proyectos de software libre y no suele dar problemas.</p>
+
+<p>Sin embargo, no es la única; si tenemos un binario que se puede compilar con estas otras librerías, la reducción de tamaño suele ser importante. Esto no nos preocupa en un sistema &ldquo;normal&rdquo; porque el disco es barato, pero es frustrante cuando tenemos que cargar cientos de megas para poner solamente un par de servicios en una jaula.</p>
+
+<p>Así que vamos a crear una jaula usando <strong>musl libc</strong> como demostración, para ver como se reducen la cantidad de librerías y el tamaño de la jaula.</p>
+
+<h2 id="el-compilador-que-enlaza-con-musl-libc">El compilador que enlaza con musl libc</h2>
+
+<p>La librería de <strong>musl libc</strong> puede usarse de dos formas: construir una <em>toolchain</em> dedicada o usar un <em>wrapper</em> de la que tengamos en el sistema. Como la primera merecería un artículo por sí misma, usaremos la segunda. Es digno de mención indicar que existen <em>toolchains</em> prefabricadas.</p>
+
+<p>El procedimiento para instalar el <em>wrapper</em> de <strong>musl libc</strong> es relativamente simple; se trata del típico procedimiento <em>configure &amp;&amp; make &amp;&amp; make install</em>. Para ello vamos a necesitar algunas herramientas:</p>
+
+<pre><code class="language-bash">root@musl:~# apt-get install wget gcc make
+...
+root@musl:~#
+</code></pre>
+
+<p>Nos descargamos la versión de <strong>musl libc</strong> que queramos utilizar usando el comando <em>wget</em>.</p>
+
+<pre><code class="language-bash">root@musl:~# wget https://www.musl-libc.org/releases/musl-1.1.14.tar.gz
+...
+root@musl:~#
+</code></pre>
+
+<p>Descomprimimos el <em>tarball</em> descargado y nos ponemos en la carpeta creada.</p>
+
+<pre><code class="language-bash">root@musl:~# tar xzf musl-1.1.14.tar.gz
+root@musl:~# cd musl-1.1.14
+root@musl:~/musl-1.1.14#
+</code></pre>
+
+<p>Vamos a configurar el paquete, con lo que se va a generar un <em>Makefile</em> compatible con nuestro sistema. Es un buen momento para indicar la carpeta que va a contener el &ldquo;compilador&rdquo;.</p>
+
+<pre><code class="language-bash">root@musl:~/musl-1.1.14# ./configure --prefix=/opt/musl/
+...
+root@musl:~/musl-1.1.14#
+</code></pre>
+
+<p>Una vez obtenido el <em>Makefile</em>, podemos construir el &ldquo;compilador&rdquo; con la orden <em>make</em>. Si tenéis la suerte de contar con mas de un procesador, podéis acelerar este paso con el <em>flag</em> <strong>-j2</strong>, por ejemplo (serían dos threads); lo ideal poner el número de núcleos disponibles.</p>
+
+<pre><code class="language-bash">root@musl:~/musl-1.1.14# make
+...
+root@musl:~/musl-1.1.14#
+</code></pre>
+
+<p>Y con los binarios construidos, los ponemos en su sitio con <em>make install</em>. Puesto que indicamos un <em>prefix</em> en el <em>configure</em>, va a crear esa carpeta, creando en ella las carpetas necesarias (por ejemplo, <em>bin</em> y <em>lib</em>).</p>
+
+<pre><code class="language-bash">root@musl:~/musl-1.1.14# make install
+...
+root@musl:~/musl-1.1.14#
+</code></pre>
+
+<p>Cuando el <em>make install</em> haya funcionado, podemos salir de la carpeta de fuentes y eliminarla. En este caso, lo importante ha quedado en <em>/opt/musl/</em>.</p>
+
+<pre><code class="language-bash">root@musl:~/musl-1.1.14# cd ..
+root@musl:~# rm -R musl-1.1.14*
+root@musl:~#
+</code></pre>
+
+<h2 id="construyendo-una-jaula-de-ejemplo">Construyendo una jaula de ejemplo</h2>
+
+<p>Supongamos que tenemos un código fuente de un ejecutable que queremos en la jaula. En este caso vamos a hacer un sencillo programa:</p>
+
+<pre><code class="language-bash">root@musl:~# cat hello.c
+#include &quot;stdio.h&quot;
+#include &quot;stdlib.h&quot;
+
+int main() {
+    printf(&quot;Hello world!\n&quot;);
+    exit(0);
+}
+root@musl:~#
+</code></pre>
+
+<h3 id="versión-estática">Versión estática</h3>
+
+<p>Compilamos nuestro binario con el <em>flag</em> <strong>-static</strong>. Eso hace que el binario incluya lo que necesita de <strong>musl libc</strong>, con lo que no va a necesitar ninguna librería de sistema. Este binario debería funcionar en todas las máquinas con la misma arquitectura (en mi caso, x86). No os olvidéis del <em>strip</em>, que va a eliminar los símbolos de <em>debug</em> y reduce el tamaño del binario.</p>
+
+<pre><code>root@musl:~# /opt/musl/bin/musl-gcc -static -o hello hello.c
+root@musl:~# strip hello
+root@musl:~#
+</code></pre>
+
+<p>Creamos una carpeta para la jaula, en la que ponemos nuestro ejecutable, sin nada mas, porque no lo necesita.</p>
+
+<pre><code class="language-bash">root@musl:~# mkdir jail_static
+root@musl:~# cp hello jail_static/
+root@musl:~# tree jail_static/ -h
+jail_static/
+└── [4.9K]  hello
+
+0 directories, 1 file
+root@musl:~#
+</code></pre>
+
+<p>Lanzamos un <em>chroot</em> que va modificar la percepción de las carpetas; a todos los efectos, <em>jail_static/</em> va a ser <em>/</em> mientras el comando lanzado no acabe. Esto implica que nuestro binario estaría en la raíz de la jaula.</p>
+
+<pre><code class="language-bash">root@musl:~# chroot jail_static/ /hello
+Hello world!
+root@musl:~#
+</code></pre>
+
+<p>Vemos que funciona y que solo hemos necesitado 5 kilobytes para nuestra jaula. Obviamente, vamos a necesitar algo mas para poner un servicio completo.</p>
+
+<p>Hay que indicar que varios binarios posiblemente llevarían incrustados los mismos pedazos de <strong>musl libc</strong> duplicando código, y que para actualizar la librería habría que recompilarlos todos con la nueva versión.</p>
+
+<h3 id="versión-dinámica">Versión dinámica</h3>
+
+<p>Que nuestro binario sea dinámico implica que no incluye ningún código de <strong>musl libc</strong>, así que la va a necesitar cerca para funcionar. La ventaja es los binarios son independientes de la librería usada, que podemos actualizar simplemente cambiándola por la nueva, sin recompilar los binarios.</p>
+
+<p>Para compilar este caso no vamos a indicar ningún <em>flag</em> de compilación, ya que el formato dinámico es el habitual.</p>
+
+<pre><code class="language-bash">root@musl:~# /opt/musl/bin/musl-gcc -o hello hello.c
+root@musl:~# strip hello
+root@musl:~#
+</code></pre>
+
+<p>La parte mala es que este binario no funciona sin sus librerías, que podemos buscar con <em>ldd</em>:</p>
+
+<pre><code class="language-bash">root@musl:~# ldd hello
+./hello: error while loading shared libraries: /usr/lib/i386-linux-gnu/libc.so: invalid ELF header
+root@musl:~#
+</code></pre>
+
+<p>Desgraciadamente, el <em>ldd</em> del sistema funciona con la librería del sistema. La funcionalidad del <em>ldd</em> para <strong>musl libc</strong> la proporciona la misma librería, siempre que se llame <em>ldd</em>. Hacer un enlace nos basta.</p>
+
+<pre><code>root@musl:~# ln -s /opt/musl/lib/libc.so ldd
+root@musl:~# ./ldd hello
+        /lib/ld-musl-i386.so.1 (0xb7757000)
+        libc.so =&gt; /lib/ld-musl-i386.so.1 (0xb7757000)
+root@musl:~# ldd /lib/ld-musl-i386.so.1
+        statically linked
+root@musl:~#
+</code></pre>
+
+<p>Como vemos, nuestro binario necesita el fichero <em>/lib/ld-musl-i386.so.1</em>, y este a ninguno mas. Con esta información podemos montar la jaula. Cabe decir que la librería puede reducirse con el comando <em>strip</em>.</p>
+
+<pre><code class="language-bash">root@musl:~# mkdir jail_dynamic
+root@musl:~# mkdir jail_dynamic/lib
+root@musl:~# cp hello jail_dynamic/
+root@musl:~# cp /lib/ld-musl-i386.so.1 jail_dynamic/lib/
+root@musl:~# strip jail_dynamic/lib/ld-musl-i386.so.1
+root@musl:~# tree jail_dynamic/ -h
+jail_dynamic/
+├── [2.2K]  hello
+└── [4.0K]  lib
+    └── [531K]  ld-musl-i386.so.1
+
+1 directory, 2 files
+root@musl:~#
+</code></pre>
+
+<p>Y como es de esperar, la jaula funciona como se espera:</p>
+
+<pre><code class="language-bash">root@musl:~# chroot jail_dynamic/ /hello
+Hello world!
+root@musl:~#
+</code></pre>
+
+<p>En este caso, la jaula ocupa mas que la versión estática. En el caso de haber mas binarios, podría salirnos a cuenta; desde luego, en este caso no hay beneficio ninguno, y además tenemos una complejidad adicional. Valorad cada caso individualmente.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

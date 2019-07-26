@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Creando un entorno escalable (II) - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Creando un entorno escalable (II)</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-03-07
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/replica-set.html">replica set</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/firehol.html">firehol</a>
+</p>
+
+<p>Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un <em>cluster</em> de bases de datos; será <strong>mongodb</strong> porque la aplicación lo requiere y usará la topología de un <strong>replica set</strong>.</p>
+
+<p>Este artículo se basa enormemente en <a href="/2015/12/construyendo-una-replica-set-en-mongodb.html">otro artículo</a> que ya publicamos, al que vamos a añadir algunas mejoras reflejadas en otros.</p>
+
+<p>Como ya vimos en el artículo referido, solo necesitamos levantar un proceso <em>mongod</em> en cada una de las máquinas, para posteriormente casarlos entre sí.</p>
+
+<h2 id="levantando-los-procesos-de-mongodb">Levantando los procesos de mongodb</h2>
+
+<p>Este punto se repite en las máquinas que van a formar la <strong>replica set</strong>, que son <em>mongo1</em>, <em>mongo2</em> y <em>backoffice</em>. Vamos a seguir solamente una de ellas; el resto son análogas.</p>
+
+<p>Crearemos una estructura en <em>/opt/</em> para alojar los binarios, las configuraciones, los datos y los logs.</p>
+
+<pre><code class="language-bash">root@mongo1:~# mkdir -p /opt/mongodb/{bin,conf,data,logs}
+root@mongo1:~#
+</code></pre>
+
+<p>En la carpeta de binarios vamos a poner el único que se necesita: el <em>mongod</em>. Lo podemos sacar descomprimiendo el
+fichero comprimido <em>.tar.gz</em> de la página de descargas de <strong>mongodb</strong>. En nuestro caso concreto, lo he sacado de <a href="https://fastdl.mongodb.org/linux/mongodb-linux-i686-3.2.3.tgz">https://fastdl.mongodb.org/linux/mongodb-linux-i686-3.2.3.tgz</a>.</p>
+
+<pre><code class="language-bash">root@mongo1:~# cp mongodb-linux-i686-3.2.3/bin/mongod /opt/mongodb/bin/
+root@mongo1:~#
+</code></pre>
+
+<p>Ponemos un fichero de configuración para la instancia que queremos correr. Esta configuración puede variar mucho, pero un ejemplo básico para salir del paso con una máquina de 32 bits (que no soportan <em>WiredTiger</em>) podría ser:</p>
+
+<pre><code class="language-bash">root@mongo1:~# cat /opt/mongodb/conf/mongo.conf
+systemLog:
+    path: /opt/mongodb/logs/mongo.log
+    logAppend: true
+    destination: file
+
+net:
+    port: 27017
+    bindIp: 0.0.0.0
+
+storage:
+    dbPath: /opt/mongodb/data/
+    engine: mmapv1
+    mmapv1:
+        smallFiles: true
+
+replication:
+    replSetName: rs
+root@mongo1:~#
+</code></pre>
+
+<p><strong>TRUCO</strong>: Es un buen momento para montar un sistema de ficheros alternativo para almacenar los datos, sea poner <a href="/2016/01/lvm-logical-volume-manager.html">LVM</a> (para tener crecimiento dinámico o <a href="/2016/02/haciendo-snapshots-con-lvm.html">snapshots</a>, sea un <a href="/2015/12/construyendo-un-raid-10-en-linux.html">RAID</a> (por ejemplo para tener alto rendimiento y/o replicación de datos), o incluso ambos.</p>
+
+<p>Cumpliendo con una política de seguridad básica, vamos a crear un usuario de sistema para correr el proceso.</p>
+
+<pre><code class="language-bash">root@mongo1:~# useradd -s /usr/sbin/nologin -r -M mongo -d /opt/mongodb/
+root@mongo1:~#
+</code></pre>
+
+<p>Le damos la propiedad de toda la estructura de <strong>mongodb</strong>, para ahorrarnos problemas de permisos.</p>
+
+<pre><code class="language-bash">root@mongo1:~# chown -R mongo:mongo /opt/mongodb/
+root@mongo1:~#
+</code></pre>
+
+<p>Y ya como resumen, ponemos una salida para ver como nos queda la estructura:</p>
+
+<pre><code class="language-bash">root@mongo1:~# tree /opt/mongodb/
+/opt/mongodb/
+├── bin
+│   └── mongod
+├── conf
+│   └── mongo.conf
+├── data
+└── logs
+
+4 directories, 2 files
+root@mongo1:~#
+</code></pre>
+
+<p>El último paso consiste en crear una <em>unit</em> en <strong>systemd</strong> (o un <em>init script</em>, dependiendo de la distribución usada; de hecho, cada máquina puede ir con una distribución distinta).</p>
+
+<pre><code class="language-bash">root@mongo1:~# cat /etc/systemd/system/mongo.service
+[Unit]
+Description=MongoDB
+
+[Service]
+User=mongo
+LimitFSIZE=infinity
+LimitCPU=infinity
+LimitAS=infinity
+LimitNOFILE=64000
+LimitNPROC=64000
+ExecStartPre=/bin/rm -f /opt/mongodb/data/mongod.lock
+ExecStart=/opt/mongodb/bin/mongod -f /opt/mongodb/conf/mongo.conf
+
+[Install]
+WantedBy=multi-user.target
+root@mongo1:~#
+</code></pre>
+
+<p>Lo activamos para que se levante solo en los siguientes arranques, y lo levantamos para la sesión actual.</p>
+
+<pre><code class="language-bash">root@mongo1:~# systemctl enable mongo
+Created symlink from /etc/systemd/system/multi-user.target.wants/mongo.service to /etc/systemd/system/mongo.service.
+root@mongo1:~# systemctl start mongo
+root@mongo1:~#
+</code></pre>
+
+<p>Repetid este paso en las otras máquinas de <strong>mongodb</strong>.</p>
+
+<h2 id="consideraciones-de-seguridad">Consideraciones de seguridad</h2>
+
+<p>Para que una <strong>replica set</strong> funcione como debe, todos los procesos deben comunicarse entre sí. Como los hemos puesto en el mismo puerto, podemos agruparlo todo en una sola regla.</p>
+
+<p>Como en nuestro caso estamos virtualizando con <strong>LXC</strong>, vamos a controlar el tráfico con el <strong>firehol</strong> de la máquina anfitriona.</p>
+
+<pre><code class="language-bash">...
+root@lxc:~# cat /etc/firehol/firehol.conf
+mongo_servers=&quot;10.0.0.5 10.0.0.6 10.0.0.7&quot;
+...  
+router internal inface lxc0 outface lxc0
+    route custom mongodb tcp/27017 default accept src &quot;$mongo_servers&quot; dst &quot;$mongo_servers&quot;
+...
+root@lxc:~#
+</code></pre>
+
+<p>Acordaos de reiniciar <strong>firehol</strong>.</p>
+
+<h2 id="atando-la-replica-set">Atando la replica set</h2>
+
+<p>Este paso se ejecuta en una sola máquina, que va a reproducir los cambios a las demás, por efecto de la <strong>replica set</strong>. Por ejemplo, lo hago en <em>mongo1</em>, por hacer alguna.</p>
+
+<p>Entramos en el <em>mongo shell</em>, desde donde lanzaremos el resto de comandos.</p>
+
+<pre><code class="language-bash">root@mongo1:~# ./mongodb-linux-i686-3.2.3/bin/mongo
+MongoDB shell version: 3.2.3
+connecting to: test
+Welcome to the MongoDB shell.
+For interactive help, type &quot;help&quot;.
+...
+&gt; 
+</code></pre>
+
+<p>Siguiendo los pasos estándares, creamos una configuración vacía en la máquina elegida, y añadimos las otras dos. Tened en cuenta que la máquina <em>backoffice</em> se declara como un árbitro, por decisión de diseño.</p>
+
+<pre><code class="language-bash">&gt; rs.initiate()
+{
+        &quot;info2&quot; : &quot;no configuration specified. Using a default configuration for the set&quot;,
+        &quot;me&quot; : &quot;mongo1:27017&quot;,
+        &quot;ok&quot; : 1
+}
+rs:SECONDARY&gt; rs.add(&quot;mongo2:27017&quot;)
+{ &quot;ok&quot; : 1 }
+rs:PRIMARY&gt; rs.addArb(&quot;backoffice:27017&quot;)
+{ &quot;ok&quot; : 1 }
+rs:PRIMARY&gt;
+</code></pre>
+
+<p>Podemos verificar que todo está bien mediante el comando <em>rs.status()</em>, como sigue:</p>
+
+<pre><code class="language-bash">rs:PRIMARY&gt; rs.status()
+{
+        &quot;set&quot; : &quot;rs&quot;,
+...  
+        &quot;members&quot; : [
+                {
+...  
+                        &quot;name&quot; : &quot;mongo1:27017&quot;,
+                        &quot;stateStr&quot; : &quot;PRIMARY&quot;,
+...  
+                },
+                {
+...  
+                        &quot;name&quot; : &quot;mongo2:27017&quot;,
+                        &quot;stateStr&quot; : &quot;SECONDARY&quot;,
+...  
+                },
+                {
+...  
+                        &quot;name&quot; : &quot;backoffice:27017&quot;,
+                        &quot;stateStr&quot; : &quot;ARBITER&quot;,
+...  
+                }
+        ],
+        &quot;ok&quot; : 1
+}
+rs:PRIMARY&gt;
+</code></pre>
+
+<p>Y salimos del <em>mongo shell</em>, que ya no necesitamos; las aplicaciones de <em>backend</em> y de <em>backoffice</em> ya incluyen una librería para conectarse por sí mismos.</p>
+
+<pre><code class="language-bash">rs:PRIMARY&gt; exit
+bye
+root@mongo1:~#
+</code></pre>
+
+<p>Todo lo que queda en <em>/root/</em> es innecesario y se puede borrar. De todas formas podemos dejar el resto de binarios en <em>/opt/mongodb/</em> en alguna de las máquinas por si acaso.</p>
+
+<p><strong><em>El siguiente paso va a ser montar los servidores de aplicaciones en los backends y en el backoffice</em></strong></p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

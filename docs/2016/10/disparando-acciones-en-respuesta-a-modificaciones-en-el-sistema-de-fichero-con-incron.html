@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Disparando acciones en respuesta a modificaciones en el sistema de fichero con incron - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Disparando acciones en respuesta a modificaciones en el sistema de fichero con incron</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-10-03
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/incron.html">incron</a>
+</p>
+
+<p>El otro día recibí una petición diferente en mi trabajo. Se necesitaba monitorizar una carpeta, de forma que cuando alguien dejara ficheros, se lanzara una tarea para procesarlos. Tras buscar un poco por internet, topé con una herramienta tipo <em>cron</em>, que ejecutaba comandos ante eventos en el sistema de ficheros.</p>
+
+<p>Como me pareció interesante, me puse a investigar como funcionaba y, aunque no sirvió para cubrir nuestras necesidades, decidí apuntarla por sus usos potenciales en el futuro.</p>
+
+<p>Como no podía ser de otra forma, vamos a empezar instalando el paquete que lo contiene:</p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# apt-get install -y incron
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+The following NEW packages will be installed:
+  incron
+0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.
+Need to get 68.8 kB of archives.
+After this operation, 321 kB of additional disk space will be used.
+...  
+Processing triggers for systemd (215-17+deb8u4) ...
+root@65b056d5d699:~# 
+</code></pre>
+
+<p>Normalmente, los servicios se levantan solos en <strong>Debian</strong>, pero como estamos trabajando con un contenedor <strong>docker</strong> mediante <strong>SSH</strong>, vamos a tener que hacerlo manualmente.</p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# service incron start
+[ ok ] Starting File system events scheduler: incron.
+root@65b056d5d699:~# 
+</code></pre>
+
+<p>Esta herramienta se puede configurar de forma similar al <strong>cron</strong>; tenemos la opción de poner ficheros de configuración en <em>/etc/incron.d/</em> o podemos usar comandos de <strong>incron</strong> por usuario, mediante el comando <em>incron</em>, con los flags correspondientes.</p>
+
+<ul>
+<li><strong>incron -l</strong> &rarr; lista la tabla de incron del usuario actual</li>
+<li><strong>incron -e</strong> &rarr; edita la tabla de incron del usuario actual</li>
+<li><strong>incron -r</strong> &rarr; elimina la tabla de incron del usuario actual</li>
+</ul>
+
+<p>Para usar <strong>incron</strong> a nivel de usuario, este debe aparecer en <em>/etc/incron.allow</em>.</p>
+
+<h2 id="un-caso-práctico">Un caso práctico</h2>
+
+<p>Supongamos que tenemos un servidor web <strong>nginx</strong>.</p>
+
+<pre><code class="language-bash">root@65b056d5d699:/etc/nginx/sites-enabled# netstat -lntp
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      249/nginx       
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1/sshd          
+tcp6       0      0 :::22                   :::*                    LISTEN      1/sshd          
+root@65b056d5d699:/etc/nginx/sites-enabled# 
+</code></pre>
+
+<p>Estamos cansados de recargar la configuración cada vez que modificamos alguno de los ficheros de configuración, así que vamos a delegar esta tarea a <strong>incron</strong>. Concretamente queremos que cada vez que se modifique el fichero <em>/etc/nginx/nginx.conf</em> o algunos de los <em>virtualhosts</em> en <em>/etc/nginx/sites-enabled/</em>, se haga un <em>reload</em> del servicio.</p>
+
+<p>Miramos la tabla de eventos posibles a monitorizar y vemos que nos interesa el evento <strong>IN_MODIFY</strong>. Se pueden monitorizar varios eventos uniéndolos con un <strong>OR</strong> lógico, pero no se pueden poner mas de una línea por carpeta monitorizada.</p>
+
+<ul>
+<li><strong>IN_ACCESS</strong> &rarr; Se ha accedido al fichero o directorio.</li>
+<li><strong>IN_ATTRIB</strong> &rarr; Se han cambiado los <em>metadatos</em> (o los <em>timestamps</em>).</li>
+<li><strong>IN_CLOSE_WRITE</strong> &rarr; Se ha cerrado un fichero abierto en modo distinto al de escritura.</li>
+<li><strong>IN_CLOSE_NOWRITE</strong> &rarr; Se ha cerrado un fichero abierto en modo de escritura.</li>
+<li><strong>IN_CREATE</strong> &rarr; Se ha creado un fichero en el directorio monitorizado.</li>
+<li><strong>IN_DELETE</strong> &rarr; Se ha borrado un fichero en la carpeta.</li>
+<li><strong>IN_DELETE_SELF</strong> &rarr; El fichero o directorio monitorizado ha sido borrado.</li>
+<li><strong>IN_MODIFY</strong> &rarr; El fichero ha sido modificado.</li>
+<li><strong>IN_MOVE_SELF</strong> &rarr; El fichero o carpeta monitorizado se ha movido.</li>
+<li><strong>IN_MOVED_FROM</strong> &rarr; Un fichero se ha movido desde la carpeta monitorizada.</li>
+<li><strong>IN_MOVED_TO</strong> &rarr; Un fichero se ha movido hacia la carpeta monitorizada.</li>
+<li><strong>IN_OPEN</strong> &rarr; Se ha abierto un fichero en la carpeta monitorizada.</li>
+<li><strong>IN_MOVE</strong> &rarr; Combinación de IN_MOVED_FROM y de IN_MOVED_TO.</li>
+<li><strong>IN_CLOSE</strong> &rarr; Combinación de IN_CLOSE_WRITE y IN_CLOSE_NOWRITE.</li>
+<li><strong>IN_ALL_EVENTS</strong> &rarr; Todos los eventos anteriores.</li>
+</ul>
+
+<p>Así pues, ponemos la tripleta <em>carpeta, evento, acción</em>, ya sea con el comando <em>incron -e</em> o mediante un fichero en <em>/etc/incron.d/</em>. Es importante indicar que la salida del comando no se puede recoger en este fichero; si es necesario, habría que llamar a un <em>script</em> que tuviera la redirección.</p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# cat /etc/incron.d/nginx 
+/etc/nginx/nginx.conf IN_MODIFY /usr/sbin/service nginx reload
+/etc/nginx/sites-enabled/ IN_MODIFY /usr/sbin/service nginx reload
+root@65b056d5d699:~# 
+</code></pre>
+
+<p>En este punto no hay que recargar nada; <strong>incron</strong> ha detectado el cambio y se ha recargado solo.</p>
+
+<p>Vamos a cambiar, por ejemplo, el puerto en el que escucha nuestra web.</p>
+
+<p><strong>ANTES:</strong></p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# cat /etc/nginx/sites-enabled/mysite 
+server {
+	listen 80 default_server;
+	root /var/www/html;
+	server_name _;
+}
+</code></pre>
+
+<p><strong>DESPUES:</strong></p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# cat /etc/nginx/sites-enabled/mysite 
+server {
+	listen 8080 default_server;
+	root /var/www/html;
+	server_name _;
+}
+root@65b056d5d699:~# 
+</code></pre>
+
+<p>Y sin recargar la configuración de <strong>nginx</strong> -puesto que ya lo ha hecho <strong>incron</strong>-, vemos que se ha puesto a escuchar en el nuevo puerto.</p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# netstat -lntp
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      249/nginx       
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      1/sshd          
+tcp6       0      0 :::22                   :::*                    LISTEN      1/sshd          
+root@65b056d5d699:~# 
+</code></pre>
+
+<h2 id="ejecución-parametrizada-de-nuestras-tareas">Ejecución parametrizada de nuestras tareas</h2>
+
+<p>El proceso de <strong>incron</strong> nos ofrece unos parámetros para discernir cual de los eventos disparó el <em>trigger</em>:</p>
+
+<ul>
+<li><strong>$$</strong> &rarr; Símbolo de dólar.</li>
+<li><strong>$@</strong> &rarr; Ruta de la carpeta monitorizada.</li>
+<li><strong>$#</strong> &rarr; Fichero modificado.</li>
+<li><strong>$%</strong> &rarr; Evento que disparó la acción, en texto.</li>
+<li><strong>$&amp;</strong> &rarr; Evento que disparó la acción, en número.</li>
+</ul>
+
+<p>Si quisiéramos procesar un fichero tal como nos lo dejen en una carpeta, podemos usar un <em>script</em> con parámetros que haga lo que deba con el mismo.</p>
+
+<pre><code class="language-bash">root@65b056d5d699:~# cat /etc/incron.d/batch_process 
+/opt/batch_process/inbox/ IN_WRITE_CLOSE /opt/batch_process/process_file.py $@ $#
+root@65b056d5d699:~# 
+</code></pre>
+
+<p>Este <em>script</em> recibe la ruta de la carpeta monitorizada y el fichero. Lo que hace el <em>script</em> se deja a la imaginación del lector. Como punto adicional, recalcar que se ha usado el evento <strong>IN_WRITE_CLOSE</strong> en vez de <strong>IN_CREATE</strong> porque este último salta inmediatamente, y podríamos encontrarnos con un fichero a medio subir, en caso de ser puesto por un protocolo remoto.</p>
+
+<p>Estoy seguro que en un futuro no muy lejano, esta herramienta me va a ser de gran utilidad.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

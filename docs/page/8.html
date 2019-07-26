@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2018/01/aplicaciones-graficas-en-un-contenedor.html">Aplicaciones gráficas en un contenedor</a></h2>
+<p>A veces nos encontramos en un ordenador que no tenemos preparado para usar nuestras aplicaciones habituales, o simplemente no es el nuestro, o no queremos ensuciarlo para probar aplicaciones nuevas. Si disponemos de <strong>docker</strong>, es posible ejecutarlas compartiendo solamente el <em>unix socket</em> del servidor gráfico para verlas en nuestra pantalla.</p>
+<p><a class="article" href="/2018/01/aplicaciones-graficas-en-un-contenedor.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/01/usando-un-bastion-ssh.html">Usando un bastión SSH</a></h2>
+<p>Hoy vamos a presentar un patrón de conectividad para acceder a un conjunto de máquinas, exponiendo solamente una de ellas, y aprovechando el protocolo SSH para pasar el tráfico a través, de forma transparente. Eso facilita los casos en los que no podemos tener una VPN o una red dedicada.</p>
+<p><a class="article" href="/2018/01/usando-un-bastion-ssh.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/12/manteniendo-la-version-de-paquetes-en-debian-y-ubuntu.html">Manteniendo la versión de paquetes en Debian y Ubuntu</a></h2>
+<p>Una de las operaciones más rutinarias que podemos tener como administradores de sistemas Linux es la actualización de un servidor. Mecánicamente lanzas <strong>apt-get upgrade</strong> y te quedas tan tranquilo con la tarea completa. Poco después te encuentras con alguien cabreado porque alguna librería o servicio no va adecuadamente como antes.</p>
+<p><a class="article" href="/2017/12/manteniendo-la-version-de-paquetes-en-debian-y-ubuntu.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/12/usando-extensiones-en-flask.html">Usando extensiones en Flask</a></h2>
+<p>Muchos de los <em>microframeworks</em> que existen en <strong>python</strong> no ofrecen ninguna ayuda con las tareas más simples que toda aplicación acaba implementando; eso nos hace decantarnos casi siempre por una opción más pesada de <em>framework</em>, como por ejemplo, <strong>Django</strong>. Sin embargo, gracias a los <strong>blueprints</strong> de <strong>Flask</strong>, esto es innecesario.</p>
+<p><a class="article" href="/2017/12/usando-extensiones-en-flask.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/12/creciendo-con-flask-los-blueprints.html">Creciendo con Flask: los blueprints</a></h2>
+<p>Ya estuvimos hablando del <em>microframework</em> <strong>Flask</strong>, pero no profundizamos en su funcionalidad más avanzada: los <strong>blueprints</strong>, que son una agrupación de vistas, plantillas y contenido estático similar a las aplicaciones de <strong>django</strong>. Solamente por esta funcionalidad queda justificado el uso de este <em>framework</em> para proyectos de tamaños medio o grande.</p>
+<p><a class="article" href="/2017/12/creciendo-con-flask-los-blueprints.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/12/otro-microframework-en-python-flask.html">Otro microframework en python: Flask</a></h2>
+<p>Cuando queremos hacer una nueva aplicación web podemos usar un <em>framework</em> completo como <strong>django</strong> o uno minimalista como <strong>bottle</strong>. Entre ambos existe una amplia variedad de <em>frameworks</em> que nos pueden aportar variedad y algunas de las funcionalidades más demandadas. En esta categoria podemos encontrar un <em>microframework</em> muy interesante llamado <strong>Flask</strong>.</p>
+<p><a class="article" href="/2017/12/otro-microframework-en-python-flask.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/un-odm-para-mongodb-en-python-mongoengine.html">Un ODM para mongodb en python: mongoengine</a></h2>
+<p>Aquellos que hemos usado <strong>mongodb</strong> desde <strong>python</strong>, ya conocemos las virtudes de <strong>pymongo</strong>. Sin embargo, este lenguaje es orientado a objetos, y trabajar con ellos hace nuestro código más simple y más legible. <strong>Mongoengine</strong> es un ODM, una librería que se encarga de convertir objetos en documentos <strong>mongodb</strong> y viceversa.</p>
+<p><a class="article" href="/2017/11/un-odm-para-mongodb-en-python-mongoengine.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/ejecutando-procesos-desde-python-con-popen.html">Ejecutando procesos desde python con popen</a></h2>
+<p>Algunas veces nos interesa lanzar comandos <em>bash</em>, pero necesitamos de la potencia de <em>python</em> para <em>parsear</em> la salida. En otras ocasiones queremos lanzar los comandos <em>bash</em> directamente desde <em>python</em> porque se hace desde una aplicación web. En estos casos nos viene muy bien el módulo <em>subprocess</em> que nos lo permite.</p>
+<p><a class="article" href="/2017/11/ejecutando-procesos-desde-python-con-popen.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/redirecciones-a-nivel-de-nginx.html">Redirecciones a nivel de nginx</a></h2>
+<p>No son pocas las veces que queremos hacer una redirección de algunos de nuestros dominios a otros. Puede que queramos añadir el clásico <code>www</code> delante del dominio, o tal vez queramos forzar el uso de <code>https</code>. Hacer copias de nuestro dominio no es viable, pero podemos usar redirecciones fijas 301.</p>
+<p><a class="article" href="/2017/11/redirecciones-a-nivel-de-nginx.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/uso-basico-de-un-cluster-docker-swarm.html">Uso básico de un cluster Docker Swarm</a></h2>
+<p>Usar un <em>cluster</em> de <strong>docker swarm</strong> no es transparente para nuestro uso; necesitamos cambiar de mentalidad y tener en cuenta algunos conceptos. Donde antes hablábamos de contenedores, aquí se habla de <strong>servicios</strong>, que básicamente son un número variable de contenedores repartidos por los diferentes nodos del <em>cluster</em> de forma balanceada.</p>
+<p><a class="article" href="/2017/11/uso-basico-de-un-cluster-docker-swarm.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/7.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a href="/page/7.html">7</a>
+	<a class="active" href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a href="/page/11.html">11</a>
+	<a href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/9.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

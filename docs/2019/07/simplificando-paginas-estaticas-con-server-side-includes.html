@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Simplificando páginas estáticas con Server Side Includes - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Simplificando páginas estáticas con Server Side Includes</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-07-01
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/server-side-includes.html">server side includes</a> / <a href="/tag/ssi.html">SSI</a> / <a href="/tag/nginx.html">nginx</a>
+</p>
+
+<p>Los <em>Server Side Includes</em> (SSI) son una extensión de algunos servidores web que nos permiten hacer manipulaciones en el fichero HTML servido de forma fácil. Esto nos permite, por ejemplo, incluir <em>snippets</em> de código en nuestras páginas estáticas, lo que contribuye en el principio <strong>Dont Repeat Yourself</strong>, sin contenido duplicado.</p>
+
+<p>Los SSI funcionan incrustando directivas en nuestras páginas web, en forma de comentarios con una sintaxis específica. El servidor web &ldquo;interpreta&rdquo; esas directivas antes de enviarle la respuesta al usuario, dándonos una especie de contenido dinámico sin repercutir en el rendimiento de servicio.</p>
+
+<p>Aunque es una tecnología de los años 90 y va camino a caer en desuso, creo que tiene todavía uso con el auge de las páginas estáticas, probablemente autogeneradas. Algunos servidores web todavía conservan esta extensión:</p>
+
+<ul>
+<li>Apache</li>
+<li>IIS</li>
+<li>Lighttpd</li>
+<li>Nginx</li>
+</ul>
+
+<p>Desde mi punto de vista personal, su <em>killer feature</em> es la incorporación de <em>snippets</em>, de forma que no nos repitamos y podamos cambiar todas las páginas editando solo un fichero.</p>
+
+<h2 id="un-escenario-problemático">Un escenario problemático</h2>
+
+<p>Hace tiempo que descubrí <a href="/2016/12/documentacion-facil-con-markdown-y-strapdownjs.html">una librería magnífica para hacer documentación</a>. De hecho, sirve también para hacer sitios web simples; solo hace falta rodear nuestro contenido <strong>markdown</strong> con algunos <em>tags</em> HTML:</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Lorem Ipsum&lt;/title&gt;
+&lt;xmp theme=&quot;spacelab&quot; style=&quot;display:none;&quot;&gt;
+
+# Esto es markdown
+
+&lt;/xmp&gt;
+&lt;script src=&quot;http://strapdownjs.com/v/0.2/strapdown.js&quot;&gt;&lt;/script&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>Como la prueba de concepto nos gusta, nos la quedamos; pasan los meses y vamos añadiendo páginas nuevas a nuestro sitio simple, llegando al centenar de páginas. Con el paso del tiempo se nos puede ocurrir hacer algunos cambios:</p>
+
+<ul>
+<li>Cambiar el título del sitio</li>
+<li>Cambiar el tema base del sitio</li>
+<li>Reestructurar los elementos HTML de forma radical</li>
+<li>Hospedar una copia local de <strong>strapdown</strong></li>
+</ul>
+
+<p>Esto supone cambiar todas las páginas, y son muchas a estas alturas. Incluso si lo automatizamos es una tarea bastante poco deseable.</p>
+
+<h2 id="server-side-includes-al-rescate">Server Side Includes al rescate</h2>
+
+<p>Imaginemos que los <em>tags</em> necesarios se externalizan en <em>snippets</em> de código en fichero distintos:</p>
+
+<ul>
+<li>Tags anteriores al contenido &rarr; Los metemos en <code>header.shtml</code></li>
+<li>Tags posteriores al contenido &rarr; Los metemos en <code>footer.shtml</code></li>
+</ul>
+
+<p><strong>TRUCO</strong>: La extensión <code>.shtml</code> no es necesaria, pero es la tradición. Podéis cambiarla por la que os convenga (<code>.html</code>, <code>.inc</code>, <code>.snippet</code>, &hellip;)</p>
+
+<p>Ahora nuestro <em>document root</em> tiene dos ficheros más, que agruparé en una carpeta propia para poder poner reglas extras de <strong>nginx</strong> sobre ella.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/ssi$ tree www/
+www/
+├── include
+│   ├── footer.shtml
+│   └── header.shtml
+└── index.html
+
+1 directory, 3 files
+gerard@atlantis:~/workspace/ssi$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/ssi$ cat www/include/header.shtml 
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Lorem Ipsum&lt;/title&gt;
+&lt;xmp theme=&quot;spacelab&quot; style=&quot;display:none;&quot;&gt;
+gerard@atlantis:~/workspace/ssi$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/ssi$ cat www/include/footer.shtml 
+&lt;/xmp&gt;
+&lt;script src=&quot;http://strapdownjs.com/v/0.2/strapdown.js&quot;&gt;&lt;/script&gt;
+&lt;/html&gt;
+gerard@atlantis:~/workspace/ssi$ 
+</code></pre>
+
+<p>Los ficheros HTML no se libran de modificaciones, pero esto se debería hacer con antelación a la crecida de contenido&hellip;</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/ssi$ cat www/index.html 
+&lt;!--#include file=&quot;/include/header.shtml&quot; --&gt;
+
+# Esto es markdown
+
+&lt;!--#include file=&quot;/include/footer.shtml&quot; --&gt;
+gerard@atlantis:~/workspace/ssi$ 
+</code></pre>
+
+<p>Esto causará que el comentario se sustituya por el contenido de los ficheros indicados.</p>
+
+<h2 id="activando-ssi-en-nginx">Activando SSI en Nginx</h2>
+
+<p>Para que el servidor web <strong>nginx</strong> pueda interpretar estos comentarios solo se necesita activar el módulo SSI. Esto se hace con la directiva <code>ssi on</code>, a nivel de servidor o a nivel de <em>virtualhost</em>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/workspace/ssi$ cat web.conf 
+server {
+    listen 80;
+    server_name _;
+    root /srv/www;
+    index index.html;
+    ssi on;
+    error_page 404 /404.html;
+
+    location /404.html {
+        internal;
+    }
+
+    location /include/ {
+        internal;
+    }
+}
+gerard@atlantis:~/workspace/ssi$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: La última <code>location</code> sirve para &ldquo;marginar&rdquo; la carpeta <code>include</code>. Cualquier intento de solicitar una URL que empiece por <code>/include/</code> va a devolver directamente un error 404, como si no exisitiera la carpeta ni su contenido. Ese es el motivo real para mover los <em>snippets</em> a su propia carpeta.</p>
+
+<p>Ahora ya no necesitamos temer los cambios en los <em>tags</em> HTML, ya que solo habría que modificar dos <em>snippets</em>. La inclusión de los mismos la hace <strong>nginx</strong> en cada petición que se le haga, y lo conseguimos sin utilizar ningún lenguaje de programación.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

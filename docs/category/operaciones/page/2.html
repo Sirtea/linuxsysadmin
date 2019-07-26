@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Operaciones - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Category: operaciones</h1>
+
+<h2 class="article"><a href="/2018/11/un-entorno-de-jenkins-distribuido-en-contenedores.html">Un entorno de jenkins distribuido en contenedores</a></h2>
+<p>Estaba yo el otro día intentando montar un <strong>jenkins</strong> con acceso al binario de <strong>docker</strong> y <strong>python</strong>. Como no quería instalar <strong>jenkins</strong>, me limité a extender la imagen <a href="https://hub.docker.com/r/jenkins/jenkins/">jenkins/jenkins</a> para dotarlo de las herramientas necesarias, como <a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">ya hicimos con ansible</a> que, aunque funciona, no es ni elegante ni escalable.</p>
+<p><a class="article" href="/2018/11/un-entorno-de-jenkins-distribuido-en-contenedores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/10/una-alternativa-a-dig-probando-drill.html">Una alternativa a dig: probando drill</a></h2>
+<p>Cuando trabajas con terceras partes, los problemas relacionados con la resolución DNS son demasiado habituales. Muchas veces utilizan DNS internos y cuando nos pasan los datos de conexión remota, no funciona nada. En estos casos, el procedimiento suele pasar por verificar primero la resolución DNS antes que la conectividad remota.</p>
+<p><a class="article" href="/2018/10/una-alternativa-a-dig-probando-drill.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/09/ajustando-bloques-de-disco-reservado-con-tune2fs.html">Ajustando bloques de disco reservado con tune2fs</a></h2>
+<p>Llega el momento que tantas veces hemos repetido: montamos un servidor para una función concreta, y le asignamos un disco o partición a la carpeta que va a alojar la cantidad creciente de datos necesarios. De repente nos fijamos en que la capacidad del disco se ha perdido tras formatear.</p>
+<p><a class="article" href="/2018/09/ajustando-bloques-de-disco-reservado-con-tune2fs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/08/deshaciendome-del-historial-de-comandos-en-bash.html">Deshaciéndome del historial de comandos en Bash</a></h2>
+<p>Muchas veces me pregunto para qué necesito guardar un histórico de comandos en mis sesiones de <strong>bash</strong>. Como no soy nada repetitivo con los comandos que uso, solo se trata de basura acumulándose en <code>~/.bash_history</code>, y un riesgo innecesario de que otros usuarios puedan chafardear los comandos que voy utilizando.</p>
+<p><a class="article" href="/2018/08/deshaciendome-del-historial-de-comandos-en-bash.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/07/ampliando-la-memoria-swap-mediante-swapfiles.html">Ampliando la memoria swap mediante swapfiles</a></h2>
+<p>Como ya sabéis, para escribir artículos, utilizo <strong>VirtualBox</strong>. Últimamente no paro de clonar la misma imagen base una y otra vez, lo que me da un particionado idéntico. Sin embargo, cuando se trata de memoria <em>swap</em>, no todas las instáncias clonadas necesitan la misma <em>swap</em> y cambiarlo no es fácil.</p>
+<p><a class="article" href="/2018/07/ampliando-la-memoria-swap-mediante-swapfiles.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/06/contrasenas-de-un-solo-uso-para-usuarios-linux.html">Contraseñas de un solo uso para usuarios linux</a></h2>
+<p>No dejan de sorprenderme los administradores de sistemas que crean usuarios a petición, pero les asignan <em>passwords</em> supuestamente de un solo uso pidiéndoles que la cambien en el primer uso. La experiencia me dice que esa <em>password</em> solo se cambia si es estrictamente necesario. Esta petición la puedes forzar fácilmente.</p>
+<p><a class="article" href="/2018/06/contrasenas-de-un-solo-uso-para-usuarios-linux.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/06/explorando-bash-la-variable-de-entorno-hostaliases.html">Explorando bash: la variable de entorno HOSTALIASES</a></h2>
+<p>Muchas veces me he encontrado haciendo <em>demos</em> con aplicaciones ejecutando en local o en un contenedor. Otras tantas el cliente ha hecho un montón de preguntas tontas referentes a porqué pone <em>localhost</em>. En algunos de estos sistemas no disponía de acceso <em>root</em> o <em>sudo</em> para cambiar el fichero <code>/etc/hosts</code>.</p>
+<p><a class="article" href="/2018/06/explorando-bash-la-variable-de-entorno-hostaliases.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/05/despliegues-sin-corte-de-servicio-blue-green-deployments.html">Despliegues sin corte de servicio: blue-green deployments</a></h2>
+<p>Para muchas aplicaciones caseras, nos importa poco parar un servidor de aplicaciones o web. Sin embargo, en el mundo empresarial, un corte de servicio o <em>downtime</em> son palabras mayores, y normalmente vienen seguidos de un papeleo espectacular; otras veces se puede calmar la situación mediante el despido del pobre operador.</p>
+<p><a class="article" href="/2018/05/despliegues-sin-corte-de-servicio-blue-green-deployments.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/05/un-cron-alternativo-con-go-go-cron.html">Un cron alternativo con go: go-cron</a></h2>
+<p>Quiero presentar una de esas herramientas que ya existen, pero que alguien ha reescrito con el lenguaje <strong>go</strong>. Se trata de una utilidad tipo <em>cron</em>, pero está compilada de forma estática, no necesita de otras librerías y, por lo tanto, lo podemos usar en donde no tengamos permisos de <em>root</em>.</p>
+<p><a class="article" href="/2018/05/un-cron-alternativo-con-go-go-cron.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/05/una-jaula-ssh-con-git-shell.html">Una jaula SSH con git-shell</a></h2>
+<p>El otro día recibí una petición en el trabajo por parte de un cliente: poder ejecutar algunas operaciones por SSH en nuestro servidor. Solo de pensar en montar una jaula SSH con los binarios y sus librerías ya se me hizo cuesta arriba, y por eso lo hice con <strong>git-shell</strong>.</p>
+<p><a class="article" href="/2018/05/una-jaula-ssh-con-git-shell.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/category/operaciones.html">&laquo;&laquo;</a>
+	<a href="/category/operaciones.html">&laquo;</a>
+	<a href="/category/operaciones.html">1</a>
+	<a class="active" href="/category/operaciones/page/2.html">2</a>
+	<a href="/category/operaciones/page/3.html">3</a>
+	<a href="/category/operaciones/page/4.html">4</a>
+	<a href="/category/operaciones/page/5.html">5</a>
+	<a href="/category/operaciones/page/6.html">6</a>
+	<a href="/category/operaciones/page/7.html">7</a>
+	<a href="/category/operaciones/page/8.html">8</a>
+	<a href="/category/operaciones/page/3.html">&raquo;</a>
+	<a href="/category/operaciones/page/8.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

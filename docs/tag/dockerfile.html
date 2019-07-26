@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>dockerfile - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: dockerfile</h1>
+
+<h2 class="article"><a href="/2017/09/un-proceso-inicial-para-docker-tini-y-dumb-init.html">Un proceso inicial para docker: tini y dumb-init</a></h2>
+<p>Siempre nos han vendido que <strong>docker</strong> ejecuta un solo proceso, y que este puede ser cualquiera. Sin embargo, este proceso se ejecuta con PID 1, que es un poco especial y que tiene unas responsabilidades adicionales. Si no queremos implementarlas, podemos usar alguna solución que ya lo haga para nosotros.</p>
+<p><a class="article" href="/2017/09/un-proceso-inicial-para-docker-tini-y-dumb-init.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/08/creando-imagenes-con-estilo-la-instruccion-onbuild.html">Creando imágenes con estilo: la instrucción ONBUILD</a></h2>
+<p>En el día a día de mi trabajo, me encuentro con un conjunto muy variado de ficheros <em>Dockerfile</em> que vienen a hacer lo mismo, pero de formas muy distintas. El fichero original se pasa de mano en mano, pervirtiéndose en cada paso y al final queda hecho un gran asco.</p>
+<p><a class="article" href="/2017/08/creando-imagenes-con-estilo-la-instruccion-onbuild.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/docker-1705-con-multi-stage-build.html">Docker 17.05 con multi-stage build</a></h2>
+<p>Hacía tiempo que esperaba ansiosamente la nueva versión de <strong>docker</strong>. La raíz de tanta expectación son las mejoras que la versión candidata anunciaba, especialmente el nuevo modelo de <em>build</em>. Se ha modificado los <em>Dockerfile</em> para que puedan generar varias imágenes en un solo fichero, algunas de ellas partiendo de otras.</p>
+<p><a class="article" href="/2017/05/docker-1705-con-multi-stage-build.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Reduciendo el tiempo de build con Docker y su caché</a></h2>
+<p>Cuando construimos imágenes <strong>docker</strong>, muchas veces no somos conscientes del poder de la caché integrada. Si reordenamos algunas instrucciones y aplicamos algún truco, podemos evitarnos el hecho de reconstruir muchas de esas capas, llegando a reducir el tiempo de <em>rebuild</em> a prácticamente cero, siempre y cuando no hayan grandes cambios.</p>
+<p><a class="article" href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/06/controlando-contenedores-docker-con-ansible.html">Controlando contenedores docker con ansible</a></h2>
+<p>La facilidad de levantar un contenedor <strong>docker</strong> nos lleva a la pregunta del millón: ¿es posible usar <strong>docker</strong> para crear contenedores de usar y tirar para probar otras tecnologías? La respuesta es que sí, y para demostrarlo, vamos a generar un entorno minimalista en contenedores <strong>docker</strong>, desplegados mediante <strong>ansible</strong> <em>playbooks</em>.</p>
+<p><a class="article" href="/2016/06/controlando-contenedores-docker-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/evolucionando-los-contenedores-docker.html">Evolucionando los contenedores: Docker</a></h2>
+<p>Los contenedores tienen su caso de uso y son muy útiles. Sin embargo, ir copiando la imagen es una pérdida de tiempo. Aunque podemos solventar el problema con un sistema de ficheros <em>copy-on-write</em> o un sistema de ficheros tipo <em>union</em>, <strong>Docker</strong> ya nos lo ofrece todo preparado para su uso.</p>
+<p><a class="article" href="/2016/05/evolucionando-los-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/dockerfile.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

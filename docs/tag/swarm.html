@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>swarm - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: swarm</h1>
+
+<h2 class="article"><a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">Distribuyendo contenido en Docker Swarm: configuraciones y secretos</a></h2>
+<p>Muchas veces he utilizado los volúmenes de <strong>Docker</strong> para &ldquo;inyectar&rdquo; un fichero de configuración que sobreescriba a otro. Cuando utilizamos <strong>Docker Swarm</strong> suele ser un problema distribuir estos ficheros de configuración; además, a veces necesitamos que se transmitan encriptados para que no los puedan ver los contenedores hermanos, por seguridad.</p>
+<p><a class="article" href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">Verificando la salud de nuestros contenedores en Docker</a></h2>
+<p>Como bien sabemos los que trabajamos con <strong>Docker</strong>, el servidor es bastante malo comprobando si un contenedor está funcionando o no. El <em>check</em> que hace <strong>Docker</strong> solo se molesta en ver si el proceso invocado está ejecutando o no, aunque no esté respondiendo. Esto ha cambiado recientemente con los <em>healthchecks</em>.</p>
+<p><a class="article" href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2019/05/generando-ficheros-docker-compose-parametrizables-con-docker-app.html">Generando ficheros docker-compose parametrizables con docker-app</a></h2>
+<p>Casi siempre he utilizado <strong>docker-compose</strong> en mi local, y eso me ayudó mucho cuando empecé a usar <strong>Docker Swarm</strong>. El fichero <code>docker-compose.yml</code> varía un poco en cada entorno y cada vez que se modifica se degrada respecto al original, por no mencionar el problema de mantener actualizadas las copias.</p>
+<p><a class="article" href="/2019/05/generando-ficheros-docker-compose-parametrizables-con-docker-app.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">Usando Traefik en un cluster de Docker Swarm</a></h2>
+<p>Hace unas semanas, hablamos de un balanceador que trabaja muy bien con <strong>docker</strong>. Se trataba de <strong>traefik</strong> y nos permitía olvidarnos de su configuración, que él mismo podía extraer de los metadatos de los contenedores y reconfigurarse dinámicamente. Hoy vamos a explicar como funciona con un <em>cluster</em> de <strong>docker swarm</strong>.</p>
+<p><a class="article" href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2018/04/alta-disponibilidad-con-docker-swarm.html">Alta disponibilidad con Docker Swarm</a></h2>
+<p>He visto muchos artículos por internet que hacen maravillas para tener un <em>cluster</em> de <strong>Docker Swarm</strong> funcional. Puede que en versiones anteriores fuera así, pero cada vez se ha simplificado más el <em>setup</em> para alinearse con la filosofía de la simplicidad, frente a otras soluciones más completas, pero más complejas.</p>
+<p><a class="article" href="/2018/04/alta-disponibilidad-con-docker-swarm.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/11/uso-basico-de-un-cluster-docker-swarm.html">Uso básico de un cluster Docker Swarm</a></h2>
+<p>Usar un <em>cluster</em> de <strong>docker swarm</strong> no es transparente para nuestro uso; necesitamos cambiar de mentalidad y tener en cuenta algunos conceptos. Donde antes hablábamos de contenedores, aquí se habla de <strong>servicios</strong>, que básicamente son un número variable de contenedores repartidos por los diferentes nodos del <em>cluster</em> de forma balanceada.</p>
+<p><a class="article" href="/2017/11/uso-basico-de-un-cluster-docker-swarm.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/10/montando-un-cluster-de-docker-con-docker-swarm.html">Montando un cluster de docker con docker swarm</a></h2>
+<p>Usar <strong>docker</strong> en nuestro dia a dia es muy interesante y tiene un montón de aplicaciones prácticas; sin embargo no es la mejor opción confiar en un único servidor en producción. Para tener alta disponibilidad y alto renidmiento podemos montar un cluster, como por ejemplo su implementación oficial, <strong>docker swarm</strong>.</p>
+<p><a class="article" href="/2017/10/montando-un-cluster-de-docker-con-docker-swarm.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a class="active" href="/tag/swarm.html">1</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

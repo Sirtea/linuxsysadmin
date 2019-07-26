@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Alta disponibilidad con Keepalived - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Alta disponibilidad con Keepalived</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-02-27
+	<strong>Tiempo de lectura</strong>: 8 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/keepalived.html">keepalived</a> / <a href="/tag/failover.html">failover</a> / <a href="/tag/ansible.html">ansible</a> / <a href="/tag/ip-flotante.html">ip flotante</a>
+</p>
+
+<p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
+
+<p>La idea general es que existe una dirección IP flotante y existe un servicio que se dedica a decidir quién la tiene asignada. Uno de estos servicios es <strong>keepalived</strong>, que es sencillo y fácil de montar.</p>
+
+<h2 id="el-entorno-de-trabajo">El entorno de trabajo</h2>
+
+<p>Para hacer este ejemplo, he dispuesto dos máquinas, una como prioritaria, y una de <em>failover</em>, que va a asumir el servicio siempre que la otra no pueda hacerlo.</p>
+
+<p>Para mi comodidad, he dispuesto contenedores <strong>docker</strong>, como se describe en <a href="/2016/06/controlando-contenedores-docker-con-ansible.html">otro artículo</a> y voy a hacer la instalación por <strong>ansible</strong>. Aunque el entorno no es muy complejo, por comodidad lo he levantado con <strong>docker-compose</strong>.</p>
+
+<pre><code class="language-bash">
+gerard@gatria:~/docker/keepalived$ cat docker-compose.yml 
+version: '2'
+services:
+  gemini:
+    image: master
+    hostname: gemini
+    container_name: gemini
+    volumes:
+      - ./playbooks:/root/playbooks:ro
+      - ./inventory/hosts:/root/inventory/hosts:ro
+    ports:
+      - &quot;22:22&quot;
+  castor:
+    image: slave
+    hostname: castor
+    container_name: castor
+    privileged: true
+  pollux:
+    image: slave
+    hostname: pollux
+    container_name: pollux
+    privileged: true
+gerard@gatria:~/docker/keepalived$ 
+</code></pre>
+
+<p>La diferencia radica en que he puesto un servidor <strong>SSH</strong> en la máquina <em>master</em> para poder acceder fácilmente a ella y que los <em>playbooks</em> y parte del inventario vienen de la máquina <em>host</em>, para su fácil edición con un editor adecuado.</p>
+
+<p><strong>AVISO</strong>: Las máquinas <em>slave</em> van a disputarse la dirección flotante; esto no es posible en un contenedor normal. Para evitar ese problema, les he puesto el <em>flag privilieged</em>, para que puedan hacer lo que quieran.</p>
+
+<p>Finalmente creamos el entorno, con el comando adecuado.</p>
+
+<pre><code class="language-bash">gerard@gatria:~/docker/keepalived$ docker-compose up -d
+Creating network &quot;keepalived_default&quot; with the default driver
+Creating gemini
+Creating castor
+Creating pollux
+gerard@gatria:~/docker/keepalived$ 
+</code></pre>
+
+<p>Todos los comandos a partir de ahora se vana ejecutar en <em>gemini</em>, que es el <em>master</em> de <strong>ansible</strong>, y al que vamos a acceder por <strong>SSH</strong>.</p>
+
+<pre><code class="language-bash">gerard@gatria:~/docker/keepalived$ ssh root@localhost
+Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
+root@localhost's password: 
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+root@gemini:~# 
+</code></pre>
+
+<p>El fichero de <em>hosts</em> no tiene ningún secreto (aparte de las variables dependientes de cada máquina, que ya veremos), pero lo ponemos por completitud:</p>
+
+<pre><code class="language-bash">root@gemini:~# cat inventory/hosts 
+[gemini]
+castor keepalived_priority=101
+pollux keepalived_priority=100
+root@gemini:~# 
+</code></pre>
+
+<h2 id="ofreciendo-un-servicio-cualquiera">Ofreciendo un servicio cualquiera</h2>
+
+<p>Normalmente, las máquinas en configuración de <em>failover</em> suelen ser balanceadores o servidores web. En realidad, esto es irrelevante para <strong>keepalived</strong>, así que vamos a poner cualquiera.</p>
+
+<p>Nos hemos decantado por un servidor <strong>nginx</strong> en configuración de servidor web estático, para que no absorba la atención del artículo. En la vida real, estaría en configuración de balanceador web, o sería directamente un <strong>haproxy</strong>.</p>
+
+<p>Nos movemos a la carpeta de trabajo para este <em>playbook</em>.</p>
+
+<pre><code class="language-bash">root@gemini:~# cd ~/playbooks/webserver/
+root@gemini:~/playbooks/webserver# 
+</code></pre>
+
+<p>El <em>playbook</em> en sí no tiene mucho misterio; instala <strong>nginx</strong>, lo levanta con una configuración propia y pone un fichero <strong>HTML</strong> con una plantilla indicando el nombre de la máquina que ha servido la petición, a modo de chivato.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/webserver# cat webserver.yml 
+- hosts: gemini
+  gather_facts: false
+  tasks:
+    - apt: name=nginx-light state=present
+    - file: path=/etc/nginx/sites-enabled/default state=absent
+    - file: path=/www state=directory
+    - template: src=web.j2 dest=/etc/nginx/sites-enabled/web
+    - template: src=index.html.j2 dest=/www/index.html
+    - service: name=nginx state=started
+    - service: name=nginx state=reloaded
+root@gemini:~/playbooks/webserver# cat web.j2 
+server {
+	listen 80;
+	server_name _;
+	root /www;
+	index index.html;
+}
+root@gemini:~/playbooks/webserver# cat index.html.j2 
+&lt;p&gt;Hello from &lt;em&gt;{{ inventory_hostname }}&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/webserver# 
+</code></pre>
+
+<p>Lo lanzamos y ya tenemos dos servidores web para nuestra demostración:</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/webserver# ansible-playbook webserver.yml 
+
+PLAY [gemini] ******************************************************************
+
+TASK [apt] *********************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [file] ********************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [file] ********************************************************************
+changed: [pollux]
+changed: [castor]
+
+TASK [template] ****************************************************************
+changed: [pollux]
+changed: [castor]
+
+TASK [template] ****************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [service] *****************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [service] *****************************************************************
+changed: [pollux]
+changed: [castor]
+
+PLAY RECAP *********************************************************************
+castor                     : ok=7    changed=7    unreachable=0    failed=0   
+pollux                     : ok=7    changed=7    unreachable=0    failed=0   
+
+root@gemini:~/playbooks/webserver# 
+</code></pre>
+
+<p>Comprobamos que funciona, y con esto estamos:</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/webserver# wget -qO- http://castor/
+&lt;p&gt;Hello from &lt;em&gt;castor&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/webserver# wget -qO- http://pollux/
+&lt;p&gt;Hello from &lt;em&gt;pollux&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/webserver# 
+</code></pre>
+
+<h2 id="keepalived-o-como-compartir-una-dirección-ip">Keepalived, o como compartir una dirección IP</h2>
+
+<p>Ante nada, nos movemos a la carpeta de trabajo:</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/webserver# cd ~/playbooks/keepalived/
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Realmente, el servicio <strong>keepalived</strong> es como cualquier otro: instalar, configurar y recargar la configuración. Lo importante en este caso son las configuraciones. Así que el <em>playbook</em> queda un poco simple, pero mejor. Solo cabe destacar que he instalado también <strong>rsyslog</strong> que me va a proporcionar capacidades de <em>syslog</em>, que es donde <strong>keepalived</strong> deja lo <em>logs</em>. Gracias este <em>log</em>, pude ver que hacía una operación no permitida para un contenedor normal.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# cat keepalived.yml 
+- hosts: gemini
+  gather_facts: false
+  tasks:
+    - apt: name=rsyslog state=present
+    - service: name=rsyslog state=started
+- hosts: gemini
+  gather_facts: false
+  tasks:
+    - apt: name=keepalived state=present
+    - template: src=keepalived.conf.j2 dest=/etc/keepalived/keepalived.conf
+    - service: name=keepalived state=restarted
+root@gemini:~/playbooks/keepalived# cat keepalived.conf.j2 
+vrrp_script chk_nginx {
+      script &quot;killall -0 nginx&quot;
+      interval 2
+      weight 2
+}
+
+vrrp_instance VI_1 {
+      interface eth0
+      state MASTER
+      virtual_router_id 51
+      priority {{ keepalived_priority }}
+      virtual_ipaddress {
+           172.18.0.10
+      }
+      track_script {
+           chk_nginx
+      }
+}
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>La idea es que cada máquina del <em>cluster</em> tiene una prioridad, y la máquina con mas prioridad va a obtener la IP flotante, dando el servicio efectivo. Esta prioridad se ve afectada por los <em>checks</em> que pongamos, sumando el <em>weight</em> de cada <em>check</em> que devuelva un código de retorno 0 (se considera un OK).</p>
+
+<p>Con los valores 101 y 100 (que salen del fichero de <em>hosts</em>) y el propio funcionamiento de <strong>keepalived</strong>, nos aseguramos de que:</p>
+
+<ul>
+<li>Si una máquina está caída no es candidata a tener la IP flotante (las dos caídas son un tema serio).</li>
+<li>Si <em>castor</em> tiene el <strong>nginx</strong> funcional, suma 103, y gana a <em>pollux</em> (102 o 100, dependiendo si corre o no el <strong>nginx</strong>).</li>
+<li>Si el <strong>nginx</strong> de <em>castor</em> no funciona, depende; si el de *pollux funciona, pasa este a ser el <em>MASTER</em> del <em>cluster</em> (101 vs 102); sino, gana <em>castor</em> (101 vs 100), aunque este caso también es un problema.</li>
+</ul>
+
+<p>Lanzamos el <em>playbook</em> para instalar <strong>keepalived</strong> y su configuración:</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible-playbook keepalived.yml 
+
+PLAY [gemini] ******************************************************************
+
+TASK [apt] *********************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [service] *****************************************************************
+changed: [pollux]
+changed: [castor]
+
+PLAY [gemini] ******************************************************************
+
+TASK [apt] *********************************************************************
+changed: [pollux]
+changed: [castor]
+
+TASK [template] ****************************************************************
+changed: [castor]
+changed: [pollux]
+
+TASK [service] *****************************************************************
+changed: [castor]
+changed: [pollux]
+
+PLAY RECAP *********************************************************************
+castor                     : ok=5    changed=5    unreachable=0    failed=0   
+pollux                     : ok=5    changed=5    unreachable=0    failed=0   
+
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Y solo nos queda observar quien tiene la IP flotante (es <em>castor</em> porque ambos <strong>nginx</strong> funcionan y es un 103 vs 102).</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m raw -a 'ip addr | grep &quot;inet &quot;' gemini
+castor | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.3/16 scope global eth0
+    inet 172.18.0.10/32 scope global eth0
+
+
+pollux | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.4/16 scope global eth0
+
+
+root@gemini:~/playbooks/keepalived# wget -qO- http://172.18.0.10/
+&lt;p&gt;Hello from &lt;em&gt;castor&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<h2 id="pruebas-de-alta-disponibilidad">Pruebas de alta disponibilidad</h2>
+
+<p>Vamos a simular una caída de <em>castor</em> o de su <strong>nginx</strong> (el resultado es el mismo):</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m service -a &quot;name=nginx state=stopped&quot; castor
+castor | SUCCESS =&gt; {
+    &quot;changed&quot;: true, 
+    &quot;name&quot;: &quot;nginx&quot;, 
+    &quot;state&quot;: &quot;stopped&quot;
+}
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>¿Que pasa con la IP flotante? Por supuesto, la hereda <em>pollux</em>.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m raw -a 'ip addr | grep &quot;inet &quot;' gemini
+castor | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.3/16 scope global eth0
+
+
+pollux | SUCCESS | rc=0 &gt;&gt;
+
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.4/16 scope global eth0
+    inet 172.18.0.10/32 scope global eth0
+
+
+root@gemini:~/playbooks/keepalived# wget -qO- http://172.18.0.10/
+&lt;p&gt;Hello from &lt;em&gt;pollux&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Ahora simularemos que se cae <em>pollux</em>. Esto nos deja sin servicio&hellip;</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m service -a &quot;name=nginx state=stopped&quot; pollux
+pollux | SUCCESS =&gt; {
+    &quot;changed&quot;: true, 
+    &quot;name&quot;: &quot;nginx&quot;, 
+    &quot;state&quot;: &quot;stopped&quot;
+}
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Como las dos máquinas están levantadas, se trata de un 101 vs 100, lo que le da la IP a <em>castor</em>. El servicio no responde porque el <strong>nginx</strong> de <em>castor</em> está caído. Mal asunto.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m raw -a 'ip addr | grep &quot;inet &quot;' gemini
+pollux | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.4/16 scope global eth0
+
+
+castor | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.3/16 scope global eth0
+    inet 172.18.0.10/32 scope global eth0
+
+
+root@gemini:~/playbooks/keepalived# wget -O- http://172.18.0.10/
+converted 'http://172.18.0.10/' (ANSI_X3.4-1968) -&gt; 'http://172.18.0.10/' (UTF-8)
+--2016-10-14 11:00:08--  http://172.18.0.10/
+Connecting to 172.18.0.10:80... failed: Connection refused.
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Ahora, supongamos que <em>pollux</em> se recupera.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m service -a &quot;name=nginx state=started&quot; pollux
+pollux | SUCCESS =&gt; {
+    &quot;changed&quot;: true, 
+    &quot;name&quot;: &quot;nginx&quot;, 
+    &quot;state&quot;: &quot;started&quot;
+}
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Sin sorpresas, asume la IP flotante (101 vs 102).</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m raw -a 'ip addr | grep &quot;inet &quot;' gemini
+pollux | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.4/16 scope global eth0
+    inet 172.18.0.10/32 scope global eth0
+
+
+castor | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.3/16 scope global eth0
+
+
+root@gemini:~/playbooks/keepalived# wget -qO- http://172.18.0.10/
+&lt;p&gt;Hello from &lt;em&gt;pollux&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Y finalmente se recupera <em>castor</em>, lo que le da la prioridad para asumir su posición como <em>master</em> del <em>cluster</em>.</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m service -a &quot;name=nginx state=started&quot; castor
+castor | SUCCESS =&gt; {
+    &quot;changed&quot;: true, 
+    &quot;name&quot;: &quot;nginx&quot;, 
+    &quot;state&quot;: &quot;started&quot;
+}
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>Y sin sorpresas, recibe las peticiones para sí mismo:</p>
+
+<pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible -m raw -a 'ip addr | grep &quot;inet &quot;' gemini
+castor | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.3/16 scope global eth0
+    inet 172.18.0.10/32 scope global eth0
+
+
+pollux | SUCCESS | rc=0 &gt;&gt;
+
+    inet 127.0.0.1/8 scope host lo
+    inet 172.18.0.4/16 scope global eth0
+
+
+root@gemini:~/playbooks/keepalived# wget -qO- http://172.18.0.10/
+&lt;p&gt;Hello from &lt;em&gt;castor&lt;/em&gt;&lt;/p&gt;
+root@gemini:~/playbooks/keepalived# 
+</code></pre>
+
+<p>En caso de haberse levantado antes <em>castor</em>, habría ejercido como <em>master</em> enseguida, y el levantamiento de <em>pollux</em> no habría provocado un <em>failover</em> nuevo (103 vs 100 y 103 vs 102, respectivamente).</p>
+
+<p>Y con esto ya podemos tener nuestros servicios y balanceadores tipo &ldquo;ventanilla única&rdquo; redundados y con alta disponibilidad. Cabe indicar que esto no es útil ni con los <em>backends</em> (el balanceador ya suele controlar si una de ellos está caído o no), ni con los <em>clusters</em> con tecnología de <em>clustering</em> propia (bases de datos, colas, &hellip;).</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

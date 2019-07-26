@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Consultando una base de datos Oracle en python - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Consultando una base de datos Oracle en python</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-04-18
+	<strong>Tiempo de lectura</strong>: 8 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/python.html">python</a> / <a href="/tag/oracle.html">oracle</a> / <a href="/tag/script.html">script</a> / <a href="/tag/virtualenv.html">virtualenv</a> / <a href="/tag/wheel.html">wheel</a>
+</p>
+
+<p>El otro día estuve optimizando unos <em>scripts</em> hechos en <em>bash</em> que había hecho otro. Como resultado del lenguaje usado era un caos de comandos, muchos de ellos para limpiar la salida y darle la forma adecuada. Los reescribí en <em>python</em> usando la librería <strong>cx_Oracle</strong>, que compilé en un fichero <em>wheel</em>.</p>
+
+<p>El mayor problema al que te enfrentas si intentas instalar una librería <em>python</em> que no está en la librería estándar, es que debes usar el gestor de paquetes, previo uso del usuario <strong>root</strong>. Y eso no siempre es posible.</p>
+
+<p>Así que para hacer una instalación en mi carpeta personal, me decanté por crear un <strong>virtualenv</strong> en donde se iba a instalar una <em>wheel</em> precompilada en una máquina similar. Lo documento para tenerlo a mano.</p>
+
+<p>Voy a explicar dos procedimientos: el primero es como instalar el <em>package</em> en una máquina que tenga herramientas de compilación y como empaquetarlo en un fichero <em>wheel</em>; el segundo consiste en instalar la <em>wheel</em> localmente en la máquina que la va a usar, a modo de <em>runtime</em>.</p>
+
+<p>Para seguir esta guía, necesitamos una máquina con <strong>Linux</strong> cualquiera, que en mi caso ha sido una <strong>Debian Jessie</strong>. Estos son los paquetes necesarios como requisitos:</p>
+
+<ul>
+<li>unzip</li>
+<li>python</li>
+<li>libaio1</li>
+</ul>
+
+<p>En la máquina en donde se vaya a crear la <em>wheel</em>, también serán necesarios los siguientes:</p>
+
+<ul>
+<li>python-dev</li>
+<li>gcc</li>
+</ul>
+
+<p>Adicionalmente, se necesita descargar el <a href="https://www.oracle.com/downloads/index.html">Oracle instant client</a>, concretamente el <strong>basic</strong> y, en caso de la construcción de la <em>wheel</em>, también el <strong>sdk</strong>.</p>
+
+<pre><code class="language-bash">root@oracle:~# ls -1
+instantclient-basic-linux-12.1.0.2.0.zip
+instantclient-sdk-linux-12.1.0.2.0.zip
+root@oracle:~#
+</code></pre>
+
+<h2 id="construyendo-el-fichero-wheel">Construyendo el fichero wheel</h2>
+
+<p>El primer paso consiste en descomprimir el <em>instant client</em> de Oracle, necesario para cualquier programa que intente conectarse a sus bases de datos.</p>
+
+<pre><code class="language-bash">root@oracle:~# unzip instantclient-basic-linux-12.1.0.2.0.zip
+Archive:  instantclient-basic-linux-12.1.0.2.0.zip
+  inflating: instantclient_12_1/adrci
+  inflating: instantclient_12_1/BASIC_README
+  inflating: instantclient_12_1/genezi
+  inflating: instantclient_12_1/libclntshcore.so.12.1
+  inflating: instantclient_12_1/libclntsh.so.12.1
+  inflating: instantclient_12_1/libnnz12.so
+  inflating: instantclient_12_1/libocci.so.12.1
+  inflating: instantclient_12_1/libociei.so
+  inflating: instantclient_12_1/libocijdbc12.so
+  inflating: instantclient_12_1/libons.so
+  inflating: instantclient_12_1/liboramysql12.so
+  inflating: instantclient_12_1/ojdbc6.jar
+  inflating: instantclient_12_1/ojdbc7.jar
+  inflating: instantclient_12_1/uidrvci
+  inflating: instantclient_12_1/xstreams.jar
+root@oracle:~# unzip instantclient-sdk-linux-12.1.0.2.0.zip
+Archive:  instantclient-sdk-linux-12.1.0.2.0.zip
+   creating: instantclient_12_1/sdk/
+   creating: instantclient_12_1/sdk/include/
+  inflating: instantclient_12_1/sdk/include/oratypes.h
+  inflating: instantclient_12_1/sdk/include/occi.h
+  inflating: instantclient_12_1/sdk/include/ocikpr.h
+  inflating: instantclient_12_1/sdk/include/odci.h
+  inflating: instantclient_12_1/sdk/include/xa.h
+  inflating: instantclient_12_1/sdk/include/ldap.h
+  inflating: instantclient_12_1/sdk/include/oci.h
+  inflating: instantclient_12_1/sdk/include/ocidfn.h
+  inflating: instantclient_12_1/sdk/include/oci1.h
+  inflating: instantclient_12_1/sdk/include/ort.h
+  inflating: instantclient_12_1/sdk/include/ociextp.h
+  inflating: instantclient_12_1/sdk/include/occiAQ.h
+  inflating: instantclient_12_1/sdk/include/ori.h
+  inflating: instantclient_12_1/sdk/include/nzerror.h
+  inflating: instantclient_12_1/sdk/include/ocixmldb.h
+  inflating: instantclient_12_1/sdk/include/ocidef.h
+  inflating: instantclient_12_1/sdk/include/occiControl.h
+  inflating: instantclient_12_1/sdk/include/ocidem.h
+  inflating: instantclient_12_1/sdk/include/nzt.h
+  inflating: instantclient_12_1/sdk/include/orid.h
+  inflating: instantclient_12_1/sdk/include/ociap.h
+  inflating: instantclient_12_1/sdk/include/orl.h
+  inflating: instantclient_12_1/sdk/include/ocixstream.h
+  inflating: instantclient_12_1/sdk/include/occiObjects.h
+  inflating: instantclient_12_1/sdk/include/oci8dp.h
+  inflating: instantclient_12_1/sdk/include/oro.h
+  inflating: instantclient_12_1/sdk/include/occiCommon.h
+  inflating: instantclient_12_1/sdk/include/ociapr.h
+  inflating: instantclient_12_1/sdk/include/occiData.h
+   creating: instantclient_12_1/sdk/admin/
+  inflating: instantclient_12_1/sdk/admin/oraaccess.xsd
+ extracting: instantclient_12_1/sdk/ottclasses.zip
+   creating: instantclient_12_1/sdk/demo/
+  inflating: instantclient_12_1/sdk/demo/occidemo.sql
+  inflating: instantclient_12_1/sdk/demo/oraaccess.xml
+  inflating: instantclient_12_1/sdk/demo/occiobj.cpp
+  inflating: instantclient_12_1/sdk/demo/occidemod.sql
+  inflating: instantclient_12_1/sdk/demo/occidml.cpp
+  inflating: instantclient_12_1/sdk/demo/occiobj.typ
+  inflating: instantclient_12_1/sdk/demo/setuporamysql.sh
+  inflating: instantclient_12_1/sdk/demo/cdemo81.c
+  inflating: instantclient_12_1/sdk/demo/demo.mk
+  inflating: instantclient_12_1/sdk/ott
+  inflating: instantclient_12_1/sdk/SDK_README
+root@oracle:~#
+</code></pre>
+
+<p>Para que el sistema sepa donde lo hemos descomprimido, hay que definir la variable de entorno <strong>ORACLE_HOME</strong>.</p>
+
+<pre><code class="language-bash">root@oracle:~# export ORACLE_HOME=/root/instantclient_12_1/
+root@oracle:~#
+</code></pre>
+
+<p>La compilación de las librerías contenidas en el <em>package</em> <strong>cx_Oracle</strong> tiene un error y busca una librería llamada <em>libclntsh.so</em>, que no se llama así en el <em>runtime</em>. Se puede evitar el problema copiando la librería con el nuevo nombre, o mediante un enlace simbólico.</p>
+
+<pre><code class="language-bash">root@oracle:~# cd instantclient_12_1/
+root@oracle:~/instantclient_12_1# ln -s libclntsh.so.12.1 libclntsh.so
+root@oracle:~/instantclient_12_1# cd ..
+root@oracle:~#
+</code></pre>
+
+<p>Y con esto ya podemos empezar. Creamos un <strong>virtualenv</strong> que nos va a servir como plataforma de construcción del fichero <em>wheel</em>.</p>
+
+<pre><code class="language-bash">root@oracle:~# virtualenv env
+New python executable in /root/env/bin/python
+Installing setuptools, pip, wheel...done.
+root@oracle:~#
+</code></pre>
+
+<p>Se activa el entorno virtual y se instala la librería mediante <strong>pip</strong>.</p>
+
+<pre><code class="language-bash">root@oracle:~# . env/bin/activate
+(env) root@oracle:~# pip install cx_Oracle
+Collecting cx-Oracle
+  Using cached cx_Oracle-5.2.1.tar.gz
+Building wheels for collected packages: cx-Oracle
+  Running setup.py bdist_wheel for cx-Oracle ... done
+  Stored in directory: /root/.cache/pip/wheels/1f/38/66/b37c50906777b231a241ee02134f0ae018615519af43566269
+Successfully built cx-Oracle
+Installing collected packages: cx-Oracle
+Successfully installed cx-Oracle-5.2.1
+(env) root@oracle:~#
+</code></pre>
+
+<p>Podemos verificar si funciona cargando el módulo, y por ejemplo, preguntando la versión del mismo.</p>
+
+<pre><code class="language-bash">(env) root@oracle:~# python -c &quot;import cx_Oracle; print cx_Oracle.version&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ImportError: libclntsh.so.12.1: cannot open shared object file: No such file or directory
+(env) root@oracle:~#
+</code></pre>
+
+<p>Este es un mal resultado; nos indica que no se encuentra un fichero <em>.so</em>. Este fichero está en <strong>ORACLE_HOME</strong>, pero el sistema intenta buscar en <strong>LD_LIBRARY_PATH</strong>. Con modificar esta variable de entorno funciona.</p>
+
+<pre><code class="language-bash">(env) root@oracle:~# export LD_LIBRARY_PATH=$ORACLE_HOME:$LD_LIBRARY_PATH
+(env) root@oracle:~#
+</code></pre>
+
+<p>Otro error es que se queje de que no encuentra <em>libaio.so</em>. Esto indica que os habéis saltado los requisitos y necesitáis instalarlos.</p>
+
+<pre><code class="language-bash">(env) root@oracle:~# python -c &quot;import cx_Oracle; print cx_Oracle.version&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+ImportError: libaio.so.1: cannot open shared object file: No such file or directory
+(env) root@oracle:~# apt-get install libaio1
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes NUEVOS:
+  libaio1
+0 actualizados, 1 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 9.634 B de archivos.
+Se utilizarán 13,3 kB de espacio de disco adicional después de esta operación.
+...
+(env) root@oracle:~#
+</code></pre>
+
+<p>Finalmente obtenemos un resultado correcto, que nos indica que tenemos instalada la librería en nuestro entorno virtual.</p>
+
+<pre><code class="language-bash">(env) root@oracle:~# python -c &quot;import cx_Oracle; print cx_Oracle.version&quot;
+5.2.1
+(env) root@oracle:~#
+</code></pre>
+
+<p>Podemos aprovechar esta compilación para máquinas con el mismo tipo de procesador y con la misma versión de <strong>python</strong>, creando un fichero <em>wheel</em> con la librería ya compilada.</p>
+
+<pre><code class="language-bash">(env) root@oracle:~# pip wheel cx_Oracle
+Collecting cx-Oracle
+  Saved ./cx_Oracle-5.2.1-cp27-cp27mu-linux_i686.whl
+Skipping cx-Oracle, due to already being wheel.
+(env) root@oracle:~#
+</code></pre>
+
+<p>Y ese es el fichero que vamos a distribuir a los entornos de producción donde necesitemos crear <em>scripts</em> en <strong>python</strong> que se conecten a Oracle.</p>
+
+<h2 id="instalando-en-otras-máquinas">Instalando en otras máquinas</h2>
+
+<p>Vamos a suponer que nos interesa poner el <em>runtime</em> de Oracle y la carpeta con nuestros <em>scripts</em> en <em>/opt/</em>. De hecho, nada impide que se haga en una carpeta personal, en la que tengamos privilegios completos.</p>
+
+<p>También vamos a necesitar un <em>instant client</em> para poder funcionar, aunque esta vez no se necesitan enlaces simbólicos ni declarar la variable de entorno <strong>ORACLE_HOME</strong>. Lo descargamos en su localización deseada.</p>
+
+<pre><code class="language-bash">root@oracle2:/opt# unzip /root/instantclient-basic-linux-12.1.0.2.0.zip
+Archive:  /root/instantclient-basic-linux-12.1.0.2.0.zip
+  inflating: instantclient_12_1/adrci
+  inflating: instantclient_12_1/BASIC_README
+  inflating: instantclient_12_1/genezi
+  inflating: instantclient_12_1/libclntshcore.so.12.1
+  inflating: instantclient_12_1/libclntsh.so.12.1
+  inflating: instantclient_12_1/libnnz12.so
+  inflating: instantclient_12_1/libocci.so.12.1
+  inflating: instantclient_12_1/libociei.so
+  inflating: instantclient_12_1/libocijdbc12.so
+  inflating: instantclient_12_1/libons.so
+  inflating: instantclient_12_1/liboramysql12.so
+  inflating: instantclient_12_1/ojdbc6.jar
+  inflating: instantclient_12_1/ojdbc7.jar
+  inflating: instantclient_12_1/uidrvci
+  inflating: instantclient_12_1/xstreams.jar
+root@oracle2:/opt#
+</code></pre>
+
+<p>Las dependencias deberían estar ya instaladas, pero en mi caso no lo estaban. Las instalamos.</p>
+
+<pre><code class="language-bash">root@oracle2:/opt# apt-get install python libaio1
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes extras:
+  file libexpat1 libffi6 libmagic1 libpython-stdlib libpython2.7-minimal libpython2.7-stdlib libsqlite3-0 mime-support
+  python-minimal python2.7 python2.7-minimal
+Paquetes sugeridos:
+  python-doc python-tk python2.7-doc binutils binfmt-support
+Se instalarán los siguientes paquetes NUEVOS:
+  file libaio1 libexpat1 libffi6 libmagic1 libpython-stdlib libpython2.7-minimal libpython2.7-stdlib libsqlite3-0 mime-support
+  python python-minimal python2.7 python2.7-minimal
+0 actualizados, 14 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 5.020 kB de archivos.
+Se utilizarán 21,3 MB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+...  
+root@oracle2:/opt#
+</code></pre>
+
+<p>Creamos la carpeta que va a contener el entorno virtual y los <em>scripts</em>, y creamos en ella el entorno virtual.</p>
+
+<pre><code class="language-bash">root@oracle2:/opt# mkdir scripts
+root@oracle2:/opt# cd scripts/
+root@oracle2:/opt/scripts# virtualenv env
+New python executable in /opt/scripts/env/bin/python
+Installing setuptools, pip, wheel...done.
+root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Activamos el entorno virtual y le instalamos el fichero <em>wheel</em>, que habremos copiado en algún sitio. Este fichero es local a la máquina, y no se consulta el repositorio de <strong>python</strong> remoto para nada. De hecho, un <em>wheel</em> es un fichero <em>.zip</em> normal, que se descomprime en la carpeta adecuada del <strong>virtualenv</strong>.</p>
+
+<pre><code class="language-bash">root@oracle2:/opt/scripts# . env/bin/activate
+(env) root@oracle2:/opt/scripts# pip install /root/cx_Oracle-5.2.1-cp27-cp27mu-linux_i686.whl
+Processing /root/cx_Oracle-5.2.1-cp27-cp27mu-linux_i686.whl
+Installing collected packages: cx-Oracle
+Successfully installed cx-Oracle-5.2.1
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Probamos que funcione; es importante definir la variable de entorno <strong>LD_LIBRARY_PATH</strong> para que encuentre el <em>runtime</em> de Oracle. Es muy útil ponerlo en el fichero <em>~/.bashrc</em> para que se cargue solo al abrir el <em>shell</em>.</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# export LD_LIBRARY_PATH=/opt/instantclient_12_1/
+(env) root@oracle2:/opt/scripts# python -c &quot;import cx_Oracle; print cx_Oracle.version&quot;
+5.2.1
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Opcionalmente, podemos reducir la cantidad de librerías que conforman el <em>instant client</em>, ya que solo se necesitan 4, y reduce su tamaño de forma dramática.</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# du -sh /opt/instantclient_12_1/
+169M    /opt/instantclient_12_1/
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Podemos ver que el <em>package</em> <strong>cx_Oracle</strong> es un fichero <em>.so</em> y que este requiere de los otros 4 en el <em>runtime</em>.</p>
+
+<pre><code>(env) root@oracle2:/opt/scripts# find env/ -name &quot;*.so&quot;
+env/lib/python2.7/site-packages/cx_Oracle.so
+(env) root@oracle2:/opt/scripts# ldd env/lib/python2.7/site-packages/cx_Oracle.so | grep instant
+        libclntsh.so.12.1 =&gt; /opt/instantclient_12_1/libclntsh.so.12.1 (0xb5387000)
+        libnnz12.so =&gt; /opt/instantclient_12_1/libnnz12.so (0xb4d9d000)
+        libons.so =&gt; /opt/instantclient_12_1/libons.so (0xb4d69000)
+        libclntshcore.so.12.1 =&gt; /opt/instantclient_12_1/libclntshcore.so.12.1 (0xb4a90000)
+(env) root@oracle2:/opt/scripts# ldd /opt/instantclient_12_1/lib{clntsh,nnz,ons}* | grep instant
+/opt/instantclient_12_1/libclntshcore.so.12.1:
+/opt/instantclient_12_1/libclntsh.so.12.1:
+        libnnz12.so =&gt; /opt/instantclient_12_1/libnnz12.so (0xb4f8c000)
+        libons.so =&gt; /opt/instantclient_12_1/libons.so (0xb4f58000)
+        libclntshcore.so.12.1 =&gt; /opt/instantclient_12_1/libclntshcore.so.12.1 (0xb4aec000)
+/opt/instantclient_12_1/libnnz12.so:
+        libclntshcore.so.12.1 =&gt; /opt/instantclient_12_1/libclntshcore.so.12.1 (0xb7115000)
+/opt/instantclient_12_1/libons.so:
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Lo que significa que debería ser seguro eliminar el resto. Así que lo hacemos. Guardad una copia de seguridad antes de eliminar nada.</p>
+
+<p>Tras eliminar lo que no nos sirve, la carpeta queda así:</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# tree /opt/instantclient_12_1/
+/opt/instantclient_12_1/
+├── libclntshcore.so.12.1
+├── libclntsh.so.12.1
+├── libnnz12.so
+└── libons.so
+
+0 directories, 4 files
+(env) root@oracle2:/opt/scripts# du -sh /opt/instantclient_12_1/
+55M     /opt/instantclient_12_1/
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>No está nada mal; hemos pasado de 169mb a 55mb. Comprobamos que sigue funcionando:</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# python -c &quot;import cx_Oracle; print cx_Oracle.version&quot;
+5.2.1
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Y parece correcto.</p>
+
+<h2 id="uso-del-package-cx-oracle">Uso del package cx_Oracle</h2>
+
+<p>En este punto hay que seguir la documentación del módulo, que no es muy diferente de otras bases de datos; <strong>cx_Oracle</strong> sigue la misma especificación para todos los módulos de bases de datos.</p>
+
+<p>La idea es que se crea un objeto <strong>conexión</strong>, del que se saca un <strong>cursor</strong> para cada consulta que queramos ejecutar, y que se itera para obtener las <strong>filas</strong>. Pongamos un ejemplo simple:</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# cat list_fruits.py
+#!/usr/bin/env python
+
+import cx_Oracle
+
+HOST='my_host'
+PORT='my_port'
+SID='my_sid'
+SERVICE='my_service_name'
+USER='nobody'
+PASSWORD='secret'
+
+dsn = cx_Oracle.makedsn(HOST, PORT, SID, SERVICE)
+connection = cx_Oracle.connect(user=USER, password=PASSWORD, dsn=dsn)
+
+query = &quot;select name, price from fruits&quot;
+cursor = connection.cursor()
+cursor.execute(query)
+for row in cursor:
+    print ';'.join(row)
+cursor.close()
+
+connection.close()
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Ejecutamos como cualquier otro <em>script</em>:</p>
+
+<pre><code class="language-bash">(env) root@oracle2:/opt/scripts# ./list_fruits.py
+Apple;0.99
+Orange;0.89
+Pear;1.19
+(env) root@oracle2:/opt/scripts#
+</code></pre>
+
+<p>Y obtenemos los datos deseados, con la facilidad que nos aporta <strong>python</strong> para dar formato fácil a la salida de nuestros <em>scripts</em>.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

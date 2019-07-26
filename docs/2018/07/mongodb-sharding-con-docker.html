@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>MongoDB sharding con docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>MongoDB sharding con docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-07-02
+	<strong>Tiempo de lectura</strong>: 10 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/sharding.html">sharding</a> / <a href="/tag/cluster.html">cluster</a>
+</p>
+
+<p>El otro día estaba revisando viejos artículos, y me tropecé con <a href="/2016/05/mongodb-sharding-con-ansible.html">uno anterior</a>. Este estaba montado con <strong>ansible</strong>, y se me pasó por la cabeza reescribirlo usando contenedores con <strong>docker</strong>. Así pues, vamos a montar exactamente el mismo <em>cluster</em>, pero con el cambio que la última revolución tecnológica nos aporta.</p>
+
+<p><img src="/images/sharding_arquitectura_logica.jpg" alt="Sharded cluster" /></p>
+
+<p>Aunque lo ideal sería desplegar todas las instancias en varias máquinas diferentes, voy a pasar; por comodidad, voy a desplegar todos los contenedores en una sola máquina mediante <strong>docker-compose</strong>. De esta forma puedo aprovechar las mismas imágenes sin una ocupación de disco elevada.</p>
+
+<p>Como de costumbre, vamos a crear una carpeta para contener el proyecto y la vamos a llamar <code>sharding</code>. En ella voy a depositar los ficheros <code>Dockerfile</code> necesarios para la construcción de las imágenes, y de paso, el <code>docker-compose.yml</code> y las configuraciones que vamos a montar como volúmenes.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ tree
+.
+├── build
+│   ├── mongo
+│   │   └── Dockerfile
+│   ├── mongod
+│   │   └── Dockerfile
+│   └── mongos
+│       └── Dockerfile
+├── docker-compose.yml
+├── mongod_aquila.conf
+├── mongod_config.conf
+├── mongod_cygnus.conf
+├── mongod_lyra.conf
+└── mongos.conf
+
+4 directories, 9 files
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<h2 id="construyendo-las-imágenes">Construyendo las imágenes</h2>
+
+<p>El primer paso para levantar el entorno son las imágenes que lo sostienen. Necesitamos 3 imágenes: una para el proceso <code>mongod</code> (que sostiene los <em>shards</em> y los <em>config server</em>), una para el proceso <code>mongos</code> (punto de entrada al <em>cluster</em>) y otra para el cliente <code>mongo</code> (que nos sirve para atar el <em>cluster</em>).</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat build/mongod/Dockerfile 
+FROM alpine:3.7
+RUN apk add --no-cache mongodb &amp;&amp; \
+    rm /usr/bin/mongo /usr/bin/mongos /usr/bin/mongoperf &amp;&amp; \
+    install -d -o mongodb -g mongodb -m 0755 /srv/mongodb
+USER mongodb
+CMD [&quot;/usr/bin/mongod&quot;, &quot;--config&quot;, &quot;/etc/mongod.conf&quot;]
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat build/mongos/Dockerfile 
+FROM alpine:3.7
+RUN apk add --no-cache mongodb &amp;&amp; \
+    rm /usr/bin/mongo /usr/bin/mongod /usr/bin/mongoperf
+USER mongodb
+CMD [&quot;/usr/bin/mongos&quot;, &quot;--config&quot;, &quot;/etc/mongos.conf&quot;]
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat build/mongo/Dockerfile 
+FROM alpine:3.7
+RUN apk add --no-cache mongodb &amp;&amp; \
+    rm /usr/bin/mongod /usr/bin/mongos /usr/bin/mongoperf
+USER mongodb
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p>Solo nos queda construirlas usando los comandos habituales:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ docker build -t mongo-server build/mongod/
+...
+Successfully tagged mongo-server:latest
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ docker build -t mongo-proxy build/mongos/
+...
+Successfully tagged mongo-proxy:latest
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ docker build -t mongo-client build/mongo/
+...
+Successfully tagged mongo-client:latest
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<h2 id="levantando-todos-los-procesos">Levantando todos los procesos</h2>
+
+<p>La parte más tediosa de levantar un <em>cluster</em> es levantar todos los procesos implicados. En el caso del <em>cluster</em> de ejemplo, necesitamos un mínimo de 13 procesos:</p>
+
+<ul>
+<li>1 <code>mongos</code> o más para poder utilizar e <em>cluster</em> de forma transparente</li>
+<li>3 <code>mongod</code> en configuración de <em>replica set</em> para actuar como <em>config servers</em></li>
+<li>3 <code>mongod</code> en configuración de <em>replica set</em> para actuar como el <em>shard aquila</em></li>
+<li>3 <code>mongod</code> en configuración de <em>replica set</em> para actuar como el <em>shard lyra</em></li>
+<li>3 <code>mongod</code> en configuración de <em>replica set</em> para actuar como el <em>shard cygnus</em></li>
+</ul>
+
+<p>El contenedor para ejecutar el cliente <code>mongo</code> no es necesario; lo normal es que cada aplicación consuma directamente los procesos <code>mongos</code> utilizando el <em>driver</em>. Para operar el <em>cluster</em> vamos a levantar el cliente de forma puntual, eliminando el contenedor al acabar.</p>
+
+<p>Para facilitar el levantado de procesos, vamos a utilizar <strong>docker-compose</strong>; aquí os dejo el fichero <code>docker-compose.yml</code>.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat docker-compose.yml 
+version: '3'
+services:
+  mongos01:
+    image: mongo-proxy
+    container_name: mongos01
+    hostname: mongos01
+    volumes:
+      - ./mongos.conf:/etc/mongos.conf:ro
+    restart: always
+  config01:
+    image: mongo-server
+    container_name: config01
+    hostname: config01
+    volumes:
+      - ./mongod_config.conf:/etc/mongod.conf:ro
+    restart: always
+  config02:
+    image: mongo-server
+    container_name: config02
+    hostname: config02
+    volumes:
+      - ./mongod_config.conf:/etc/mongod.conf:ro
+    restart: always
+  config03:
+    image: mongo-server
+    container_name: config03
+    hostname: config03
+    volumes:
+      - ./mongod_config.conf:/etc/mongod.conf:ro
+    restart: always
+  aquila01:
+    image: mongo-server
+    container_name: aquila01
+    hostname: aquila01
+    volumes:
+      - ./mongod_aquila.conf:/etc/mongod.conf:ro
+    restart: always
+  aquila02:
+    image: mongo-server
+    container_name: aquila02
+    hostname: aquila02
+    volumes:
+      - ./mongod_aquila.conf:/etc/mongod.conf:ro
+    restart: always
+  aquila03:
+    image: mongo-server
+    container_name: aquila03
+    hostname: aquila03
+    volumes:
+      - ./mongod_aquila.conf:/etc/mongod.conf:ro
+    restart: always
+  lyra01:
+    image: mongo-server
+    container_name: lyra01
+    hostname: lyra01
+    volumes:
+      - ./mongod_lyra.conf:/etc/mongod.conf:ro
+    restart: always
+  lyra02:
+    image: mongo-server
+    container_name: lyra02
+    hostname: lyra02
+    volumes:
+      - ./mongod_lyra.conf:/etc/mongod.conf:ro
+    restart: always
+  lyra03:
+    image: mongo-server
+    container_name: lyra03
+    hostname: lyra03
+    volumes:
+      - ./mongod_lyra.conf:/etc/mongod.conf:ro
+    restart: always
+  cygnus01:
+    image: mongo-server
+    container_name: cygnus01
+    hostname: cygnus01
+    volumes:
+      - ./mongod_cygnus.conf:/etc/mongod.conf:ro
+    restart: always
+  cygnus02:
+    image: mongo-server
+    container_name: cygnus02
+    hostname: cygnus02
+    volumes:
+      - ./mongod_cygnus.conf:/etc/mongod.conf:ro
+    restart: always
+  cygnus03:
+    image: mongo-server
+    container_name: cygnus03
+    hostname: cygnus03
+    volumes:
+      - ./mongod_cygnus.conf:/etc/mongod.conf:ro
+    restart: always
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p><strong>NOTA</strong>: Es importante que el <em>hostname</em> y el <em>container_name</em> sean el mismo; las <em>replicas</em> utilizan el <em>hostname</em> para su descubrimiento, pero el <em>container_name</em> al conectarse entre ellas.</p>
+
+<p>Cada elemento dentro del <em>cluster</em> necesita un parámetro <code>replSetName</code> indicando el nombre de la <em>replica set</em> a la que pertenecen. Otro parámetro cambiante es el <code>clusterRole</code>, dependiendo si la <em>replica set</em> va a ejercer como <em>config server</em> o como <em>shard</em>. Los miembros del mismo <em>replica set</em> comparten configuración, así que solo necesitamos 4 distintas.</p>
+
+<p>Empezaremos exponiendo la configuración de los <em>config server</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat mongod_config.conf 
+processManagement:
+  fork: false
+
+net:
+  bindIp: 0.0.0.0
+  port: 27019
+  unixDomainSocket:
+    enabled: false
+
+storage:
+  dbPath: /srv/mongodb
+  engine: wiredTiger
+  journal:
+    enabled: true
+
+replication:
+  replSetName: config
+
+sharding:
+  clusterRole: configsvr
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p>La configuración de los <em>shards</em> es prácticamente la misma; solo hace falta cambiar el <code>clusterRole</code> el <code>replSetName</code> y el puerto usado. Empezaremos exponiendo la configuración del primer <em>shard</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat mongod_aquila.conf 
+processManagement:
+  fork: false
+
+net:
+  bindIp: 0.0.0.0
+  port: 27018
+  unixDomainSocket:
+    enabled: false
+
+storage:
+  dbPath: /srv/mongodb
+  engine: wiredTiger
+  journal:
+    enabled: true
+
+replication:
+  replSetName: aquila
+
+sharding:
+  clusterRole: shardsvr
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p><strong>NOTA</strong>: El <em>cluster</em> original ponía el árbitro en otro puerto para poder ir a la misma máquina. Esto ya no es necesario con <strong>docker</strong> y nos ahorra poner una configuración nueva.</p>
+
+<p>Los otros <em>shards</em> son prácticamente iguales, cambiando solamente el nombre de la <em>replica set</em>:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ diff mongod_aquila.conf mongod_lyra.conf 
+17c17
+&lt;   replSetName: aquila
+---
+&gt;   replSetName: lyra
+gerard@sirius:~/workspace/sharding$ diff mongod_aquila.conf mongod_cygnus.conf 
+17c17
+&lt;   replSetName: aquila
+---
+&gt;   replSetName: cygnus
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p>El proceso <em>mongos</em> necesita una configuración similar, con la excepción de que no necesita la directiva <code>storage</code> (porque no utiliza) y necesita el parámetro especial <code>sharding.configDB</code> que le indique donde encontrar al menos un nodo de la <em>replica set</em> que se usa para la configuración. Ya de paso, le ponemos el puerto 27017, que es el puerto por defecto y nos va a simplificar las cadenas de conexión futuras.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ cat mongos.conf 
+processManagement:
+  fork: false
+
+net:
+  bindIp: 0.0.0.0
+  port: 27017
+  unixDomainSocket:
+    enabled: false
+
+sharding:
+   configDB: config/config01:27019,config02:27019,config03:27019
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p>Y con esto tenemos todo lo necesario para levantar los procesos, así que no lo demoramos más.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ docker-compose up -d
+Creating network &quot;sharding_default&quot; with the default driver
+Creating cygnus03
+Creating config03
+Creating mongos01
+Creating aquila02
+Creating lyra03
+Creating cygnus02
+Creating cygnus01
+Creating config01
+Creating lyra01
+Creating aquila03
+Creating lyra02
+Creating config02
+Creating aquila01
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<h2 id="atando-el-cluster">Atando el cluster</h2>
+
+<p>Para atar completamente el <em>cluster</em> se necesita hacer dos cosas:</p>
+
+<ul>
+<li>Atar los <em>replica sets</em> que conformarán los <em>shards</em> y los <em>config server</em></li>
+<li>Añadir los <em>shards</em> ya atados a través de un <em>mongos</em></li>
+</ul>
+
+<p>Estas tareas administrativas requieren de un cliente <code>mongo</code> que no queremos tener de forma permanente, así que tendremos un contenedor de &ldquo;usar y tirar&rdquo;. De esta forma, cuando acabemos lo destruiremos y no tendremos partes innecesarias.</p>
+
+<p>Levantar un contenedor con la imagen que contiene el cliente <code>mongo</code> no tiene misterio. El único detalle es que lo vamos a añadir a la misma red que creó el <em>docker-compose.yml</em>; eso nos garantiza que podamos usar los <em>container_name</em> en vez de ir buscando las direcciones IP de cada contenedor.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/workspace/sharding$ docker run -ti --rm --net sharding_default mongo-client
+/ $ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: A partir de aquí todos los comandos se hacen en el <em>shell</em> de <em>alpine linux</em>. Desde esta sesión interactiva, vamos a ir abriendo sesiones de <em>mongo shell</em> contra los procesos <code>mongod</code> o <code>mongos</code> que nos haga falta.</p>
+
+<p>Atar los <em>replica sets</em> es siempre igual: entramos en uno de los miembros y le damos una configuración; otra opción es iniciar uno solo de los miembros y añadir los otros.</p>
+
+<p>Empezaremos con los <em>config servers</em>, que a partir de la versión 3.2 de <strong>mongodb</strong> pueden ser <em>replica sets</em>, y que deben serlo a partir de la versión 3.4 (la que usamos). Entraremos en <em>config01</em> y lo inicializamos, para añadir los otros dos en el mismo <em>mongo shell</em>.</p>
+
+<pre><code class="language-bash">/ $ mongo --host config01 --port 27019
+...
+&gt; rs.initiate()
+{
+	&quot;info2&quot; : &quot;no configuration specified. Using a default configuration for the set&quot;,
+	&quot;me&quot; : &quot;config01:27019&quot;,
+	&quot;ok&quot; : 1
+}
+config:PRIMARY&gt; rs.add(&quot;config02:27019&quot;)
+{ &quot;ok&quot; : 1 }
+config:PRIMARY&gt; rs.add(&quot;config03:27019&quot;)
+{ &quot;ok&quot; : 1 }
+config:PRIMARY&gt; exit
+bye
+/ $ 
+</code></pre>
+
+<p><strong>NOTA</strong>: Los <em>replica sets</em> destinados a ser <em>config servers</em> no pueden contener árbitros; si lo intentáis, obtendréis un bonito mensaje de error, pero no habrá consecuencias.</p>
+
+<p>Repetiremos la fórmula para cada uno de los otros <em>shards</em>; entramos en el primer contenedor de cada <em>shard</em>, donde lo inicializamos y añadimos los otros dos. Para ser fieles al artículo original, el tercer contenedor de cada <em>shard</em> será un árbitro.</p>
+
+<pre><code class="language-bash">/ $ mongo --host aquila01 --port 27018
+...
+&gt; rs.initiate()
+{
+	&quot;info2&quot; : &quot;no configuration specified. Using a default configuration for the set&quot;,
+	&quot;me&quot; : &quot;aquila01:27018&quot;,
+	&quot;ok&quot; : 1
+}
+aquila:PRIMARY&gt; rs.add(&quot;aquila02:27018&quot;)
+{ &quot;ok&quot; : 1 }
+aquila:PRIMARY&gt; rs.addArb(&quot;aquila03:27018&quot;)
+{ &quot;ok&quot; : 1 }
+aquila:PRIMARY&gt; exit
+bye
+/ $ 
+</code></pre>
+
+<pre><code class="language-bash">/ $ mongo --host lyra01 --port 27018
+...
+&gt; rs.initiate()
+{
+	&quot;info2&quot; : &quot;no configuration specified. Using a default configuration for the set&quot;,
+	&quot;me&quot; : &quot;lyra01:27018&quot;,
+	&quot;ok&quot; : 1
+}
+lyra:PRIMARY&gt; rs.add(&quot;lyra02:27018&quot;)
+{ &quot;ok&quot; : 1 }
+lyra:PRIMARY&gt; rs.addArb(&quot;lyra03:27018&quot;)
+{ &quot;ok&quot; : 1 }
+lyra:PRIMARY&gt; exit
+bye
+/ $ 
+</code></pre>
+
+<pre><code class="language-bash">/ $ mongo --host cygnus01 --port 27018
+...
+&gt; rs.initiate()
+{
+	&quot;info2&quot; : &quot;no configuration specified. Using a default configuration for the set&quot;,
+	&quot;me&quot; : &quot;cygnus01:27018&quot;,
+	&quot;ok&quot; : 1
+}
+cygnus:PRIMARY&gt; rs.add(&quot;cygnus02:27018&quot;)
+{ &quot;ok&quot; : 1 }
+cygnus:PRIMARY&gt; rs.addArb(&quot;cygnus03:27018&quot;)
+{ &quot;ok&quot; : 1 }
+cygnus:PRIMARY&gt; exit
+bye
+/ $ 
+</code></pre>
+
+<p>Ahora tenemos 4 <em>replica sets</em>, uno configurado como <em>config server</em> y apuntado por el proceso <code>mongos</code>, y otros 3 que serán los <em>shards</em>. Vamos a iniciar un <em>mongo shell</em> contra el proceso <code>mongos</code>, desde donde vamos a acabar las configuraciones.</p>
+
+<pre><code class="language-bash">/ $ mongo --host mongos01 --port 27017
+...
+mongos&gt; 
+</code></pre>
+
+<p>De hecho, en este punto ya tenemos un <em>cluster</em> funcional, pero como no tiene <em>shards</em>, no hay donde guardar datos.</p>
+
+<pre><code class="language-bash">mongos&gt; sh.status()
+--- Sharding Status --- 
+  sharding version: {
+  	&quot;_id&quot; : 1,
+  	&quot;minCompatibleVersion&quot; : 5,
+  	&quot;currentVersion&quot; : 6,
+  	&quot;clusterId&quot; : ObjectId(&quot;5b182ae62446c4f43cbab312&quot;)
+  }
+  shards:
+  active mongoses:
+        &quot;3.4.10&quot; : 1
+  autosplit:
+        Currently enabled: yes
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+NaN
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours: 
+                No recent migrations
+  databases:
+
+mongos&gt; 
+</code></pre>
+
+<p>Para añadir <em>shards</em> solamente tenemos que utilizar el método <code>sh.addShard()</code> para especificar la <em>replica set</em> que va a actuar como <em>shard</em>; hay que añadir la <em>replica set</em> siguiendo la fórmula <code>rsName/server1:port,...,serverN:port</code>, aunque si especificamos uno solo nombre, basta.</p>
+
+<pre><code class="language-bash">mongos&gt; sh.addShard(&quot;aquila/aquila01:27018&quot;)
+{ &quot;shardAdded&quot; : &quot;aquila&quot;, &quot;ok&quot; : 1 }
+mongos&gt; 
+</code></pre>
+
+<p><strong>TRUCO</strong>: A pesar de haber dado solamente el nombre <em>aquila01</em>, el resto de servidores ha sido descubierto por el <em>cluster</em> de forma automática; aún así, los árbitros no aparecen en el listado.</p>
+
+<pre><code class="language-bash">mongos&gt; sh.status()
+--- Sharding Status --- 
+  sharding version: {
+  	&quot;_id&quot; : 1,
+  	&quot;minCompatibleVersion&quot; : 5,
+  	&quot;currentVersion&quot; : 6,
+  	&quot;clusterId&quot; : ObjectId(&quot;5b182ae62446c4f43cbab312&quot;)
+  }
+  shards:
+        {  &quot;_id&quot; : &quot;aquila&quot;,  &quot;host&quot; : &quot;aquila/aquila01:27018,aquila02:27018&quot;,  &quot;state&quot; : 1 }
+  active mongoses:
+        &quot;3.4.10&quot; : 1
+  autosplit:
+        Currently enabled: yes
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+NaN
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours: 
+                No recent migrations
+  databases:
+
+mongos&gt; 
+</code></pre>
+
+<p>Vamos a repetir la fórmula para añadir los otros <em>shards</em>, que es básicamente la misma:</p>
+
+<pre><code class="language-bash">mongos&gt; sh.addShard(&quot;lyra/lyra01:27018&quot;)
+{ &quot;shardAdded&quot; : &quot;lyra&quot;, &quot;ok&quot; : 1 }
+mongos&gt; sh.addShard(&quot;cygnus/cygnus01:27018&quot;)
+{ &quot;shardAdded&quot; : &quot;cygnus&quot;, &quot;ok&quot; : 1 }
+mongos&gt; 
+</code></pre>
+
+<p>Y de esta forma, ya podemos ver el <em>cluster</em> acabado, con sus 3 <em>shards</em> añadidos sin problemas.</p>
+
+<pre><code class="language-bash">mongos&gt; sh.status()
+--- Sharding Status --- 
+  sharding version: {
+  	&quot;_id&quot; : 1,
+  	&quot;minCompatibleVersion&quot; : 5,
+  	&quot;currentVersion&quot; : 6,
+  	&quot;clusterId&quot; : ObjectId(&quot;5b182ae62446c4f43cbab312&quot;)
+  }
+  shards:
+        {  &quot;_id&quot; : &quot;aquila&quot;,  &quot;host&quot; : &quot;aquila/aquila01:27018,aquila02:27018&quot;,  &quot;state&quot; : 1 }
+        {  &quot;_id&quot; : &quot;cygnus&quot;,  &quot;host&quot; : &quot;cygnus/cygnus01:27018,cygnus02:27018&quot;,  &quot;state&quot; : 1 }
+        {  &quot;_id&quot; : &quot;lyra&quot;,  &quot;host&quot; : &quot;lyra/lyra01:27018,lyra02:27018&quot;,  &quot;state&quot; : 1 }
+  active mongoses:
+        &quot;3.4.10&quot; : 1
+  autosplit:
+        Currently enabled: yes
+  balancer:
+        Currently enabled:  yes
+        Currently running:  no
+NaN
+        Failed balancer rounds in last 5 attempts:  0
+        Migration Results for the last 24 hours: 
+                No recent migrations
+  databases:
+
+mongos&gt; 
+</code></pre>
+
+<p>Como no necesitamos más el contenedor del <em>mongo shell</em>, salimos de él para que el sistema lo pueda reciclar.</p>
+
+<pre><code class="language-bash">mongos&gt; exit
+bye
+/ $ exit
+gerard@sirius:~/workspace/sharding$ 
+</code></pre>
+
+<p>Y con esto estamos listos para introducir nuestros datos, aunque añadir más procesos <code>mongos</code> nos dará alta disponibilidad para el acceso de nuestras aplicaciones, aunque los <em>shards</em> y los <em>config servers</em> ya disfrutan de ella.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

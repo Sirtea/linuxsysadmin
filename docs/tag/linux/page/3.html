@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>linux - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Tag: linux</h1>
+
+<h2 class="article"><a href="/2016/05/autenticacion-ssh-por-claves.html">Autenticación SSH por claves</a></h2>
+<p>A pesar de que el protocolo <strong>SSH</strong> es lo que mas seguridad ofrece hoy en día, un servidor rápido puede probar gran cantidad de contraseñas generadas mediante un generador por fuerza bruta. Para añadir mas seguridad podemos autenticar mediante claves en vez de usar contraseña, opcionalmente protegidos con una <em>passphrase</em>.</p>
+<p><a class="article" href="/2016/05/autenticacion-ssh-por-claves.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/evolucionando-los-contenedores-docker.html">Evolucionando los contenedores: Docker</a></h2>
+<p>Los contenedores tienen su caso de uso y son muy útiles. Sin embargo, ir copiando la imagen es una pérdida de tiempo. Aunque podemos solventar el problema con un sistema de ficheros <em>copy-on-write</em> o un sistema de ficheros tipo <em>union</em>, <strong>Docker</strong> ya nos lo ofrece todo preparado para su uso.</p>
+<p><a class="article" href="/2016/05/evolucionando-los-contenedores-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Reduciendo el tamaño de nuestros binarios con musl libc</a></h2>
+<p>Cuando construimos jaulas, por el motivo que sea, vemos que no quedan pequeñas. El problema es el conjunto de librerías que hay que poner en el caso de los binarios <em>dinámicos</em>, o el exceso de tamaño en el caso de los <em>estáticos</em>. Cambiando la librería base, podemos reducir su tamaño.</p>
+<p><a class="article" href="/2016/05/reduciendo-el-tamano-de-nuestros-binarios-con-musl-libc.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/05/mongodb-sharding-con-ansible.html">MongoDB sharding con ansible</a></h2>
+<p>Como ya vimos en un artículo anterior, los <em>replica sets</em> nos ofrecen alta disponibilidad para nuestros despliegues de <strong>mongodb</strong>. Sin embargo, algunas veces, necesitamos que nuestro <em>cluster</em> ofrezca alto rendimiento, y esto se consigue mediante <em>sharding</em>. Como no queremos renunciar a la alta disponibilidad, podemos aplicar ambas; hoy explicamos como.</p>
+<p><a class="article" href="/2016/05/mongodb-sharding-con-ansible.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/un-escritorio-minimo-con-debian.html">Un escritorio mínimo con Debian</a></h2>
+<p>Harto de distribuciones para escritorio cargados con aplicaciones que no se usan, decidí que esta vez iba a instalar un escritorio de trabajo partiendo de una <em>Debian netinstall</em>. El resto va a ser instalar las aplicaciones justas y necesarias para nuestro trabajo diario. En este artículo describo como lo hice.</p>
+<p><a class="article" href="/2016/04/un-escritorio-minimo-con-debian.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/consultando-una-base-de-datos-oracle-en-python.html">Consultando una base de datos Oracle en python</a></h2>
+<p>El otro día estuve optimizando unos <em>scripts</em> hechos en <em>bash</em> que había hecho otro. Como resultado del lenguaje usado era un caos de comandos, muchos de ellos para limpiar la salida y darle la forma adecuada. Los reescribí en <em>python</em> usando la librería <strong>cx_Oracle</strong>, que compilé en un fichero <em>wheel</em>.</p>
+<p><a class="article" href="/2016/04/consultando-una-base-de-datos-oracle-en-python.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Instalando ansible para gestionar servidores</a></h2>
+<p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
+<p><a class="article" href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/compilando-python-desde-cero.html">Compilando python desde cero</a></h2>
+<p>Siempre que estoy trabajando en un servidor CentOS o RedHat, veo que las versiones de <em>python</em> que usan son bastante viejas. De hecho, hay una gran mejora de <em>python</em> entre las versiones 2.4, 2.6 y 2.7; así que es frecuente compilar una versión superior para nuestro uso.</p>
+<p><a class="article" href="/2016/04/compilando-python-desde-cero.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Sistemas de ficheros multicapa con aufs</a></h2>
+<p>Trabajando con contenedores tenemos una parte que se repite: el sistema de ficheros base, que copiamos siempre. Otras veces nos puede interesar hacer un sistema capaz de descartar los cambios desde un punto inicial. Podemos crear una capa base de solo lectura y añadir otra capa de cambios con <strong>aufs</strong>.</p>
+<p><a class="article" href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-4.html">Creando un entorno escalable (IV)</a></h2>
+<p>Acabamos el artículo anterior de esta serie con las aplicaciones corriendo en sus respectivas máquinas. En este artículo vamos a poner una fachada a todo el sistema, mediante un <em>proxy HTTP</em> que haga las funciones de terminación <em>SSL</em> y de <em>balanceador</em>, exponiendo todo el sistema en una sola dirección IP.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-4.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/tag/linux.html">&laquo;&laquo;</a>
+	<a href="/tag/linux/page/2.html">&laquo;</a>
+	<a href="/tag/linux.html">1</a>
+	<a href="/tag/linux/page/2.html">2</a>
+	<a class="active" href="/tag/linux/page/3.html">3</a>
+	<a href="/tag/linux/page/4.html">4</a>
+	<a href="/tag/linux/page/5.html">5</a>
+	<a href="/tag/linux/page/6.html">6</a>
+	<a href="/tag/linux/page/4.html">&raquo;</a>
+	<a href="/tag/linux/page/6.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

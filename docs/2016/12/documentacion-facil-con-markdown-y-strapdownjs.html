@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Documentación fácil con markdown y strapdown.js - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Documentación fácil con markdown y strapdown.js</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2016-12-12
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/miscelanea.html">Miscelánea</a>
+    <strong>Tags</strong>: <a href="/tag/html.html">html</a> / <a href="/tag/markdown.html">markdown</a> / <a href="/tag/strapdownjs.html">strapdownjs</a>
+</p>
+
+<p>Últimamente estoy harto de realizar documentación en formato <em>word</em>; pierdo la mayoría de mi tiempo dando formato, colores y maquetando el poco contenido que alcanzo a poner. Tras mucho meditar y, a partir de ahora, la voy a escribir en <strong>markdown</strong>, y se lea en <strong>HTML</strong>, como lenguaje mas usado.</p>
+
+<p>Revisando por la web, he encontrado una librería magnífica que se llama <a href="http://strapdownjs.com/">strapdown.js</a>, que combina la elegancia de <strong>bootstrap</strong> con un compilador <strong>markdown</strong> de lado cliente. De esta forma, ni siquiera necesito hacer el paso previo de convertir mis ficheros <strong>markdown</strong> a <strong>HTML</strong>.</p>
+
+<p>Como plus extra, como el fichero se interpreta en el navegador, no necesito nada muy caprichoso en el servidor para servir las páginas; con un <strong>nginx</strong> nos basta. Incluso podemos sacar partido de las <a href="https://pages.github.com/">GitHub Pages</a>, para tener <em>hosting</em> gratuito.</p>
+
+<p>Las páginas son ficheros <em>.html</em> estándares, con la única diferencia de que todo lo que vaya en el <em>tag xmp</em> será interpretado como <strong>markdown</strong>. Ahí pongo el esqueleto básico de una página.</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Sin título&lt;/title&gt;
+
+&lt;xmp theme=&quot;spacelab&quot; style=&quot;display:none;&quot;&gt;
+...
+&lt;/xmp&gt;
+
+&lt;script src=&quot;http://strapdownjs.com/v/0.2/strapdown.js&quot;&gt;&lt;/script&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>De hecho, el fichero incluido <em>strapdown.js</em>, y el resto de ficheros necesarios se pueden alojar en nuestro mismo servidor, para una velocidad de acceso óptima.</p>
+
+<h2 id="un-ejemplo">Un ejemplo</h2>
+
+<p>Supongamos que queremos hacer una web de dos páginas: el índice y otra de ejemplo. Para ello vamos a poner dos ficheros <strong>HTML</strong>, de la misma manera que lo haríamos para una página web normal.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/www$ ls -1
+example.html
+index.html
+gerard@aldebaran:~/www$ 
+</code></pre>
+
+<p>Empezaremos creando un <em>index.html</em> con el siguiente contenido:</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Home page&lt;/title&gt;
+
+&lt;xmp theme=&quot;spacelab&quot; style=&quot;display:none;&quot;&gt;
+# Hello world!
+
+You are in the Home page.
+
+Navigation:
+
+* [Home page](/)
+* [Example page](/example.html)
+&lt;/xmp&gt;
+
+&lt;script src=&quot;http://strapdownjs.com/v/0.2/strapdown.js&quot;&gt;&lt;/script&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>Hemos puesto un enlace a la página de ejemplo, así que la vamos a crear también, para no tener enlaces rotos. Pongamos algo similar:</p>
+
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;title&gt;Example page&lt;/title&gt;
+
+&lt;xmp theme=&quot;spacelab&quot; style=&quot;display:none;&quot;&gt;
+# This is an example
+
+You are in the example page.
+
+Navigation:
+
+* [Home page](/)
+* [Example page](/example.html)
+&lt;/xmp&gt;
+
+&lt;script src=&quot;http://strapdownjs.com/v/0.2/strapdown.js&quot;&gt;&lt;/script&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>Y no hay que hacer nada más. Solo hay que servir el contenido de esta carpeta. Podemos montar un servidor web o podemos sincronizarla a otro servidor que tengamos. Como no me quiero entretener con esto, y dado que no tiene nada que ver, me voy a limitar a levantar el servidor estándar que viene con <strong>python</strong>.</p>
+
+<pre><code class="language-bash">gerard@aldebaran:~/www$ python -m SimpleHTTPServer
+Serving HTTP on 0.0.0.0 port 8000 ...
+</code></pre>
+
+<p>Y con esto solo nos queda verificar el resultado en <a href="http://localhost:8000/">http://localhost:8000/</a>. Si miráis el código fuente de la página, veréis que se ve el lenguaje de marcado tal cual; incluso puede que veáis la página antes de su <em>renderizado</em>, mientras se carga la librería <strong>javascript</strong>. Al menos, habré cumplido con mi objetivo, que era el de escribir contenido sin perder tiempo en la maquetación.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

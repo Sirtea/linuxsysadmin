@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Montando un servidor docker con Debian Stretch - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Montando un servidor docker con Debian Stretch</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2017-07-24
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/stretch.html">stretch</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/docker-compose.html">docker-compose</a>
+</p>
+
+<p>Finalmente ha sucedido: ha llegado el esperado lanzamiento de <strong>Debian Stretch</strong>. Como buen linuxero no me he podido resistir a hacer alguna instalación para probar, aunque solo sea como una máquina virtual. Su función, determinada por mi actual flujo de trabajo, va a ser como servidor de <strong>docker</strong> con <strong>docker-compose</strong>.</p>
+
+<p>En este caso, lo necesito para mi uso personal, pero en el ámbito de mi trabajo. Una de las particularidades a las que me enfrento es un <em>proxy</em> <strong>squid</strong> no transparente, así que también voy a ponerlo como anotaciones en el artículo.</p>
+
+<h2 id="el-servidor-base">El servidor base</h2>
+
+<p>Se trata de instalar un sistema operativo básico con SSH, partiendo de la imagen <em>netinst</em>, que considero suficiente para un servidor estándar, y me evita descargar una <em>iso</em> más grande.</p>
+
+<p>No voy a explicar como se instala; simplemente he respondido las preguntas de la instalación tal como me las hacía. Solo hace falta tener en cuenta que se eligió el servidor <strong>SSH</strong> durante la instalación (concretamente en el <em>tasksel</em>) y que se indicó el <em>proxy</em> cuando se me preguntó.</p>
+
+<p>Para evitar que la operación <strong>apt-get update</strong> tarde más tiempo de lo debido, vamos a limpiar el fichero <em>/etc/apt/sources.list</em>, eliminando las entradas que no nos interesen.</p>
+
+<p>Y ya para acabar, vamos a crear una carpeta <em>bin</em> para nuestro usuario de trabajo, lo que hace especialmente fácil poner <em>scripts</em> locales para el mismo usuario.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ mkdir bin
+gerard@atlantis:~$
+</code></pre>
+
+<h2 id="instalar-docker-engine-y-docker-compose">Instalar docker engine y docker-compose</h2>
+
+<h3 id="docker-engine">Docker engine</h3>
+
+<p>Para instalar <strong>docker engine</strong> vamos a seguir <a href="https://docs.docker.com/engine/installation/linux/docker-ce/debian/">la documentación</a>. El primer paso es descargarse la clave oficial GPG de <strong>docker</strong>, para que <strong>apt</strong> confíe en la fuente de <em>software</em>.</p>
+
+<p><strong>NOTA</strong>: es probable que el comando <strong>wget</strong> falle si estamos detrás de un <em>proxy</em>; basta con exportar la variable de entorno <strong>https_proxy</strong>.</p>
+
+<pre><code class="language-bash">root@atlantis:~# apt-get install apt-transport-https
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+...
+root@atlantis:~# wget -qO- https://download.docker.com/linux/debian/gpg | apt-key add -
+OK
+root@atlantis:~#
+</code></pre>
+
+<p>Añadimos la línea adecuada para usar el repositorio oficial de <strong>docker</strong> y, tras hacer el correspondiente <em>update</em>, instalamos el paquete <strong>docker-ce</strong>.</p>
+
+<pre><code class="language-bash">root@atlantis:~# echo &quot;deb https://download.docker.com/linux/debian stretch stable&quot; &gt; /etc/apt/sources.list.d/docker.list
+root@atlantis:~# apt-get update
+Obj:1 http://security.debian.org/debian-security stretch/updates InRelease
+Des:2 https://download.docker.com/linux/debian stretch InRelease [20,2 kB]
+Des:3 https://download.docker.com/linux/debian stretch/stable amd64 Packages [1.934 B]
+Ign:4 http://ftp.fr.debian.org/debian stretch InRelease
+Des:5 http://ftp.fr.debian.org/debian stretch-updates InRelease [88,5 kB]
+Obj:6 http://ftp.fr.debian.org/debian stretch Release
+Descargados 111 kB en 5s (19,5 kB/s)
+Leyendo lista de paquetes... Hecho
+root@atlantis:~# apt-get install docker-ce
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+...
+root@atlantis:~#
+</code></pre>
+
+<p>Para hacer mas fácil el acceso a <strong>docker</strong> para el usuario de trabajo, vamos a añadirlo al mismo grupo.</p>
+
+<pre><code class="language-bash">root@atlantis:~# usermod -a -G docker gerard
+root@atlantis:~#
+</code></pre>
+
+<h3 id="docker-compose">Docker compose</h3>
+
+<p>Para instalar esta utilidad, vamos a seguir <a href="https://docs.docker.com/compose/install/">su documentación</a>. En esencia se limita a descargar el binario en algún lugar del <em>path</em> y a darle permisos de ejecución.</p>
+
+<pre><code class="language-bash">root@atlantis:~# wget -qO /usr/local/bin/docker-compose https://github.com/docker/compose/releases/download/1.14.0/docker-compose-`uname -s`-`uname -m`
+root@atlantis:~# chmod 755 /usr/local/bin/docker-compose
+root@atlantis:~#
+</code></pre>
+
+<h2 id="sobre-los-servidores-proxy">Sobre los servidores proxy</h2>
+
+<p>Trabajar detrás de un servidor <em>proxy</em> es un problema cuando trabajamos con <strong>docker</strong>, ya que el <em>proxy</em> debe configurarse a nivel de servicio, luego debe especificarse en cada <em>docker build</em> y finalmente en cada <em>docker run</em>.</p>
+
+<p>La primera configuración <em>proxy</em> necesaria es la de <strong>apt</strong>. Por suerte para nosotros, cuando instalamos el sistema operativo y lo indicamos ya nos guardó ese parámetro en <em>/etc/apt/apt.conf</em>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ cat /etc/apt/apt.conf
+Acquire::http::Proxy &quot;http://192.168.0.2:3128&quot;;
+gerard@atlantis:~$
+</code></pre>
+
+<p>A veces, algunos comandos como el <strong>wget</strong> necesitan definir el <em>proxy</em> como una variable de sistema; por ejemplo, para poner la variable <strong>https_proxy</strong> para esta sesión de terminal, podemos hacer algo como:</p>
+
+<pre><code class="language-bash">root@atlantis:~# export https_proxy=http://192.168.0.2:3128
+root@atlantis:~#
+</code></pre>
+
+<p>El demonio de <strong>docker</strong> utiliza el <em>proxy</em> definido en las variables de sistema. En el caso de <em>systemd</em> podemos añadir estas variables de forma fácil añadiendo una configuración <em>overlay</em>. Esto hace necesario recargar las configuraciones para el demonio de <strong>systemd</strong> y luego el mismo demonio de <strong>docker</strong> para que utilice las nuevas variables.</p>
+
+<pre><code class="language-bash">root@atlantis:~# mkdir /etc/systemd/system/docker.service.d
+root@atlantis:~# cat /etc/systemd/system/docker.service.d/proxy.conf
+[Service]
+Environment=&quot;HTTP_PROXY=http://192.168.0.2:3128&quot;
+Environment=&quot;HTTPS_PROXY=http://192.168.0.2:3128&quot;
+root@atlantis:~# systemctl daemon-reload
+root@atlantis:~# systemctl restart docker
+root@atlantis:~#
+</code></pre>
+
+<p>Finalmente, y por comodidad podemos añadir estas variables de entorno de forma permanente para el usuario de trabajo en el fichero <em>~/.bashrc</em>, de forma que en cada nueva sesión de SSH no tengamos que redefinirlas. Aprovechamos también para añadir algunos <em>alias</em> útiles para reducir los comandos de construcción de imágenes y ejecución de contenedores, escondiendo las variables del <em>proxy</em>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ cat .bashrc
+...
+alias drun='docker run -e &quot;http_proxy=http://192.168.0.2:3128&quot; -e &quot;https_proxy=http://192.168.0.2:3128&quot;'
+alias dbuild='docker build --build-arg=&quot;http_proxy=http://192.168.0.2:3128&quot; --build-arg=&quot;https_proxy=http://192.168.0.2:3128&quot;'
+export HTTP_PROXY=http://192.168.0.2:3128
+export HTTPS_PROXY=${HTTP_PROXY}
+export http_proxy=${HTTP_PROXY}
+export https_proxy=${HTTP_PROXY}
+export NO_PROXY=&quot;127.0.0.1,localhost&quot;
+export no_proxy=${NO_PROXY}
+gerard@atlantis:~$
+</code></pre>
+
+<h2 id="siguientes-pasos">Siguientes pasos</h2>
+
+<p>Es probable que este servidor necesite algunas utilidades que no hayan venido con los paquetes base. Nada nos impide ponerlos nosotros a mano, con los correspondientes <em>apt-get install</em>. A partir de aquí, solo nos queda disfrutar de nuestro nuevo servidor <strong>docker</strong> mínimo.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

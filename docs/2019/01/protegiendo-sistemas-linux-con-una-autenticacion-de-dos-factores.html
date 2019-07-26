@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Protegiendo sistemas Linux con una autenticación de dos factores - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Protegiendo sistemas Linux con una autenticación de dos factores</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-01-22
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
+    <strong>Tags</strong>: <a href="/tag/pam.html">pam</a> / <a href="/tag/two-factor.html">two-factor</a> / <a href="/tag/google.html">google</a> / <a href="/tag/ssh.html">ssh</a>
+</p>
+
+<p>El otro día tuve un auditor de seguridad imponiendo sus criterios arbitrarios; quería que cierto servidor seguro no fuera accesible si no era con una autenticación de 2 factores. Aunque personalmente no lo veo útil, me tocó ceder a sus exigencias y aquí he anotado como lo hice: con <strong>libpam-google-authenticator</strong>.</p>
+
+<p>El reto no es para nada complejo; un sistema Linux moderno utiliza para autenticarse un sistema llamado <strong>PAM</strong> (<em>Pluggable Authentication Modules</em>) y solo es necesario añadir un módulo que haga el tipo de autenticación que más nos convenga.</p>
+
+<p>Para una autenticación de 2 factores, <strong>Google</strong> nos lo pone fácil, usando una aplicación móvil generadora de <em>tokens</em> que su módulo <strong>libpam-google-authenticator</strong> acepta o no, dependiendo de las configuraciones reinantes.</p>
+
+<p>Así sin más preámbulos, procedemos a instalar dicho paquete (esto se hizo en un sistema <strong>Debian Stretch</strong>, pero debería valer para cualquier <strong>Debian</strong>, <strong>Ubuntu</strong> o derivado):</p>
+
+<pre><code class="language-bash">gerard@secure:~$ sudo apt install libpam-google-authenticator
+Leyendo lista de paquetes... Hecho
+Creando árbol de dependencias
+Leyendo la información de estado... Hecho
+Se instalarán los siguientes paquetes adicionales:
+  libqrencode3
+Se instalarán los siguientes paquetes NUEVOS:
+  libpam-google-authenticator libqrencode3
+0 actualizados, 2 nuevos se instalarán, 0 para eliminar y 0 no actualizados.
+Se necesita descargar 65,9 kB de archivos.
+Se utilizarán 197 kB de espacio de disco adicional después de esta operación.
+¿Desea continuar? [S/n] s
+Des:1 http://ftp.es.debian.org/debian stretch/main amd64 libqrencode3 amd64 3.4.4-1+b2 [34,3 kB]
+Des:2 http://ftp.es.debian.org/debian stretch/main amd64 libpam-google-authenticator amd64 20160607-2+b1 [31,6 kB]
+Descargados 65,9 kB en 0s (254 kB/s)
+Seleccionando el paquete libqrencode3:amd64 previamente no seleccionado.
+(Leyendo la base de datos ... 21701 ficheros o directorios instalados actualmente.)
+Preparando para desempaquetar .../libqrencode3_3.4.4-1+b2_amd64.deb ...
+Desempaquetando libqrencode3:amd64 (3.4.4-1+b2) ...
+Seleccionando el paquete libpam-google-authenticator previamente no seleccionado.
+Preparando para desempaquetar .../libpam-google-authenticator_20160607-2+b1_amd64.deb ...
+Desempaquetando libpam-google-authenticator (20160607-2+b1) ...
+Configurando libqrencode3:amd64 (3.4.4-1+b2) ...
+Procesando disparadores para libc-bin (2.24-11+deb9u3) ...
+Configurando libpam-google-authenticator (20160607-2+b1) ...
+gerard@secure:~$
+</code></pre>
+
+<h2 id="configurando-el-servidor">Configurando el servidor</h2>
+
+<p>Como ya he dicho antes, <strong>PAM</strong> es <em>pluggable</em>; esto significa que poco hay que hacer. Se &ldquo;enchufa&rdquo; a la cadena de autenticación, añadiendo una directiva nueva en el fichero relevante de la configuración de <strong>PAM</strong>.</p>
+
+<p>Como nos interesa proteger todo aquello que requiera de autenticación, me ha parecido natural ponerlo en <code>/etc/pam.d/common-auth</code>, que es la configuración que todo el resto de subsistemas incluye. Para proteger -por ejemplo- solamente el subsistema de <strong>sudo</strong>, lo pondríamos en <code>/etc/pam.d/sudo</code>.</p>
+
+<p>Añadimos la línea relevante al final del fichero y listo:</p>
+
+<pre><code class="language-bash">gerard@secure:~$ tail -1 /etc/pam.d/common-auth
+auth required pam_google_authenticator.so nullok
+gerard@secure:~$
+</code></pre>
+
+<p><strong>TRUCO</strong>: El parámetro <code>nullok</code> permite que un usuario que no haya configurado la autenticación (ver más adelante), pueda seguir entrando sin ella, de la forma tradicional. Por supuesto, tras un periodo razonable, esta directiva se va a quitar, para obligar a todo el mundo a cumplir con las nuevas exigencias de seguridad.</p>
+
+<p>Otro punto conflictivo es el <strong>SSH</strong>, al que hay que dar a entender que &ldquo;hay dos peticiones de <em>login</em>&rdquo;. Esto se hace mediante la directiva <code>ChallengeResponseAuthentication</code> en su configuración, que tendrá que recargar después.</p>
+
+<pre><code class="language-bash">gerard@secure:~$ grep -i ^challenge /etc/ssh/sshd_config
+ChallengeResponseAuthentication yes
+gerard@secure:~$
+</code></pre>
+
+<pre><code class="language-bash">gerard@secure:~$ sudo service ssh reload
+gerard@secure:~$
+</code></pre>
+
+<p><strong>AVISO</strong>: Me pasé un buen rato sin que funcionara porque tenía dos veces la directiva, primero con &ldquo;no&rdquo; y luego con &ldquo;yes&rdquo;; eso no vale y solo debe quedar una sin comentar.</p>
+
+<h2 id="configurando-un-cliente">Configurando un cliente</h2>
+
+<p>De hecho, este proceso debe repetirse para cada usuario &ldquo;tradicional&rdquo; que pretenda acceder al sistema. No es necesario para usuarios que no vayan a entrar, bloqueados o usuarios de servicio.</p>
+
+<p>El procedimiento no puede ser más simple: ejecutamos el asistente.</p>
+
+<pre><code class="language-bash">gerard@secure:~$ google-authenticator
+...
+gerard@secure:~$
+</code></pre>
+
+<p>Este asistente nos va a hacer preguntas para regular el comportamiento del módulo (cosas como <em>tokens</em> por tiempo, reusabilidad de los códigos o un <em>rate limiting</em> de <em>logins</em> por tiempo). Es seguro responder que sí a todas las preguntas.</p>
+
+<p>Finalmente nos va a mostrar un código QR y una clave, que no sirve para configurar la aplicación generadora de códigos (por ejemplo, <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=es">la suya</a>). Podemos escanear el código o poner a mano la clave, con un nombre de cuenta descriptiva.</p>
+
+<p>Es importante anotar los códigos de emergencia por si no tuviéramos el móvil a mano, aunque son de un solo uso. Esto nos va a crear un fichero <code>.google_authenticator</code> con los parámetros, las claves y los códigos de emergencia.</p>
+
+<p><strong>TRUCO</strong>: Si se os acaban los códigos de emergencia podéis añadirlos a mano en el mismo fichero.</p>
+
+<p>En mi caso, como tengo demasiados servidores para administrar, tomé la decisión de configurar el generador en mi móvil <strong>una única vez</strong> y copiar el fichero <code>.google_authenticator</code> en todos los demás servidores, de forma que se rigen por el mismo generador. Solo os conviene saber que el fichero debe tener permisos <code>0600</code> o más restrictivos, o será rechazado al entrar.</p>
+
+<pre><code class="language-bash">gerard@secure:~$ chmod 600 .google_authenticator
+gerard@secure:~$
+</code></pre>
+
+<p>Repetimos para todos los usuarios y ya lo tenemos.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

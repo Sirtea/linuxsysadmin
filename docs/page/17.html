@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2016/04/consultando-una-base-de-datos-oracle-en-python.html">Consultando una base de datos Oracle en python</a></h2>
+<p>El otro día estuve optimizando unos <em>scripts</em> hechos en <em>bash</em> que había hecho otro. Como resultado del lenguaje usado era un caos de comandos, muchos de ellos para limpiar la salida y darle la forma adecuada. Los reescribí en <em>python</em> usando la librería <strong>cx_Oracle</strong>, que compilé en un fichero <em>wheel</em>.</p>
+<p><a class="article" href="/2016/04/consultando-una-base-de-datos-oracle-en-python.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Instalando ansible para gestionar servidores</a></h2>
+<p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
+<p><a class="article" href="/2016/04/instalando-ansible-para-gestionar-servidores.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/04/compilando-python-desde-cero.html">Compilando python desde cero</a></h2>
+<p>Siempre que estoy trabajando en un servidor CentOS o RedHat, veo que las versiones de <em>python</em> que usan son bastante viejas. De hecho, hay una gran mejora de <em>python</em> entre las versiones 2.4, 2.6 y 2.7; así que es frecuente compilar una versión superior para nuestro uso.</p>
+<p><a class="article" href="/2016/04/compilando-python-desde-cero.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Sistemas de ficheros multicapa con aufs</a></h2>
+<p>Trabajando con contenedores tenemos una parte que se repite: el sistema de ficheros base, que copiamos siempre. Otras veces nos puede interesar hacer un sistema capaz de descartar los cambios desde un punto inicial. Podemos crear una capa base de solo lectura y añadir otra capa de cambios con <strong>aufs</strong>.</p>
+<p><a class="article" href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-4.html">Creando un entorno escalable (IV)</a></h2>
+<p>Acabamos el artículo anterior de esta serie con las aplicaciones corriendo en sus respectivas máquinas. En este artículo vamos a poner una fachada a todo el sistema, mediante un <em>proxy HTTP</em> que haga las funciones de terminación <em>SSL</em> y de <em>balanceador</em>, exponiendo todo el sistema en una sola dirección IP.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-4.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-3.html">Creando un entorno escalable (III)</a></h2>
+<p>En el artículo anterior de esta serie montamos el cluster de la base de datos que íbamos a necesitar para las aplicaciones que conformaban este entorno de ejemplo. Ahora que tenemos la base de datos, falta poner los servidores de aplicaciones que sirven nuestras aplicaciones y que usan el cluster.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-3.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/03/creando-un-entorno-escalable-2.html">Creando un entorno escalable (II)</a></h2>
+<p>Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un <em>cluster</em> de bases de datos; será <strong>mongodb</strong> porque la aplicación lo requiere y usará la topología de un <strong>replica set</strong>.</p>
+<p><a class="article" href="/2016/03/creando-un-entorno-escalable-2.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/creando-un-entorno-escalable.html">Creando un entorno escalable (I)</a></h2>
+<p>Mucha gente tiene un servidor único para alojar páginas web dinámicas, por ejemplo con <strong>PHP</strong> y con <strong>MySQL</strong>. Sin embargo, a veces esto puede resultar insuficiente; nos puede interesar tener un entorno de bajas especificaciones y de bajo coste, pero preparado crecer al mismo ritmo que lo hacen los usuarios.</p>
+<p><a class="article" href="/2016/02/creando-un-entorno-escalable.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Restringiendo accesos mediante certificados de cliente</a></h2>
+<p>De vez en cuando, tenemos algún contenido web o una API que necesita un control de acceso superior. El método mas eficaz del que disponemos hoy en día es la autenticación con certificados SSL cliente, en donde es el cliente el que debe ofrecer un certificado que el servidor validará.</p>
+<p><a class="article" href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/02/haciendo-snapshots-con-lvm.html">Haciendo snapshots con LVM</a></h2>
+<p>Una de las funcionalidades mas implementadas en los sistemas de ficheros de nueva generación es la capacidad de hacer <em>snapshots point-in-time</em>. Sin embargo, no tenemos que renunciar a la estabilidad de los sistemas de ficheros tradicionales como <strong>ext4</strong>; otras veces no es posible por requisitos del servicio que debe usarlo.</p>
+<p><a class="article" href="/2016/02/haciendo-snapshots-con-lvm.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/16.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a href="/page/7.html">7</a>
+	<a href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a href="/page/11.html">11</a>
+	<a href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a class="active" href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/18.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

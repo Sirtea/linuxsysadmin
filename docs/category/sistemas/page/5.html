@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Sistemas - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Category: sistemas</h1>
+
+<h2 class="article"><a href="/2017/06/un-servidor-de-git-local-con-gitolite.html">Un servidor de git local con gitolite</a></h2>
+<p>A todos nos encanta el sistema de control de versiones <strong>git</strong>. Tanto a nivel local como a nivel público en <em>GitHub</em> es una maravilla; lo que no me gusta tanto es el precio que suelen tener las soluciones privadas. Sin embargo, y con un poco de habilidad, podemos encontrar alternativas.</p>
+<p><a class="article" href="/2017/06/un-servidor-de-git-local-con-gitolite.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/05/generacion-facil-de-certificados-con-easyrsa.html">Generación fácil de certificados con easyrsa</a></h2>
+<p>Ya vimos en <a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">otro artículo</a> como restringir los accesos a una web usando certificados SSL. Sin embargo, la generación de los mismos era un poco confusa. Sin embargo, existe una herramienta llamada <strong>easyrsa</strong> que nos permite generar peticiones de forma fácil, firmarlas con nuestra CA y obtener el producto final.</p>
+<p><a class="article" href="/2017/05/generacion-facil-de-certificados-con-easyrsa.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Un entorno web estático con nginx, rsync y docker</a></h2>
+<p>Hemos hablado de generar nuestro contenido HTML estático con otras herramientas, y finalmente ha llegado la hora de servirlo. Normalmente, los ficheros que cambian tal y como vamos generando páginas son pocos y nos interesa copiarlo de forma remota, pero no podemos hacerlo con <strong>docker</strong> porque hacen falta dos servicios.</p>
+<p><a class="article" href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Múltiples servicios en un mismo contenedor Docker</a></h2>
+<p>Como ya sabemos, un contenedor <strong>docker</strong> solo puede ejecutar un proceso, y su finalización implica la parada del contenedor. Sin embargo, a veces nos puede interesar cargar los contenedores con algún servicio más, para hacerlos autosuficientes. Para ello, nos podemos ayudar de un <em>gestor de procesos</em>, como por ejemplo, <strong>runit</strong>.</p>
+<p><a class="article" href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/alta-disponibilidad-con-keepalived.html">Alta disponibilidad con Keepalived</a></h2>
+<p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
+<p><a class="article" href="/2017/02/alta-disponibilidad-con-keepalived.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/compartiendo-carpetas-con-nfs.html">Compartiendo carpetas con NFS</a></h2>
+<p>Son muchas las veces que queremos tener una carpeta disponible en todas las máquinas que usamos habitualmente, sea una unidad de <em>backup</em>, o sea una carpeta de intercambio de fotos. Disponemos de servidores tipo FTP, pero es mas cómodo tener una unidad remota como una carpeta mas de nuestra máquina.</p>
+<p><a class="article" href="/2017/02/compartiendo-carpetas-con-nfs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/01/un-registro-local-de-docker.html">Un registro local de Docker</a></h2>
+<p>He llegado a ese momento en el que el número de imágenes <strong>docker</strong> que he construido se me ha ido de las manos. Ya no pueden seguir ocupando espacio en mi local, así que me he decidido a montar mi propio registro de imágenes, para mi uso y disfrute privado.</p>
+<p><a class="article" href="/2017/01/un-registro-local-de-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/10/disparando-acciones-en-respuesta-a-modificaciones-en-el-sistema-de-fichero-con-incron.html">Disparando acciones en respuesta a modificaciones en el sistema de fichero con incron</a></h2>
+<p>El otro día recibí una petición diferente en mi trabajo. Se necesitaba monitorizar una carpeta, de forma que cuando alguien dejara ficheros, se lanzara una tarea para procesarlos. Tras buscar un poco por internet, topé con una herramienta tipo <em>cron</em>, que ejecutaba comandos ante eventos en el sistema de ficheros.</p>
+<p><a class="article" href="/2016/10/disparando-acciones-en-respuesta-a-modificaciones-en-el-sistema-de-fichero-con-incron.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/09/un-servidor-pypi-local.html">Un servidor pypi local</a></h2>
+<p>Cuando trabajamos con <strong>python</strong>, muchas veces necesitamos instalar librerías con <em>pip</em> o <em>easy_install</em>. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar los mismos. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.</p>
+<p><a class="article" href="/2016/09/un-servidor-pypi-local.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2016/08/el-servidor-de-aplicaciones-uwsgi.html">El servidor de aplicaciones uWSGI</a></h2>
+<p>Estaba yo el otro día buscando un servidor de aplicaciones para aplicaciones <em>python</em>, y entre todas las opciones encontré uno que es una auténtica joya: <strong>uWSGI</strong>. Se trata de un servidor modular, que permite servir un amplio abanico de posibilidades en cuanto a lenguajes se refiere, usando un <em>plugin</em> adecuado.</p>
+<p><a class="article" href="/2016/08/el-servidor-de-aplicaciones-uwsgi.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/category/sistemas.html">&laquo;&laquo;</a>
+	<a href="/category/sistemas/page/4.html">&laquo;</a>
+	<a href="/category/sistemas.html">1</a>
+	<a href="/category/sistemas/page/2.html">2</a>
+	<a href="/category/sistemas/page/3.html">3</a>
+	<a href="/category/sistemas/page/4.html">4</a>
+	<a class="active" href="/category/sistemas/page/5.html">5</a>
+	<a href="/category/sistemas/page/6.html">6</a>
+	<a href="/category/sistemas/page/7.html">7</a>
+	<a href="/category/sistemas/page/6.html">&raquo;</a>
+	<a href="/category/sistemas/page/7.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

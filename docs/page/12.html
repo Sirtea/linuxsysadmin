@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="generator" content="Hugo 0.55.6" />
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Linux Sysadmin</h1>
+
+<h2 class="article"><a href="/2017/04/auditando-las-acciones-de-los-usuarios-de-nuestro-sftp.html">Auditando las acciones de los usuarios de nuestro SFTP</a></h2>
+<p>Algunas veces me he encontrado con usuarios de alguno de mis servidores SFTP que se quejan porque &ldquo;les desaparecen archivos&rdquo;. Si estamos seguros que esas desapariciones no tienen nada que ver con nosotros, lo mas probable es que lo hayan hecho los mismos usuarios, sea manualmente o de forma automática.</p>
+<p><a class="article" href="/2017/04/auditando-las-acciones-de-los-usuarios-de-nuestro-sftp.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Un entorno web estático con nginx, rsync y docker</a></h2>
+<p>Hemos hablado de generar nuestro contenido HTML estático con otras herramientas, y finalmente ha llegado la hora de servirlo. Normalmente, los ficheros que cambian tal y como vamos generando páginas son pocos y nos interesa copiarlo de forma remota, pero no podemos hacerlo con <strong>docker</strong> porque hacen falta dos servicios.</p>
+<p><a class="article" href="/2017/03/un-entorno-web-estatico-con-nginx-rsync-y-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/hospedando-contenido-estatico-en-github-pages.html">Hospedando contenido estático en Github pages</a></h2>
+<p>Algunas veces nos hemos planteado la posibilidad de tener nuestro propio servidor con nuestras propias aplicaciones, pero el coste del <em>hosting</em> nos lo ha hecho replantear, especialmente para proyectos de pruebas sin beneficio. Si no nos importa hospedar contenido <strong>HTML</strong> estático, las páginas de <strong>GitHub</strong> pueden cumplir con nuestras necesidades.</p>
+<p><a class="article" href="/2017/03/hospedando-contenido-estatico-en-github-pages.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/generadores-de-contenido-web-estaticos.html">Generadores de contenido web estáticos</a></h2>
+<p>Antes de la masiva invasión de <strong>PHP</strong> y <strong>mysql</strong> en todos los proveedores de internet, existían solamente las páginas <strong>HTML</strong> estáticas. Los servidores eran más simples y tenían menos superficie de ataque, aunque mantener las páginas web era un auténtica pesadilla; para eso se han creado los generadores web estáticos.</p>
+<p><a class="article" href="/2017/03/generadores-de-contenido-web-estaticos.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Múltiples servicios en un mismo contenedor Docker</a></h2>
+<p>Como ya sabemos, un contenedor <strong>docker</strong> solo puede ejecutar un proceso, y su finalización implica la parada del contenedor. Sin embargo, a veces nos puede interesar cargar los contenedores con algún servicio más, para hacerlos autosuficientes. Para ello, nos podemos ayudar de un <em>gestor de procesos</em>, como por ejemplo, <strong>runit</strong>.</p>
+<p><a class="article" href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/alta-disponibilidad-con-keepalived.html">Alta disponibilidad con Keepalived</a></h2>
+<p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
+<p><a class="article" href="/2017/02/alta-disponibilidad-con-keepalived.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/sincronizando-ficheros-con-owncloud.html">Sincronizando ficheros con ownCloud</a></h2>
+<p>Finalmente ha sucedido: el ingeniero de seguridad de la empresa ha decidido cerrar servicios de sincronizado de ficheros, dejando inútiles servicios como <strong>Dropbox</strong>, <strong>Mega</strong> y otros. Sin embargo, cualquier bloqueo que se haga mediante el dominio hace que sea imposible cerrar todos estos servicios, e incluso podemos poner el nuestro.</p>
+<p><a class="article" href="/2017/02/sincronizando-ficheros-con-owncloud.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/escribiendo-un-servidor-dns-en-python-con-twisted.html">Escribiendo un servidor DNS en python con twisted</a></h2>
+<p>El otro día tuvimos una caída del centro de datos de desarrollo. Inmediatamente después vimos que teníamos afectación en el entorno de producción, ya que lanzaba peticiones al <strong>DNS</strong> de desarrollo. Sin saber claramente porque pasaba, hice un servidor <strong>DNS</strong> en <strong>python</strong>, para ver que tipos de peticiones se lanzaban.</p>
+<p><a class="article" href="/2017/02/escribiendo-un-servidor-dns-en-python-con-twisted.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/02/compartiendo-carpetas-con-nfs.html">Compartiendo carpetas con NFS</a></h2>
+<p>Son muchas las veces que queremos tener una carpeta disponible en todas las máquinas que usamos habitualmente, sea una unidad de <em>backup</em>, o sea una carpeta de intercambio de fotos. Disponemos de servidores tipo FTP, pero es mas cómodo tener una unidad remota como una carpeta mas de nuestra máquina.</p>
+<p><a class="article" href="/2017/02/compartiendo-carpetas-con-nfs.html">Seguir leyendo</a></p>
+<hr />
+<h2 class="article"><a href="/2017/01/un-escaner-ssl-con-sslyze.html">Un escáner SSL con sslyze</a></h2>
+<p>El otro día cayó en mis manos un escaneo de la plataforma para uno de los servicios que gestiono. No voy a dar detalles al respecto en virtud del acuerdo de confidencialidad que mantengo con ellos, pero consideré interesante una de las herramientas que usaron para testear el dominio SSL.</p>
+<p><a class="article" href="/2017/01/un-escaner-ssl-con-sslyze.html">Seguir leyendo</a></p>
+<hr />
+
+<div class="pagination">
+	<a href="/">&laquo;&laquo;</a>
+	<a href="/page/11.html">&laquo;</a>
+	<a href="/">1</a>
+	<a href="/page/2.html">2</a>
+	<a href="/page/3.html">3</a>
+	<a href="/page/4.html">4</a>
+	<a href="/page/5.html">5</a>
+	<a href="/page/6.html">6</a>
+	<a href="/page/7.html">7</a>
+	<a href="/page/8.html">8</a>
+	<a href="/page/9.html">9</a>
+	<a href="/page/10.html">10</a>
+	<a href="/page/11.html">11</a>
+	<a class="active" href="/page/12.html">12</a>
+	<a href="/page/13.html">13</a>
+	<a href="/page/14.html">14</a>
+	<a href="/page/15.html">15</a>
+	<a href="/page/16.html">16</a>
+	<a href="/page/17.html">17</a>
+	<a href="/page/18.html">18</a>
+	<a href="/page/19.html">19</a>
+	<a href="/page/13.html">&raquo;</a>
+	<a href="/page/19.html">&raquo;&raquo;</a>
+</div>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

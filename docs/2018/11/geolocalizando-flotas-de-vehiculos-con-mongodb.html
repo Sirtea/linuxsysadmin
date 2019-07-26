@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Geolocalizando flotas de vehículos con MongoDB - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+		<a href="https://github.com/sirtea">GitHub</a>
+	</div>
+</div>
+
+<h1>Geolocalizando flotas de vehículos con MongoDB</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2018-11-26
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+    <strong>Tags</strong>: <a href="/tag/geolocalizacion.html">geolocalización</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/python.html">python</a>
+</p>
+
+<p>Soy un aficionado a las películas bélicas, especialmente las referentes a la Segunda Guerra Mundial. Una de las imágenes más impactantes es cuando salen los centros de mando, donde los generales tienen una mesa con un mapa y la disposición de sus fuerzas, que se actualizan cuando llegan los mensajeros.</p>
+
+<p>Trasladando el problema fuera del ambiente bélico, y adaptando a las tecnologías actuales, veríamos que esta imagen es una bonita aproximación para un sistema de geolocalización:</p>
+
+<ul>
+<li>Una base de datos para guardar la posición y tamaño de tus unidades</li>
+<li>Un <em>feed</em> periódico de actualizaciones, por ejemplo vía REST</li>
+<li>Y por supuesto con una encriptación SSL, que rebaja a un broma la criptografía del momento</li>
+</ul>
+
+<p>Por supuesto, hoy en día no tenemos un conflicto bélico tan grande como para justificar este sistema, pero algunos clientes están interesados en geolocalizar flotas de vehículos, o en poner sus instalaciones en un mapa, con vistas a darse a conocer.</p>
+
+<p>Dependiendo de si el punto de referencia es móvil o no, y de si los puntos a geolocalizar se mueven o no, damos pie a una variedad muy interesante de problemas que podemos resolver:</p>
+
+<ul>
+<li>Un sistema de control de flotas de camiones, taxis o barcos</li>
+<li>Una aplicación turística para nuestro móvil</li>
+<li>Recordatorio de sitios en donde hemos aparcado el coche o guardado objetos</li>
+<li>Seguimiento de personas u objetivos</li>
+</ul>
+
+<p>Para no alargar innecesariamente, vamos a suponer que estamos haciendo un control de flotas de vehículos; será más fácil hacerse a la idea de esta manera.</p>
+
+<p>Trabajar con un modelo de geolocalización plano es fácil, pero no práctico; además, muchos motores de datos nos ofrecen el modelo esférico de forma fácil. Hay varias bases de datos que trabajan bien con modelos de geolocalización esféricos, como por ejemplo <strong>PostgreSQL</strong>, <strong>Redis</strong> o <strong>MongoDB</strong>.</p>
+
+<p>Personalmente soy un apasionado de las bases de datos <strong>NoSQL</strong>, así que me limito a considerar <strong>Redis</strong> y <strong>MongoDB</strong>. He descartado <strong>Redis</strong> por el gran conocimiento de <strong>MongoDB</strong> del que dispongo, y por una letra pequeña del comando <strong>Redis</strong> <a href="https://redis.io/commands/geoadd">GEOADD</a>:</p>
+
+<blockquote>
+<p>Valid latitudes are from -85.05112878 to 85.05112878 degrees.</p>
+</blockquote>
+
+<p>¿Y que pasa si trabajamos cerca de los polos? Mejor vamos a lo seguro y seguimos con <strong>MongoDB</strong>.</p>
+
+<h2 id="centrándonos-en-el-problema-con-mongodb">Centrándonos en el problema con MongoDB</h2>
+
+<p>Dicen que <strong>MongoDB</strong> es una base de datos <em>schemaless</em>. Pocas aplicaciones tienen esto: herencia, versiones distintas de documentos, &hellip; Una aplicación decente va a tener un <em>schema</em> más o menos fijo y si tratamos de geolocalización, más todavía.</p>
+
+<p>El modelo esférico <strong>MongoDB</strong> exije el uso de un estándar de documentos para los <a href="https://docs.mongodb.com/manual/reference/geojson/">objetos GeoJSON</a>. Me gustan especialmente los de tipo <strong>Point</strong> (aunque es mi opinión personal).</p>
+
+<p>De esta forma, podemos construir nuestros documentos con un campo tipo <strong>Point</strong> para determinar su posición. Consultar la posición de un vehículo desde un centro de mando, o buscar un taxi disponible a una distancia aceptable desde el punto en donde tengamos al solicitante, se vuelve un problema trivial. Ya de paso, podemos calcular la distancia al vehículo por el mismo precio.</p>
+
+<h3 id="guardando-un-documento-posicional">Guardando un documento posicional</h3>
+
+<p>Un documento con un campo &ldquo;posición&rdquo; solo necesita que dicha &ldquo;posición&rdquo; se guarde como un <strong>Point</strong>. Sin embargo, para poder lanzar consultas geoespaciales, se necesita un índice especial: el índice <code>2dphere</code> (más información <a href="https://docs.mongodb.com/manual/core/2dsphere/">aquí</a>). Por supuesto, este índice puede ser compuesto con otros campos.</p>
+
+<p>Como ejemplo de inserción podemos poner el siguiente:</p>
+
+<pre><code class="language-python3">def save_vehicle(name, lon, lat):
+	db.vehicles.create_index([('location', pymongo.GEOSPHERE)])
+	doc = {
+		'name': name,
+		'location': {
+			'type': 'Point',
+			'coordinates': [lon, lat],
+		}
+	}
+	db.vehicles.insert_one(doc)
+</code></pre>
+
+<p><strong>NOTA</strong>: La operación <code>create_index</code> reemplaza la anterior <code>ensure_index</code>, y por lo tanto, no va a hacer nada si el índice ya existiera.</p>
+
+<p>Un posible <em>update</em> debería respetar la forma del <strong>Point</strong> presente en el campo &ldquo;location&rdquo;, pero el índice ya estaría presente.</p>
+
+<h3 id="consultando-documentos-cercanos-con-su-distancia">Consultando documentos cercanos con su distancia</h3>
+
+<p><strong>MongoDB</strong> nos ofrece una serie de <a href="https://docs.mongodb.com/manual/geospatial-queries/#geospatial-query-operators">operadores de geolocalización</a>. Básicamente se nos permite buscar puntos cercanos, puntos dentro de cierta área, e incluso polígonos que intersectan con otros. Aplicando al mundo de los puntos, solo aplican las dos primeras.</p>
+
+<p>Buscar objetos en una cierta área es muy interesante para limitar resultados a &ldquo;zonas visibles&rdquo;, especialmente para confeccionar mapas. La operación de cercanía no es tan útil; nos da objetos cercanos ordenados por cercanía, pero no nos proporciona la distancia a la que están.</p>
+
+<p>Esto casi nos obliga a utilizar el <em>aggregation framework</em> para realizar el mismo trabajo. Nuestras queries se vuelven un poco más complejas, pero nos proporciona la distancia de los objetos al punto de referencia.</p>
+
+<p>Por ejemplo, para buscar un taxi disponible, podríamos hacer algo como lo siguiente:</p>
+
+<pre><code class="language-python3">point = {
+    'type': 'Point',
+    'coordinates': [lon, lat],
+}
+pipeline = [
+    {
+        '$geoNear': {
+            'query': {'available': True},
+            'near': point,
+            'distanceField': 'dist',
+            'distanceMultiplier': 0.001,
+            'spherical': True,
+        },
+    },
+]
+cursor = db.taxis.aggregate(pipeline)
+</code></pre>
+
+<p>En este caso buscamos taxis con disponibilidad, por cercanía al punto <code>point</code> y guardando la distancia en el campo <code>dist</code>, con un multiplicador de 0,001 que, básicamente, lo pasa a kilometros.</p>
+
+<p>Estos son los campos más útiles:</p>
+
+<ul>
+<li><code>query</code> &rarr; El primer filtro que se realiza; solo se van a considerar los documentos que cumplan con esta <em>query</em></li>
+<li><code>near</code> &rarr; El punto de referencia, del que buscamos documentos cercanos</li>
+<li><code>minDistance</code> &rarr; La distancia mínima a la que tiene que estar un punto (opcional)</li>
+<li><code>maxDistance</code> &rarr; La distancia máxima a la que tiene que estar un punto (opcional)</li>
+<li><code>distanceField</code> &rarr; La respuesta va a incluir este campo adicional, con la distancia calculada</li>
+<li><code>distanceMultiplier</code> &rarr; Normalmente, la distancia calculada es en metros, y podemos multiplicar por una constante para sacar un valor más útil</li>
+</ul>
+
+<p>Y con esto tenemos las herramientas necesarias para construir nuestra siguiente gran aplicación.</p>
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
