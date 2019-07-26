@@ -1,0 +1,38 @@
+{{ define "title" }}{{ if ne .Kind "home" }}{{ .Title }} - {{ end }}{{ end }}
+
+{{- define "main" }}
+{{- if eq .Type "categories" }}
+<h1>Category: {{ lower .Title }}</h1>
+{{- else if eq .Type "tags" }}
+<h1>Tag: {{ lower .Title }}</h1>
+{{- else }}
+<h1>{{ .Title }}</h1>
+{{- end }}
+
+{{- $paginator := .Paginate (where .Pages "Type" "articles") }}
+{{ range $paginator.Pages }}
+<h2 class="article"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+{{ .Summary }}
+<p><a class="article" href="{{ .RelPermalink }}">Seguir leyendo</a></p>
+<hr />
+{{- end }}
+
+<div class="pagination">
+	{{- if $paginator.HasPrev }}
+	<a href="{{ $paginator.First.URL }}">&laquo;&laquo;</a>
+	<a href="{{ $paginator.Prev.URL }}">&laquo;</a>
+	{{- end }}
+	{{- $current := $paginator.PageNumber }}
+	{{- range $paginator.Pagers }}
+	{{- if ne .PageNumber $current }}
+	<a href="{{ .URL }}">{{ .PageNumber }}</a>
+	{{- else }}
+	<a class="active" href="{{ .URL }}">{{ .PageNumber }}</a>
+	{{- end }}
+	{{- end }}
+	{{- if $paginator.HasNext }}
+	<a href="{{ $paginator.Next.URL }}">&raquo;</a>
+	<a href="{{ $paginator.Last.URL }}">&raquo;&raquo;</a>
+	{{- end }}
+</div>
+{{- end }}

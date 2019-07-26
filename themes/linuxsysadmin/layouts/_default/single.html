@@ -1,0 +1,15 @@
+{{ define "title" }}{{ .Title }} - {{ end }}
+
+{{- define "main" }}
+<h1>{{ .Title }}</h1>
+{{ if eq .Section "articles" }}
+<p class="headline">
+	<strong>Fecha</strong>: {{ .Date.Format "2006-01-02" }}
+	<strong>Tiempo de lectura</strong>: {{ .ReadingTime }} minuto{{ if ne .ReadingTime 1 }}s{{ end }}
+	<strong>Categoría</strong>:{{ range first 1 .Params.categories }} <a href="/category/{{ . | urlize }}.html">{{ . }}</a>{{ end }}
+    <strong>Tags</strong>: {{ range $key, $tag := .Params.tags }}{{ if ne $key 0 }} / {{ end }}<a href="/tag/{{ $tag | urlize }}.html">{{ $tag }}</a>{{ end }}
+</p>
+{{- end }}
+
+{{ .Content }}
+{{- end }}

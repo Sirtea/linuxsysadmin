@@ -1,0 +1,10 @@
+{{ define "title" }}{{ .Title }} - {{ end }}
+
+{{- define "main" }}
+<h1>{{ .Title }}</h1>
+<ul>
+{{- range .Data.Terms.Alphabetical }}
+	<li><a href="{{ .Page.RelPermalink }}">{{ .Name | title }}</a> - {{ len .Pages }} página{{ if ne (len .Pages) 1 }}s{{ end }}</li>
+{{- end }}
+</ul>
+{{- end }}

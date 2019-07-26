@@ -1,0 +1,48 @@
+baseURL = "https://www.linuxsysadmin.ml/"
+languageCode = "es-es"
+title = "Linux Sysadmin"
+theme = "linuxsysadmin"
+disableKinds = ["RSS", "robotsTXT"]
+removepathaccents = true
+uglyURLs = true
+publishDir = "docs"
+
+[taxonomies]
+  tag = "tags"
+  category = "categories"
+
+[permalinks]
+  articles = "/:year/:month/:slug"
+  pages = "/:slug"
+  tags = "/tag/:slug"
+  categories = "/category/:slug"
+
+[menu]
+  [[menu.main]]
+    name = "Linux Sysadmin"
+    url = "/"
+    weight = -100
+  [[menu.main]]
+    name = "Sobre mí"
+    url = "/about.html"
+    weight = -2
+  [[menu.main]]
+    name = "Curriculum Vitae"
+    url = "/curriculum.html"
+    weight = -1
+  [[menu.main]]
+    name = "Categorías"
+    url = "/categories.html"
+    weight = 1
+  [[menu.main]]
+    name = "Tags"
+    url = "/tags.html"
+    weight = 2
+  [[menu.main]]
+    name = "Archivos"
+    url = "/archives.html"
+    weight = 3
+  [[menu.main]]
+    name = "GitHub"
+    url = "https://github.com/sirtea"
+    weight = 4

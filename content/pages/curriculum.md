@@ -1,5 +1,7 @@
-Title: Curriculum Vitae
-slug: curriculum
+---
+title: "Curriculum Vitae"
+slug: "curriculum"
+---
 
 
 

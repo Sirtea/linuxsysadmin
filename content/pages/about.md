@@ -1,5 +1,7 @@
-Title: Sobre mí
-slug: about
+---
+title: "Sobre mí"
+slug: "about"
+---
 
 
 
