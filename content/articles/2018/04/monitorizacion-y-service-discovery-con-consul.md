@@ -115,7 +115,7 @@ gerard@atlantis:~$
 
 La interfaz web la podemos abrir en un navegador en <http://localhost:8500/> y sería algo como esto:
 
-![aaa](https://1npo9l3lml0zvr6w62acc3t1-wpengine.netdna-ssl.com/wp-content/uploads/2017/06/consul-ui.png)
+![Consul UI](/images/consul-ui.png)
 
 ## Declarando servicios
 
