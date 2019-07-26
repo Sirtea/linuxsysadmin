@@ -1,5 +1,5 @@
 /* General layout */
-body { max-width: 1000px; margin: 1rem auto 2rem; padding: 2rem }
+body { max-width: 1000px; margin: auto; padding: 2rem }
 body { font-family: sans-serif }
 
 /* Top menu */
@@ -33,7 +33,7 @@ h2.article { border-bottom: none }
 a.article { background-color: #000000; color: #FFFFFF; font-size: small; padding: 0.25rem 0.5rem; text-decoration: none }
 
 /* Footer style */
-.footer { text-align: center; margin-top: 2rem; border-top: 1px solid #CCCCCC; line-height: 3rem }
+.footer { text-align: center; margin-top: 2rem; margin-bottom: 0rem; border-top: 1px solid #CCCCCC; line-height: 3rem }
 
 /* Solo aplica a /curriculum.html */
 dt { text-indent: 4rem; clear: left; float: left; width: 250px; font-weight: bold }
