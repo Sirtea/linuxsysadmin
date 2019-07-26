@@ -1,5 +1,5 @@
 /* General layout */
-body { max-width: 1000px; margin: 1rem auto 2rem }
+body { max-width: 1000px; margin: 1rem auto 2rem; padding: 2rem }
 body { font-family: sans-serif }
 
 /* Top menu */
@@ -21,7 +21,7 @@ body { font-family: sans-serif }
 .headline strong { margin-left: 1rem}
 
 /* Pagination style */
-.pagination { overflow: hidden; line-height: 2rem; display: table; margin: auto }
+.pagination { line-height: 2rem; text-align: center }
 .pagination a { text-decoration: none; color: #000000; padding: 0.5rem }
 .pagination a:hover { background-color: #000000; color: #FFFFFF }
 .pagination a.active { font-weight: bold }

@@ -17,7 +17,7 @@
 <hr />
 {{- end }}
 
-<div class="pagination">
+<p class="pagination">
 	{{- if $paginator.HasPrev }}
 	<a href="{{ $paginator.First.URL }}">&laquo;&laquo;</a>
 	<a href="{{ $paginator.Prev.URL }}">&laquo;</a>
@@ -34,5 +34,5 @@
 	<a href="{{ $paginator.Next.URL }}">&raquo;</a>
 	<a href="{{ $paginator.Last.URL }}">&raquo;&raquo;</a>
 	{{- end }}
-</div>
+</p>
 {{- end }}
