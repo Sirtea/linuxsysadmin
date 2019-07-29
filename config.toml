@@ -7,6 +7,7 @@ removepathaccents = true
 uglyURLs = true
 publishDir = "docs"
 googleAnalytics = "UA-68486572-1"
+disqusShortname = "linuxsysadmin-gmb"
 
 [taxonomies]
   tag = "tags"
