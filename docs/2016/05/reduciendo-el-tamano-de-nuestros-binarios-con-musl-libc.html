@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Reduciendo el tamaño de nuestros binarios con musl libc - Linux Sysadmin</title>
 	<link rel="stylesheet" href="/style.css" />
-    <link rel="icon" href="/favicon.ico" />
+	<link rel="icon" href="/favicon.ico" />
 </head>
 <body>
 <div class="menu">
@@ -26,7 +26,7 @@
 	<strong>Fecha</strong>: 2016-05-16
 	<strong>Tiempo de lectura</strong>: 5 minutos
 	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
-    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/musl.html">musl</a> / <a href="/tag/libc.html">libc</a> / <a href="/tag/chroot.html">chroot</a> / <a href="/tag/jaula.html">jaula</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/musl.html">musl</a> / <a href="/tag/libc.html">libc</a> / <a href="/tag/chroot.html">chroot</a> / <a href="/tag/jaula.html">jaula</a>
 </p>
 
 <p>Cuando construimos jaulas, por el motivo que sea, vemos que no quedan pequeñas. El problema es el conjunto de librerías que hay que poner en el caso de los binarios <em>dinámicos</em>, o el exceso de tamaño en el caso de los <em>estáticos</em>. Cambiando la librería base, podemos reducir su tamaño.</p>

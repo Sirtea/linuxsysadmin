@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Creando un entorno escalable (II) - Linux Sysadmin</title>
 	<link rel="stylesheet" href="/style.css" />
-    <link rel="icon" href="/favicon.ico" />
+	<link rel="icon" href="/favicon.ico" />
 </head>
 <body>
 <div class="menu">
@@ -26,7 +26,7 @@
 	<strong>Fecha</strong>: 2016-03-07
 	<strong>Tiempo de lectura</strong>: 4 minutos
 	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
-    <strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/replica-set.html">replica set</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/firehol.html">firehol</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/jessie.html">jessie</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/replica-set.html">replica set</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/firehol.html">firehol</a>
 </p>
 
 <p>Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un <em>cluster</em> de bases de datos; será <strong>mongodb</strong> porque la aplicación lo requiere y usará la topología de un <strong>replica set</strong>.</p>
@@ -224,6 +224,14 @@ root@mongo1:~#
 <p>Todo lo que queda en <em>/root/</em> es innecesario y se puede borrar. De todas formas podemos dejar el resto de binarios en <em>/opt/mongodb/</em> en alguna de las máquinas por si acaso.</p>
 
 <p><strong><em>El siguiente paso va a ser montar los servidores de aplicaciones en los backends y en el backoffice</em></strong></p>
+<hr />
+<h2>Artículos de la serie "Creando un entorno escalable"</h2>
+<ul>
+	<li><a href="https://www.linuxsysadmin.ml/2016/03/creando-un-entorno-escalable-4.html">Creando un entorno escalable (IV)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2016/03/creando-un-entorno-escalable-3.html">Creando un entorno escalable (III)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2016/03/creando-un-entorno-escalable-2.html">Creando un entorno escalable (II)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2016/02/creando-un-entorno-escalable.html">Creando un entorno escalable (I)</a></li>
+</ul>
 <p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 
 </body>

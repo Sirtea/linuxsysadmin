@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Problemas de log con docker y python - Linux Sysadmin</title>
 	<link rel="stylesheet" href="/style.css" />
-    <link rel="icon" href="/favicon.ico" />
+	<link rel="icon" href="/favicon.ico" />
 </head>
 <body>
 <div class="menu">
@@ -26,7 +26,7 @@
 	<strong>Fecha</strong>: 2017-05-01
 	<strong>Tiempo de lectura</strong>: 3 minutos
 	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
-    <strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/buffering.html">buffering</a> / <a href="/tag/logs.html">logs</a> / <a href="/tag/salida-estandar.html">salida estándar</a>
+	<strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/buffering.html">buffering</a> / <a href="/tag/logs.html">logs</a> / <a href="/tag/salida-estandar.html">salida estándar</a>
 </p>
 
 <p>El otro día estaba haciendo un <em>script</em> de <strong>python</strong> que debía ejecutarse en un contenedor <strong>docker</strong>. A pesar de la cantidad de <em>verbose</em> que le puse, no era capaz de ver ningún texto cuando miraba los <em>logs</em>. Tras mucha búsqueda, finalmente encontré el culpable en la variable de entorno <strong>PYTHONUNBUFFERED</strong>.</p>
