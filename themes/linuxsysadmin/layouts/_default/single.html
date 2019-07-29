@@ -7,9 +7,22 @@
 	<strong>Fecha</strong>: {{ .Date.Format "2006-01-02" }}
 	<strong>Tiempo de lectura</strong>: {{ .ReadingTime }} minuto{{ if ne .ReadingTime 1 }}s{{ end }}
 	<strong>Categoría</strong>:{{ range first 1 .Params.categories }} <a href="/category/{{ . | urlize }}.html">{{ . }}</a>{{ end }}
-    <strong>Tags</strong>: {{ range $key, $tag := .Params.tags }}{{ if ne $key 0 }} / {{ end }}<a href="/tag/{{ $tag | urlize }}.html">{{ $tag }}</a>{{ end }}
+	<strong>Tags</strong>: {{ range $key, $tag := .Params.tags }}{{ if ne $key 0 }} / {{ end }}<a href="/tag/{{ $tag | urlize }}.html">{{ $tag }}</a>{{ end }}
 </p>
 {{- end }}
 
 {{ .Content }}
+
+{{- if isset .Params "series" }}
+
+<hr />
+
+<h2>Artículos de la serie "{{ .Params.series }}"</h2>
+<ul>
+{{- $serie := .Params.series }}
+{{- range where .Site.Pages "Params.series" $serie }}
+	<li><a href="{{ .Permalink }}">{{ .Title }}</a></li>
 {{- end }}
+</ul>
+{{- end }}
+{{ end }}
