@@ -6,6 +6,7 @@ disableKinds = ["RSS", "robotsTXT"]
 removepathaccents = true
 uglyURLs = true
 publishDir = "docs"
+googleAnalytics = "UA-68486572-1"
 
 [taxonomies]
   tag = "tags"
@@ -46,3 +47,10 @@ publishDir = "docs"
     name = "GitHub"
     url = "https://github.com/sirtea"
     weight = 4
+
+[privacy]
+  [privacy.googleAnalytics]
+    disable = false
+    anonymizeIP = true
+    respectDoNotTrack = true
+    useSessionStorage = true
