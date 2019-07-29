@@ -63,7 +63,7 @@ b3fb6777bac2ad5c061ff5ea6603305c0c43d6103c552a47fafb1414a7434c34
 gerard@sodium:~/docker$ 
 ```
 
-Solo nos faltaría abrir un navegador a la URL configurada, que en mi caso es <http://localhost:10000/>. Es un buen momento para configurar nuestra base de datos. Aunque se pueden usar varias, no lo haremos por hoy.
+Solo nos faltaría abrir un navegador a la URL configurada, que en mi caso es `http://localhost:10000/`. Es un buen momento para configurar nuestra base de datos. Aunque se pueden usar varias, no lo haremos por hoy.
 
 Le damos al botón "Add new server" y le indicamos los valores de acceso al servidor **InfluxDB**. En mi caso, solo he tenido que tocar la dirección IP, que al tratarse del primer contenedor levantado, es la 172.17.0.2; mirad la salida de un *docker inspect* en caso de dudas.
 

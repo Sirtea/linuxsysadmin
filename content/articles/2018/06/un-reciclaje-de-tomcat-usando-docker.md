@@ -42,7 +42,7 @@ services:
 gerard@atlantis:~/workspace/tomcat$
 ```
 
-Solo nos queda levantar el servicio, pudiendo encontrar el resultado en [http://localhost:8080/sample/](http://localhost:8080/sample/).
+Solo nos queda levantar el servicio, pudiendo encontrar el resultado en `http://localhost:8080/sample/`.
 
 ```bash
 gerard@atlantis:~/workspace/tomcat$ docker-compose up -d
@@ -55,7 +55,7 @@ gerard@atlantis:~/workspace/tomcat$
 
 Cuando tenemos una aplicación es natural que hayan evolutivos y se necesite cambiar el fichero. Como **Tomcat** maneja varias aplicaciones, un reinicio las afecta a todas y causa un *downtime* importante, por no mencionar que el tiempo para levantar el servicio se dispara.
 
-Afortunadamente, **Tomcat** nos ofrece una aplicación que tiene como única finalidad, administrar otras aplicaciones. Es el *manager* y lo podemos localizar en [http://localhost:8080/manager/html](http://localhost:8080/manager/html), o siguiendo un botón desde la página inicial en [http://localhost:8080/](http://localhost:8080/).
+Afortunadamente, **Tomcat** nos ofrece una aplicación que tiene como única finalidad, administrar otras aplicaciones. Es el *manager* y lo podemos localizar en `http://localhost:8080/manager/html`, o siguiendo un botón desde la página inicial en `http://localhost:8080/`.
 
 Este *manager* se puede acceder definiendo un usuario en `conf/tomcat-users.xml`, y por defecto permite entrar a los usuario en la máquina local. Este comportamiento se puede cambiar mediante un fichero de contexto, que pondremos en `conf/Catalina/localhost/<aplicación>.xml`. Veamos como habilitar el *manager* y el *host-manager*, mediante el añadido de los ficheros de configuración usando volúmenes:
 

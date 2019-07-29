@@ -109,4 +109,4 @@ Creating phpserver ... done
 gerard@atlantis:~/workspace/phpserver$
 ```
 
-Podemos ver el resultado en <http://atlantis:8080/info.php>. Dada la naturaleza de **PHP**, solo os queda abrir la carpeta `app` y meter vuestro código, bien sea copiándolo, o bien sea desarrollándolo ahí directamente. No os olvidéis de ir revisando la salida usando `docker-compose logs -f` por si os faltaran extensiones, o simplemente para ver los errores que vuestro código pueda generar.
+Podemos ver el resultado en `http://atlantis:8080/info.php`. Dada la naturaleza de **PHP**, solo os queda abrir la carpeta `app` y meter vuestro código, bien sea copiándolo, o bien sea desarrollándolo ahí directamente. No os olvidéis de ir revisando la salida usando `docker-compose logs -f` por si os faltaran extensiones, o simplemente para ver los errores que vuestro código pueda generar.

@@ -24,8 +24,8 @@ Las plantillas están escritas en un motor de plantillas llamado [Handlebars](ht
 
 El uso de una instancia nueva nos viene muy bien, porque tenemos un índice y un *post*, que nos permitirán ver como evoluciona nuestro *blog*, a medida que avanzamos en el artículo.
 
-* Índice -> <http://localhost:2368/>
-* Post -> <http://localhost:2368/welcome-to-ghost/>
+* Índice -> `http://localhost:2368/`
+* Post -> `http://localhost:2368/welcome-to-ghost/`
 
 ## Un tema vacío
 

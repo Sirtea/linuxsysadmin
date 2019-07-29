@@ -68,7 +68,7 @@ gerard@sodium:~/web$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
 
-En este punto podemos ver la página web localmente en <http://localhost:8000/>, aunque por estar detrás de un *firewall*, nadie más allá del *firewall* puede verlo.
+En este punto podemos ver la página web localmente en `http://localhost:8000/`, aunque por estar detrás de un *firewall*, nadie más allá del *firewall* puede verlo.
 
 ## Instalando ngrok
 
@@ -171,7 +171,7 @@ Connections                   ttl     opn     rt1     rt5     p50     p90
 
 De esta salida podemos sacar dos datos importantes:
 
-* La página pública referente a nuestro túnel, <http://54b3ca80.ngrok.io/>
-* Una página local de estadísticas local en <http://localhost:4040/>
+* La página pública referente a nuestro túnel, `http://54b3ca80.ngrok.io/`
+* Una página local de estadísticas local en `http://localhost:4040/`
 
 La página de estado es una gran utilidad; es en donde podemos ver información de estado y un análisis exhaustivo de las peticiones recibidas. Vale la pena darle un vistazo.

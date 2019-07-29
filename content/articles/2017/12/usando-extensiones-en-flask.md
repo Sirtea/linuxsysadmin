@@ -159,7 +159,7 @@ admin.init_app(app)
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 ```
 
-Y sin especificar ningún parámetro extra, nuestro panel de administración se va a encontrar por defecto en <http://localhost:8080/admin/>. Esto se puede modificar al registrar el **blueprint**.
+Y sin especificar ningún parámetro extra, nuestro panel de administración se va a encontrar por defecto en `http://localhost:8080/admin/`. Esto se puede modificar al registrar el **blueprint**.
 
 **WARNING**: El panel de administración solo sirve para administrar. No tiene autenticación integrada y queda como responsabilidad del usuario decidir que hacer. Se puede desactivar antes de ir a producción, se puede limitar el acceso mediante autenticación básica o certificados, e incluso se puede poner una extensión de autenticación como **flask-login** o **flask-auth**.
 

@@ -18,7 +18,7 @@ El único requisito que necesitamos en **Slack** es el de activar la aplicación
 
 > Aplicaciones -> WebHooks entrantes -> Añadir configuración
 
-El resultado es que nos va a dar una **URL de Webhook**, que es algo del estilo <https://hooks.slack.com/services/XXX/YYY/ZZZ>; no necesitamos nada más.
+El resultado es que nos va a dar una **URL de Webhook**, que es algo del estilo `https://hooks.slack.com/services/XXX/YYY/ZZZ`; no necesitamos nada más.
 
 Para la parte de envío, solo se necesita hacer una petición POST al **webhook**, con un mensaje muy concreto. Más información [en la documentación](https://api.slack.com/incoming-webhooks).
 

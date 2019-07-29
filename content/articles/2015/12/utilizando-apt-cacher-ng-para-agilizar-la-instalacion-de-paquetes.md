@@ -88,7 +88,7 @@ root@client1:~#
 
 Como estos paquetes no están en la *caché* del servidor, se han descargado de internet en 15 segundos, de acuerdo a la velocidad de mi conexión de internet y de la velocidad de respuesta de los repositorios elegidos.
 
-Si revisamos la página de estadísticas de **apt-cacher-ng**, disponible en *http://aptcacher:3142/acng-report.html* podemos ver que se han descargado 4,78mb en 13 paquetes; todos son **miss** de la cache, es decir, se han ido a buscar al repositorio oficial.
+Si revisamos la página de estadísticas de **apt-cacher-ng**, disponible en `http://aptcacher:3142/acng-report.html` podemos ver que se han descargado 4,78mb en 13 paquetes; todos son **miss** de la cache, es decir, se han ido a buscar al repositorio oficial.
 
 ![Estadísticas web de apt-cacher](/images/apt-cacher-ng-1.jpg)
 

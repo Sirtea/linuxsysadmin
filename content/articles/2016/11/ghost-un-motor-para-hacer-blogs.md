@@ -21,7 +21,7 @@ La instalación es también muy simple:
 3. Instalar las dependencias con *npm install --production*
 4. Levantar el servicio con *npm start* (desarrollo) o *npm start --production*.
 
-Y ya tenemos nuestro *blog* visible en <http://localhost:2368/> con su interfaz de administración en <http://localhost:2368/ghost/>. Estos valores pueden cambiarse en el fichero *config.js*.
+Y ya tenemos nuestro *blog* visible en `http://localhost:2368/` con su interfaz de administración en `http://localhost:2368/ghost/`. Estos valores pueden cambiarse en el fichero *config.js*.
 
 El problema de esta aproximación es que la versión de **Ghost**, de **NPM** y de **NodeJS** son demasiado importantes, exigiendo versiones elevadas que no están en los repositorios oficiales de la mayoría de distribuciones. Lo pude instalar en una *Ubuntu 16.04* y, aun así, el binario exigido */usr/bin/node* no se llamaba así, sino que estaba en */usr/bin/nodejs*. Esto se puede solucionar con un simple enlace simbólico, pero busca el error...
 

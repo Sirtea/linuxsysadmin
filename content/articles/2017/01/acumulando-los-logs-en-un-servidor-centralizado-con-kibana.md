@@ -90,6 +90,6 @@ Creating kibana
 gerard@styx:~/docker/elk$ 
 ```
 
-Solo nos falta acceder a la interfaz del **Kibana** en <http://localhost:5601/> y disfrutar del resultado.
+Solo nos falta acceder a la interfaz del **Kibana** en `http://localhost:5601/` y disfrutar del resultado.
 
 ![Frontend de Kibana](/images/kibana-frontend.jpg)

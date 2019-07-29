@@ -113,7 +113,7 @@ atlantis.node.consul.   0       IN      A       10.0.2.15
 gerard@atlantis:~$
 ```
 
-La interfaz web la podemos abrir en un navegador en <http://localhost:8500/> y sería algo como esto:
+La interfaz web la podemos abrir en un navegador en `http://localhost:8500/` y sería algo como esto:
 
 ![Consul UI](/images/consul-ui.png)
 

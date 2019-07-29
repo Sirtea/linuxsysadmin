@@ -243,7 +243,7 @@ Built site for language en:
 total in 8 ms
 ```
 
-Y si apuntamos nuestro navegador a la URL sugerida <http://localhost:1313/> podremos ver nuestro sitio web con las modificaciones pertinentes.
+Y si apuntamos nuestro navegador a la URL sugerida `http://localhost:1313/` podremos ver nuestro sitio web con las modificaciones pertinentes.
 
 A lo largo de la vida de la página, vamos a repetir este paso muchas veces, tal como queramos ir añadiendo más páginas.
 

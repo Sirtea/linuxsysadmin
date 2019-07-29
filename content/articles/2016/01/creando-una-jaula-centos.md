@@ -55,7 +55,7 @@ Vemos ahora que tenemos una estructura de carpetas que empieza a parecerse a lo 
 
 El siguiente paso consiste en localizar el fichero *.rpm* relativo a la *release* de *CentOS* que queramos en nuestra jaula. Apuntamos el navegador al servidor web con el repositorio base en [http://mirror.centos.org/centos/](http://mirror.centos.org/centos/) y buscamos el *link*.
 
-Suponiendo que queramos un *CentOS* versión 7 y con una arquitectura *x64_64*, el *link* podría ser [http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm](http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm).
+Suponiendo que queramos un *CentOS* versión 7 y con una arquitectura *x64_64*, el *link* podría ser `http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm`.
 
 ```bash
 [root@mars ~]# rpm -i --root=${JAIL} --nodeps http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm

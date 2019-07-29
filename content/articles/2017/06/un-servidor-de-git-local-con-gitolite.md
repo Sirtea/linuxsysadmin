@@ -206,7 +206,7 @@ repo testing
 gerard@aldebaran:~/docker/gitolite/workspace/gitolite-admin$ 
 ```
 
-Se trata de repositorios (o grupos) con una lista tabulada de permisos y usuarios o grupos a los que afectan. Más información en [la documentación](http://gitolite.com/gitolite/conf/). El grupo *all* es especial y viene predefinido.
+Se trata de repositorios (o grupos) con una lista tabulada de permisos y usuarios o grupos a los que afectan. Más información en [la documentación](https://gitolite.com/gitolite/basic-admin.html). El grupo *all* es especial y viene predefinido.
 
 Vamos a poner algunos repositorios, grupos y permisos:
 

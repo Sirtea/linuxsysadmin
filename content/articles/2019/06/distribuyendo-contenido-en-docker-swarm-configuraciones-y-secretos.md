@@ -182,4 +182,4 @@ Para verificar el funcionamiento solo necesitamos dos cosas:
 * Verificar que el contenido es la página de ejemplo usada.
 * Inspeccionar el certificado para ver que es el que le hemos puesto.
 
-En ambos casos basta con utilizar un navegador. Como se trata de un puerto expuesto en un *swarm*, podemos ir a dicho puerto de cualquier nodo del *swarm*, por ejemplo a <https://atlantis/>.
+En ambos casos basta con utilizar un navegador. Como se trata de un puerto expuesto en un *swarm*, podemos ir a dicho puerto de cualquier nodo del *swarm*, por ejemplo a `https://atlantis/`.

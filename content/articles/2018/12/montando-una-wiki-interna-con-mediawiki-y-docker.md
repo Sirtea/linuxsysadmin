@@ -57,7 +57,7 @@ Creating mariadb  ... done
 gerard@atlantis:~/tools/wiki$
 ```
 
-El resultado lo podemos ver en <http://atlantis:8080/>
+El resultado lo podemos ver en `http://atlantis:8080/`.
 
 **NOTA**: No me voy a meter en manejar volúmenes, reinicios y otras cuestiones como múltiples instancias o balancedores; esto solo va a alargar el artículo innecesariamente.
 

@@ -182,8 +182,8 @@ app.register_blueprint(pages)
 
 De esta forma tendremos dos nuevas URLs en la aplicación:
 
-* <http://localhost:8080/about>
-* <http://localhost:8080/legal>
+* `http://localhost:8080/about`
+* `http://localhost:8080/legal`
 
 Es interesante ver que hay dos nuevas plantillas en el **blueprint**, pero la plantilla base y la hoja de estilos siguen siendo las de la aplicación principal. Los ficheros del **blueprint** tienen preferencia sobre el resto, pero no los eclipsan; los anteriores quedan disponibles por si no se sobreescribieran.
 

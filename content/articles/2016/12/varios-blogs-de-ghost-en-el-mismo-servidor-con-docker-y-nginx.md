@@ -252,7 +252,7 @@ multighost_proxy_1    /entrypoint.sh             Up      0.0.0.0:80->80/tcp
 gerard@sirius:~/docker/multighost$ 
 ```
 
-Solo faltaría abrir en un navegador y apuntar a <http://ghost1.my/> y a <http://ghost2.my/> para ver los resultados.
+Solo faltaría abrir en un navegador y apuntar a `http://ghost1.my/` y a `http://ghost2.my/` para ver los resultados.
 
 Es importante notar que la topología del entorno se declara solamente en el *docker-compose.yml*; en caso de poner mas *blogs*, no hay que tocar otros ficheros. Bastaría con declarar un *ghost3* y modificar las variables de entorno del *proxy*, para que genere su configuración.
 

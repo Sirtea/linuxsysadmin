@@ -68,7 +68,7 @@ gerard@aldebaran:~/docker/wetty$
 
 Como pretendo utilizarla como un máquina de salto, este tamaño y limitación son más que adecuados. Sin embargo no estaba dispuesto a pagar 1,2 gb por un contenedor que no hace nada por sí mismo...
 
-Solo nos queda ejecutar la imagen exponiendo el puerto 3000 del contenedor, para poder acceder remotamente desde el navegador, que en mi caso estaría en <http://localhost:3000/>.
+Solo nos queda ejecutar la imagen exponiendo el puerto 3000 del contenedor, para poder acceder remotamente desde el navegador, que en mi caso estaría en `http://localhost:3000/`.
 
 ```bash
 gerard@aldebaran:~/docker/wetty$ docker run -ti --rm -p 3000:3000 wetty

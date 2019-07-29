@@ -48,7 +48,7 @@ networks:
 gerard@atlantis:~/workspace/jenkins$
 ```
 
-Levantamos el **jenkins** con `docker-compose up -d` y nos vamos a su panel de trabajo en <http://atlantis:8080/>. La primera vez nos va a hacer varias preguntas para crear el usuario de administración y demás; esto es un **jenkins** normal.
+Levantamos el **jenkins** con `docker-compose up -d` y nos vamos a su panel de trabajo en `http://atlantis:8080/`. La primera vez nos va a hacer varias preguntas para crear el usuario de administración y demás; esto es un **jenkins** normal.
 
 ## Unos slaves de ejemplo
 

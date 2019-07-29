@@ -91,4 +91,4 @@ gerard@aldebaran:~/www$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 ```
 
-Y con esto solo nos queda verificar el resultado en <http://localhost:8000/>. Si miráis el código fuente de la página, veréis que se ve el lenguaje de marcado tal cual; incluso puede que veáis la página antes de su *renderizado*, mientras se carga la librería **javascript**. Al menos, habré cumplido con mi objetivo, que era el de escribir contenido sin perder tiempo en la maquetación.
+Y con esto solo nos queda verificar el resultado en `http://localhost:8000/`. Si miráis el código fuente de la página, veréis que se ve el lenguaje de marcado tal cual; incluso puede que veáis la página antes de su *renderizado*, mientras se carga la librería **javascript**. Al menos, habré cumplido con mi objetivo, que era el de escribir contenido sin perder tiempo en la maquetación.
