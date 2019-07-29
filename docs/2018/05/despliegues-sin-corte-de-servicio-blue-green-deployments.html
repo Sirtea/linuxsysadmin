@@ -101,6 +101,8 @@ root@proxy:~#
 <li>Entorno de pruebas en el puerto 8080, apuntando al entorno <strong>green</strong></li>
 </ul>
 
+<p>Faltaría verificar que recibimos las respuestas esperadas:</p>
+
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy/fake/

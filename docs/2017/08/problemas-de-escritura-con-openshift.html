@@ -60,11 +60,11 @@ from wsgiref.simple_server import make_server, demo_app
 server = make_server('0.0.0.0', 8080, demo_app)
 server.serve_forever()
 gerard@atlantis:~/projects/openshift_simulator$
+</code></pre>
 
-Y lo construimos:
+<p>Y lo construimos:</p>
 
-```bash
-gerard@atlantis:~/projects/openshift_simulator$ docker build -t openshift_simulator .
+<pre><code class="language-bash">gerard@atlantis:~/projects/openshift_simulator$ docker build -t openshift_simulator .
 Sending build context to Docker daemon  3.072kB
 ...
 Successfully tagged openshift_simulator:latest
@@ -73,7 +73,7 @@ gerard@atlantis:~/projects/openshift_simulator$
 
 <p>Normalmente lo ejecutaríamos de la siguiente manera:</p>
 
-<pre><code>gerard@atlantis:~/projects/openshift_simulator$ docker run -ti --rm -p 8888:8080 --name test1 openshift_simulator
+<pre><code class="language-bash">gerard@atlantis:~/projects/openshift_simulator$ docker run -ti --rm -p 8888:8080 --name test1 openshift_simulator
 ...
 </code></pre>
 
