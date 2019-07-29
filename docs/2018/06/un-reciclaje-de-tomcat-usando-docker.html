@@ -66,7 +66,7 @@ services:
 gerard@atlantis:~/workspace/tomcat$
 </code></pre>
 
-<p>Solo nos queda levantar el servicio, pudiendo encontrar el resultado en <a href="http://localhost:8080/sample/">http://localhost:8080/sample/</a>.</p>
+<p>Solo nos queda levantar el servicio, pudiendo encontrar el resultado en <code>http://localhost:8080/sample/</code>.</p>
 
 <pre><code class="language-bash">gerard@atlantis:~/workspace/tomcat$ docker-compose up -d
 Creating network &quot;tomcat_default&quot; with the default driver
@@ -78,7 +78,7 @@ gerard@atlantis:~/workspace/tomcat$
 
 <p>Cuando tenemos una aplicación es natural que hayan evolutivos y se necesite cambiar el fichero. Como <strong>Tomcat</strong> maneja varias aplicaciones, un reinicio las afecta a todas y causa un <em>downtime</em> importante, por no mencionar que el tiempo para levantar el servicio se dispara.</p>
 
-<p>Afortunadamente, <strong>Tomcat</strong> nos ofrece una aplicación que tiene como única finalidad, administrar otras aplicaciones. Es el <em>manager</em> y lo podemos localizar en <a href="http://localhost:8080/manager/html">http://localhost:8080/manager/html</a>, o siguiendo un botón desde la página inicial en <a href="http://localhost:8080/">http://localhost:8080/</a>.</p>
+<p>Afortunadamente, <strong>Tomcat</strong> nos ofrece una aplicación que tiene como única finalidad, administrar otras aplicaciones. Es el <em>manager</em> y lo podemos localizar en <code>http://localhost:8080/manager/html</code>, o siguiendo un botón desde la página inicial en <code>http://localhost:8080/</code>.</p>
 
 <p>Este <em>manager</em> se puede acceder definiendo un usuario en <code>conf/tomcat-users.xml</code>, y por defecto permite entrar a los usuario en la máquina local. Este comportamiento se puede cambiar mediante un fichero de contexto, que pondremos en <code>conf/Catalina/localhost/&lt;aplicación&gt;.xml</code>. Veamos como habilitar el <em>manager</em> y el <em>host-manager</em>, mediante el añadido de los ficheros de configuración usando volúmenes:</p>
 

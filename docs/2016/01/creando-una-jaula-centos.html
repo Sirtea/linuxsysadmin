@@ -73,7 +73,7 @@ Red Hat Enterprise Linux Server release 7.2 (Maipo)
 
 <p>El siguiente paso consiste en localizar el fichero <em>.rpm</em> relativo a la <em>release</em> de <em>CentOS</em> que queramos en nuestra jaula. Apuntamos el navegador al servidor web con el repositorio base en <a href="http://mirror.centos.org/centos/">http://mirror.centos.org/centos/</a> y buscamos el <em>link</em>.</p>
 
-<p>Suponiendo que queramos un <em>CentOS</em> versión 7 y con una arquitectura <em>x64_64</em>, el <em>link</em> podría ser <a href="http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm">http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm</a>.</p>
+<p>Suponiendo que queramos un <em>CentOS</em> versión 7 y con una arquitectura <em>x64_64</em>, el <em>link</em> podría ser <code>http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm</code>.</p>
 
 <pre><code class="language-bash">[root@mars ~]# rpm -i --root=${JAIL} --nodeps http://mirror.centos.org/centos/7/os/x86_64/Packages/centos-release-7-2.1511.el7.centos.2.10.x86_64.rpm
 warning: Generating 12 missing index(es), please wait...
