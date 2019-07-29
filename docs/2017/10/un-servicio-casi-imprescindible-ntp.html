@@ -105,6 +105,7 @@ root@server:~#
 <p>Para configurar un servidor <strong>NTP</strong> no se necesita nada adicional. El paquete que acabamos de instalar ya ha levantado un servidor <strong>NTP</strong> preparado para que lo usen otros servidores que lleguen a él vía red. De hecho, en el ejemplo estamos sincronizando contra otro servidor (10.0.0.1) que es idéntico al del ejemplo, solo que está sincronizando de otro servidor. A nivel de seguridad, hay que tener en cuenta que el protocolo <strong>NTP</strong> utiliza los puertos 123 TCP y UDP y solo se necesita permitir uno de estos dos a nivel de <em>firewall</em>.</p>
 
 <p>El estrato 4 (en el ejemplo) significa que estamos sincronizando contra un servidor de estrato 4, que es uno que sincroniza de uno de estrato 3. Al final de la cadena, encontraremos un reloj GPS o atómico, que es un servidor de estrato 1. El protocolo <strong>NTP</strong> permite tener estratos hasta 15, significando el número 16 que no habría ninguna conectividad con el servidor especificado.</p>
+
 <p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 
 </body>
