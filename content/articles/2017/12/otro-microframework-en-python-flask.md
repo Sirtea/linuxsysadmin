@@ -4,6 +4,7 @@ slug: "otro-microframework-en-python-flask"
 date: 2017-12-04
 categories: ['Desarrollo']
 tags: ['python', 'framework', 'microframework', 'flask']
+series: "Flask framework"
 ---
 
 Cuando queremos hacer una nueva aplicación web podemos usar un *framework* completo como **django** o uno minimalista como **bottle**. Entre ambos existe una amplia variedad de *frameworks* que nos pueden aportar variedad y algunas de las funcionalidades más demandadas. En esta categoria podemos encontrar un *microframework* muy interesante llamado **Flask**.<!--more-->

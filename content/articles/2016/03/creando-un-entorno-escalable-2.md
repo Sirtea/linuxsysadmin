@@ -4,6 +4,7 @@ slug: "creando-un-entorno-escalable-2"
 date: 2016-03-07
 categories: ['Sistemas']
 tags: ['linux', 'debian', 'jessie', 'mongodb', 'replica set', 'systemd', 'firehol']
+series: "Creando un entorno escalable"
 ---
 
 Seguimos con la serie de montar un entorno escalable. Tras explicar en el primer artículo lo que vamos a montar, seguimos con ello. En este artículo vamos a montar un *cluster* de bases de datos; será **mongodb** porque la aplicación lo requiere y usará la topología de un **replica set**.<!--more-->

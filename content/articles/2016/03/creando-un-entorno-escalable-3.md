@@ -4,6 +4,7 @@ slug: "creando-un-entorno-escalable-3"
 date: 2016-03-14
 categories: ['Sistemas']
 tags: ['linux', 'debian', 'jessie', 'WSGI', 'uWSGI', 'python', 'virtualenv', 'firehol']
+series: "Creando un entorno escalable"
 ---
 
 En el artículo anterior de esta serie montamos el cluster de la base de datos que íbamos a necesitar para las aplicaciones que conformaban este entorno de ejemplo. Ahora que tenemos la base de datos, falta poner los servidores de aplicaciones que sirven nuestras aplicaciones y que usan el cluster.<!--more-->

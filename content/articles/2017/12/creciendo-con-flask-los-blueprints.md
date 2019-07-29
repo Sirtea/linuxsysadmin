@@ -4,6 +4,7 @@ slug: "creciendo-con-flask-los-blueprints"
 date: 2017-12-11
 categories: ['Desarrollo']
 tags: ['python', 'framework', 'microframework', 'flask', 'blueprints']
+series: "Flask framework"
 ---
 
 Ya estuvimos hablando del *microframework* **Flask**, pero no profundizamos en su funcionalidad más avanzada: los **blueprints**, que son una agrupación de vistas, plantillas y contenido estático similar a las aplicaciones de **django**. Solamente por esta funcionalidad queda justificado el uso de este *framework* para proyectos de tamaños medio o grande.<!--more-->

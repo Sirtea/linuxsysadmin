@@ -4,6 +4,7 @@ slug: "usando-extensiones-en-flask"
 date: 2017-12-18
 categories: ['Desarrollo']
 tags: ['python', 'framework', 'microframework', 'flask', 'extensiones']
+series: "Flask framework"
 ---
 
 Muchos de los *microframeworks* que existen en **python** no ofrecen ninguna ayuda con las tareas más simples que toda aplicación acaba implementando; eso nos hace decantarnos casi siempre por una opción más pesada de *framework*, como por ejemplo, **Django**. Sin embargo, gracias a los **blueprints** de **Flask**, esto es innecesario.<!--more-->

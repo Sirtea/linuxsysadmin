@@ -4,6 +4,7 @@ slug: "creando-un-entorno-escalable-4"
 date: 2016-03-21
 categories: ['Sistemas']
 tags: ['linux', 'debian', 'jessie', 'proxy http', 'balanceador', 'ssl', 'nginx', 'virtual hosts', 'port forwarding']
+series: "Creando un entorno escalable"
 ---
 
 Acabamos el artículo anterior de esta serie con las aplicaciones corriendo en sus respectivas máquinas. En este artículo vamos a poner una fachada a todo el sistema, mediante un *proxy HTTP* que haga las funciones de terminación *SSL* y de *balanceador*, exponiendo todo el sistema en una sola dirección IP.<!--more-->

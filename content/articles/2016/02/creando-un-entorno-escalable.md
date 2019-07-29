@@ -4,6 +4,7 @@ slug: "creando-un-entorno-escalable"
 date: 2016-02-29
 categories: ['Sistemas']
 tags: ['linux', 'entorno', 'escalable']
+series: "Creando un entorno escalable"
 ---
 
 Mucha gente tiene un servidor único para alojar páginas web dinámicas, por ejemplo con **PHP** y con **MySQL**. Sin embargo, a veces esto puede resultar insuficiente; nos puede interesar tener un entorno de bajas especificaciones y de bajo coste, pero preparado crecer al mismo ritmo que lo hacen los usuarios.<!--more-->
