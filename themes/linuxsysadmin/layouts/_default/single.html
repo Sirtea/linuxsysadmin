@@ -26,5 +26,5 @@
 </ul>
 {{- end }}
 
-{{ template "_internal/disqus.html" . }}
+{{ if eq .Section "articles" }}{{ template "_internal/disqus.html" . }}{{ end }}
 {{ end }}
