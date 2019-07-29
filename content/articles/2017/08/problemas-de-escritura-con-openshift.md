@@ -36,6 +36,7 @@ from wsgiref.simple_server import make_server, demo_app
 server = make_server('0.0.0.0', 8080, demo_app)
 server.serve_forever()
 gerard@atlantis:~/projects/openshift_simulator$
+```
 
 Y lo construimos:
 
@@ -49,7 +50,7 @@ gerard@atlantis:~/projects/openshift_simulator$
 
 Normalmente lo ejecutaríamos de la siguiente manera:
 
-```
+```bash
 gerard@atlantis:~/projects/openshift_simulator$ docker run -ti --rm -p 8888:8080 --name test1 openshift_simulator
 ...
 ```

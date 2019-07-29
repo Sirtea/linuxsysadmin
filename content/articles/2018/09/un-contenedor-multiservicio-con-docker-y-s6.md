@@ -35,6 +35,8 @@ El primer paso es definir la carpeta de servicios, de donde va a leer `s6-svscan
 * `ssh/run` &rarr; para mantener el servidor SSH/SFTP levantado
 * `.s6-svscan/finish` &rarr; no hace nada, pero es para suprimir el *warning* al acabar el contenedor
 
+Así nos quedaría la configuración de **s6**:
+
 ```bash
 gerard@atlantis:~/workspace/miniserver$ tree -a
 .

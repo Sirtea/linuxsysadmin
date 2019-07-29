@@ -186,6 +186,8 @@ En el caso de mi *cluster*, no tengo resolución DNS, así que os resumo las IPs
 * **arcadia** &rarr; 192.168.56.3
 * **eldorado** &rarr; 192.168.56.4
 
+Ahora nos podemos hacer una idea de donde estoy lanzando las siguientes conexiones...
+
 ```bash
 gerard@shangrila:~$ curl http://192.168.56.2:8888/
 Hello world from <em>9294907313e7</em>

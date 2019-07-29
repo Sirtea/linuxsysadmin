@@ -76,6 +76,8 @@ Recargamos el **nginx** y ya tenemos lo que queríamos:
 * Entorno de producción en el puerto 80, apuntando al entorno **blue**
 * Entorno de pruebas en el puerto 8080, apuntando al entorno **green**
 
+Faltaría verificar que recibimos las respuestas esperadas:
+
 ```bash
 gerard@sirius:~/workspace$ curl http://proxy/fake/
 {"status": "200", "message": "Everything is OK", "version": "1.0.0", "server": "blue1"}
