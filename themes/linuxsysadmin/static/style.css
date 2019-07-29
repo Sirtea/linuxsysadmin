@@ -50,3 +50,4 @@ img { display: block; margin: auto; border: 2px solid #000000; max-width: 100% }
 hr { border: 0rem; border-top: 1px solid #CCCCCC }
 li { text-align: justify }
 pre { background-color: #000000; color: #FFFFFF; padding: 1rem; overflow: auto }
+p > code { background-color: #DDDDDD; color: black }
