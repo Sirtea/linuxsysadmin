@@ -467,14 +467,14 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/php.html</loc>
+    <loc>https://www.linuxsysadmin.ml/2019/01/usando-el-servidor-integrado-de-php-en-un-contenedor-docker.html</loc>
     <lastmod>2019-01-07T00:00:00+00:00</lastmod>
-    <priority>0</priority>
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/2019/01/usando-el-servidor-integrado-de-php-en-un-contenedor-docker.html</loc>
+    <loc>https://www.linuxsysadmin.ml/tag/php.html</loc>
     <lastmod>2019-01-07T00:00:00+00:00</lastmod>
+    <priority>0</priority>
   </url>
   
   <url>
@@ -2819,6 +2819,10 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/pages.html</loc>
     <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/cookies.html</loc>
   </url>
   
   <url>
