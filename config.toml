@@ -33,20 +33,20 @@ disqusShortname = "linuxsysadmin-gmb"
     url = "/curriculum.html"
     weight = -1
   [[menu.main]]
+    name = "Cookies"
+    url = "/cookies.html"
+    weight = 1
+  [[menu.main]]
     name = "Categorías"
     url = "/categories.html"
-    weight = 1
+    weight = 2
   [[menu.main]]
     name = "Tags"
     url = "/tags.html"
-    weight = 2
+    weight = 3
   [[menu.main]]
     name = "Archivos"
     url = "/archives.html"
-    weight = 3
-  [[menu.main]]
-    name = "GitHub"
-    url = "https://github.com/sirtea"
     weight = 4
 
 [privacy]
@@ -54,4 +54,4 @@ disqusShortname = "linuxsysadmin-gmb"
     disable = false
     anonymizeIP = true
     respectDoNotTrack = true
-    useSessionStorage = true
+    useSessionStorage = false

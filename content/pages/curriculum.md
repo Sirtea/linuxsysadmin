@@ -3,8 +3,6 @@ title: "Curriculum Vitae"
 slug: "curriculum"
 ---
 
-
-
 <p style="float: right"><img src="/images/gerard.jpg" alt="Foto de Gerard Monells" style="width: 50%" /></p>
 
 ## Datos personales
