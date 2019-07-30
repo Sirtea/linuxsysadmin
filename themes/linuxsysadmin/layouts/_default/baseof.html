@@ -6,7 +6,8 @@
 	<title>{{ block "title" . }}{{ end }}{{ .Site.Title }}</title>
 	<link rel="stylesheet" href="/style.css" />
 	<link rel="icon" href="/favicon.ico" />
-{{ template "_internal/google_analytics.html" . }}
+{{ partial "cookie_consent.html" . -}}
+{{ partial "google_analytics.html" . -}}
 </head>
 <body>
 {{ partial "menu.html" . }}

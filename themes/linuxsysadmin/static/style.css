@@ -35,6 +35,11 @@ a.article { background-color: #000000; color: #FFFFFF; font-size: small; padding
 /* Footer style */
 .footer { text-align: center; margin-top: 2rem; margin-bottom: 0rem; border-top: 1px solid #CCCCCC; line-height: 3rem }
 
+/* Botón de cambio de política de cookies */
+#changePreferences { text-align: center; margin: 2rem }
+#changePreferences > span { background-color: #111111; color: #FFFFFF; padding: 1rem 2rem; cursor: pointer }
+#changePreferences > span:hover { background-color: #000000 }
+
 /* Solo aplica a /curriculum.html */
 dt { text-indent: 4rem; clear: left; float: left; width: 250px; font-weight: bold }
 table { width: 90%; margin: auto; border-collapse: collapse }
@@ -52,3 +57,4 @@ li { text-align: justify }
 pre { background-color: #000000; color: #FFFFFF; padding: 1rem; overflow: auto }
 p > code { background-color: #DDDDDD; color: black }
 li > code { background-color: #DDDDDD; color: black }
+blockquote { border-left: 0.5rem #AAAAAA solid; margin-left: 0rem; padding: 0.1rem 1rem; background-color: #EEEEEE }
