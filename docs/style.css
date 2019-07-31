@@ -36,9 +36,9 @@ a.article { background-color: #000000; color: #FFFFFF; font-size: small; padding
 .footer { text-align: center; margin-top: 2rem; margin-bottom: 0rem; border-top: 1px solid #CCCCCC; line-height: 3rem }
 
 /* Botón de cambio de política de cookies */
-#changePreferences { text-align: center; margin: 2rem }
-#changePreferences > span { background-color: #111111; color: #FFFFFF; padding: 1rem 2rem; cursor: pointer }
-#changePreferences > span:hover { background-color: #000000 }
+#changePreferences { text-align: center }
+#changePreferences > p { display: inline-block; text-align: center; background-color: #111111; color: #FFFFFF; padding: 1rem 2rem; cursor: pointer }
+#changePreferences > p:hover { background-color: #000000 }
 
 /* Solo aplica a /curriculum.html */
 dt { text-indent: 4rem; clear: left; float: left; width: 250px; font-weight: bold }
