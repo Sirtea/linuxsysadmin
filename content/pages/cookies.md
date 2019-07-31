@@ -7,7 +7,7 @@ De acuerdo a las leyes vigentes me veo obligado a indicar que utlizo *cookies* y
 
 **TLDR;** Este sitio utiliza *cookies* para terceros: Google Analytics.
 
-<p id="changePreferences"><span>Cambiar mi política de <em>cookies</em></span></p>
+<div id="changePreferences"><p>Cambiar mi política de <em>cookies</em></p></div>
 
 ## ¿Que son las *cookies*?
 
