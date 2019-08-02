@@ -134,7 +134,7 @@ Nótese la aparición de la nueva carpeta *pages/*:
 (.venv) gerard@atlantis:~/projects/myapp$
 ```
 
-El funcionamiento es el mismo: regitramos vistas que renderizan plantillas y poco más. La parte interesante es que estas vistas se encapsulan en un objeto *Blueprint* que luego será registrado en la aplicación base.
+El funcionamiento es el mismo: registramos vistas que renderizan plantillas y poco más. La parte interesante es que estas vistas se encapsulan en un objeto *Blueprint* que luego será registrado en la aplicación base.
 
 ```bash
 (.venv) gerard@atlantis:~/projects/myapp$ cat pages/__init__.py
@@ -269,7 +269,7 @@ html { background-color: red }
 (.venv) gerard@atlantis:~/projects/myapp$
 ```
 
-El punto interesante es que quremos mapear el **blueprint**. Eso significa que la URL */latest* del **blueprint** tiene que utilizar un prefijo, para que lo veamos en */news/latest*. Es ahora, en el momento de registrar el **blueprint**, cuando podemos especificar que todas sus URLs cuelguen de un prefijo adicional.
+El punto interesante es que queremos mapear el **blueprint**. Eso significa que la URL */latest* del **blueprint** tiene que utilizar un prefijo, para que lo veamos en */news/latest*. Es ahora, en el momento de registrar el **blueprint**, cuando podemos especificar que todas sus URLs cuelguen de un prefijo adicional.
 
 ```bash
 (.venv) gerard@atlantis:~/projects/myapp$ cat app.py
