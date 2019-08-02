@@ -179,7 +179,7 @@ html { background-color: cyan }
 (.venv) gerard@atlantis:~/projects/myapp$
 </code></pre>
 
-<p>El funcionamiento es el mismo: regitramos vistas que renderizan plantillas y poco más. La parte interesante es que estas vistas se encapsulan en un objeto <em>Blueprint</em> que luego será registrado en la aplicación base.</p>
+<p>El funcionamiento es el mismo: registramos vistas que renderizan plantillas y poco más. La parte interesante es que estas vistas se encapsulan en un objeto <em>Blueprint</em> que luego será registrado en la aplicación base.</p>
 
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat pages/__init__.py
 from flask import Blueprint, render_template
@@ -314,7 +314,7 @@ html { background-color: red }
 (.venv) gerard@atlantis:~/projects/myapp$
 </code></pre>
 
-<p>El punto interesante es que quremos mapear el <strong>blueprint</strong>. Eso significa que la URL <em>/latest</em> del <strong>blueprint</strong> tiene que utilizar un prefijo, para que lo veamos en <em>/news/latest</em>. Es ahora, en el momento de registrar el <strong>blueprint</strong>, cuando podemos especificar que todas sus URLs cuelguen de un prefijo adicional.</p>
+<p>El punto interesante es que queremos mapear el <strong>blueprint</strong>. Eso significa que la URL <em>/latest</em> del <strong>blueprint</strong> tiene que utilizar un prefijo, para que lo veamos en <em>/news/latest</em>. Es ahora, en el momento de registrar el <strong>blueprint</strong>, cuando podemos especificar que todas sus URLs cuelguen de un prefijo adicional.</p>
 
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/myapp$ cat app.py
 from flask import Flask, render_template
