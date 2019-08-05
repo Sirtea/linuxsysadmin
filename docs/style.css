@@ -57,4 +57,4 @@ li { text-align: justify }
 pre { background-color: #000000; color: #FFFFFF; padding: 1rem; overflow: auto }
 p > code { background-color: #DDDDDD; color: black }
 li > code { background-color: #DDDDDD; color: black }
-blockquote { border-left: 0.5rem #AAAAAA solid; margin-left: 0rem; padding: 0.1rem 1rem; background-color: #EEEEEE }
+blockquote { border-left: 0.5rem #AAAAAA solid; margin-left: 0rem; margin-right: 0rem; padding: 0.1rem 1rem; background-color: #EEEEEE }
