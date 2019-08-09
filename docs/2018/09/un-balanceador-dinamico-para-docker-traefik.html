@@ -104,7 +104,7 @@ Creating traefik_traefik_1 ... done
 gerard@atlantis:~/workspace$
 </code></pre>
 
-<p>Y con esto ya podemos acceder al <em>dashboard</em> en <a href="http://localhost:8080/">http://localhost:8080/</a>, aunque no tenemos ningún dominio registrado, con lo que obtendremos errores 404 en el puerto 80.</p>
+<p>Y con esto ya podemos acceder al <em>dashboard</em> en <code>http://localhost:8080/</code>, aunque no tenemos ningún dominio registrado, con lo que obtendremos errores 404 en el puerto 80.</p>
 
 <h3 id="un-servicio-de-ejemplo">Un servicio de ejemplo</h3>
 
@@ -128,7 +128,7 @@ gerard@atlantis:~/workspace$
 
 <p>Un punto interesante de mencionar es que <strong>Traefik</strong> viene con una configuración estándar, pero se puede modificar algunas cosas que afectan a los contenedores mediante <em>labels</em>.</p>
 
-<p>La más evidente es <code>traefik.enable</code>, que sobreescribe el comportamiente de no exponer por defecto los servicios; con ello evitamos que se expongan servicios que no deseamos hacer públicos (bases de datos, depliegues blue-green, otros servicios, &hellip;).</p>
+<p>La más evidente es <code>traefik.enable</code>, que sobreescribe el comportamiento de no exponer por defecto los servicios; con ello evitamos que se expongan servicios que no deseamos hacer públicos (bases de datos, depliegues blue-green, otros servicios, &hellip;).</p>
 
 <p>Otra <em>label</em> interesante es <code>traefik.frontend.rule</code> que básicamente indica que este contenedor es uno de los miembros del <em>pool</em> de balanceo cuando se pida el <em>host</em> indicado. Una <em>label</em> que podemos necesitar es <code>traefik.port</code>, que indica contra que puerto del contenedor hay que lanzar las peticiones; por defecto se pasan al puerto 80 (que es donde escucha la imagen elegida).</p>
 
