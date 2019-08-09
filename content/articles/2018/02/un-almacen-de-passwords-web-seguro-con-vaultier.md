@@ -57,7 +57,7 @@ gerard@aldebaran:~/docker/vaultier$ docker run -ti --rm -p 80:80 rclick/vaultier
 
 Vemos que la imagen dispone de varios servicios, que se manejan con **supervisor**. Esto nos levanta la aplicación entera y la base de datos que necesita para funcionar.
 
-Solo nos queda dirigirnos a <http://localhost/> y ver nuestro nuevo servidor de secretos en funcionamiento.
+Solo nos queda dirigirnos a `http://localhost/` y ver nuestro nuevo servidor de secretos en funcionamiento.
 
 ## Conceptos básicos
 

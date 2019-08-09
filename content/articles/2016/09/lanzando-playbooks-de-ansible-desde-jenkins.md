@@ -152,7 +152,7 @@ gerard@seginus:~/docker/jenkins_ansible$
 
 ## Configurando nuestro Jenkins
 
-Ya podemos abrir la página de nuestro contenedor, de forma que se puedan efectuar las configuraciones iniciales. Nos vamos a dirigir a <http://localhost:8080/>, que es desde donde se va a controlar nuestro servidor de ahora en adelante.
+Ya podemos abrir la página de nuestro contenedor, de forma que se puedan efectuar las configuraciones iniciales. Nos vamos a dirigir a `http://localhost:8080/`, que es desde donde se va a controlar nuestro servidor de ahora en adelante.
 
 La parte mas importante de nuestro despliegue de **Jenkins** son los *plugins*. En nuestro caso, solo queremos clonar nuestros *playbooks* desde **git** y lanzarlos mediante **Ansible**. Para ello necesitamos estos dos *plugins*: *git plugin* y *ansible plugin*. Se pueden instalar en la primera visita a nuestro contenedor o a *posteriori*. Los instalamos.
 

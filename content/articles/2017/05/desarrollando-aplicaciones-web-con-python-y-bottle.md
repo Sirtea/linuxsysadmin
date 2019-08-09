@@ -87,7 +87,7 @@ Listening on http://localhost:8080/
 Hit Ctrl-C to quit.
 ```
 
-Y ya podemos dirigirnos a <http://localhost:8080/> para comprobar un bonito error 404.
+Y ya podemos dirigirnos a `http://localhost:8080/` para comprobar un bonito error 404.
 
 ## Registrando rutas a controladores
 

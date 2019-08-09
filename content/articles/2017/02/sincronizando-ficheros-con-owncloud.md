@@ -44,7 +44,7 @@ Creating mysql
 gerard@sirius:~/docker/owncloud$ 
 ```
 
-Y solamente nos queda acceder al puerto expuesto, desde un navegador cualquiera, usando la URL que corresponda. En mi caso, accedo desde la máquina local, que es donde he levantado ambos contenedores; simplemente usamos <http://localhost/>.
+Y solamente nos queda acceder al puerto expuesto, desde un navegador cualquiera, usando la URL que corresponda. En mi caso, accedo desde la máquina local, que es donde he levantado ambos contenedores; simplemente usamos `http://localhost/`.
 
 ![Owncloud setup](/images/owncloud_setup.jpg)
 

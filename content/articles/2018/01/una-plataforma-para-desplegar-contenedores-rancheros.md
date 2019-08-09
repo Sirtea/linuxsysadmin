@@ -28,7 +28,7 @@ gerard@aldebaran:~$ docker run -d --restart=unless-stopped -p 8080:8080 rancher/
 
 Este contenedor nos ofrece la base de datos de control y una bonita interfaz de usuario en el puerto 8080 para administrar nuestro *cluster*.
 
-Solo nos queda ver la interfaz de administración para comprobar que funciona, en <http://localhost:8080/>.
+Solo nos queda ver la interfaz de administración para comprobar que funciona, en `http://localhost:8080/`.
 
 ![Rancher panel](/images/rancher-panel.png)
 

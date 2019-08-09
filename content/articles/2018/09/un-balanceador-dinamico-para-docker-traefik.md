@@ -59,7 +59,7 @@ Creating traefik_traefik_1 ... done
 gerard@atlantis:~/workspace$
 ```
 
-Y con esto ya podemos acceder al *dashboard* en <http://localhost:8080/>, aunque no tenemos ningún dominio registrado, con lo que obtendremos errores 404 en el puerto 80.
+Y con esto ya podemos acceder al *dashboard* en `http://localhost:8080/`, aunque no tenemos ningún dominio registrado, con lo que obtendremos errores 404 en el puerto 80.
 
 ### Un servicio de ejemplo
 
