@@ -2,7 +2,7 @@
 
 {{- define "main" }}
 {{- if eq .Type "categories" }}
-<h1>Category: {{ lower .Title }}</h1>
+<h1>Categoría: {{ lower .Title }}</h1>
 {{- else if eq .Type "tags" }}
 <h1>Tag: {{ lower .Title }}</h1>
 {{- else }}
