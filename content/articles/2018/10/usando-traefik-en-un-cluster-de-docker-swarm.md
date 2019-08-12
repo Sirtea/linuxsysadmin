@@ -118,7 +118,7 @@ networks:
 gerard@manager:~/whoami$
 ```
 
-Tras desplegar el servicio y ver que todas las instáncias están funcionando, podremos empezar las pruebas.
+Tras desplegar el servicio y ver que todas las instancias están funcionando, podremos empezar las pruebas.
 
 ```bash
 gerard@manager:~/whoami$ docker stack deploy -c docker-compose.yml whoami
