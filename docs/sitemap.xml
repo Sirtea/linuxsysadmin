@@ -4,17 +4,46 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2019-08-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2019-08-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2019-08-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2019/08/utilizando-systemd-a-nivel-de-usuario.html</loc>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
+    <lastmod>2019-08-12T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -25,12 +54,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/category/miscelanea.html</loc>
-    <lastmod>2019-08-05T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2019-08-05T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
@@ -62,12 +85,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2019/07/exponiendo-docker-por-tcp-de-forma-controlada.html</loc>
     <lastmod>2019-07-22T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
-    <lastmod>2019-07-22T00:00:00+00:00</lastmod>
-    <priority>0</priority>
   </url>
   
   <url>
@@ -154,12 +171,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/gateway.html</loc>
-    <lastmod>2019-07-08T00:00:00+00:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
     <lastmod>2019-07-08T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
@@ -1163,12 +1174,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2018/02/configurando-servidores-con-first-time-boot-scripts.html</loc>
     <lastmod>2018-02-26T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
-    <lastmod>2018-02-26T00:00:00+00:00</lastmod>
-    <priority>0</priority>
   </url>
   
   <url>
