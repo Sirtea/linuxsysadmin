@@ -9,7 +9,9 @@
 <h1>{{ .Title }}</h1>
 {{- end }}
 
-{{- $paginator := .Paginate (where .Pages "Type" "articles") }}
+{{- $pctx := . }}
+{{- if .IsHome -}}{{ $pctx = .Site }}{{- end -}}
+{{- $paginator := .Paginate (where $pctx.RegularPages "Type" "articles") }}
 {{ range $paginator.Pages }}
 <h2 class="article"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
 {{ .Summary }}
