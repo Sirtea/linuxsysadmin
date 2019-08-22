@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Programando tareas con timers en systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important"href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Programando tareas con timers en systemd</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-08-22
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/timer.html">timer</a>
+</p>
+
+<p>Una de las funciones que prometía <strong>systemd</strong> cuando apareció era la de reemplazar las utilidades tipo <strong>cron</strong>. Esto era bueno porque iba a estandarizar un servicio que no lo estaba (aunque las diferentes distribuciones lo daban por hecho); esta idea se quedó en el tintero y es hora de sacarla.</p>
+
+<p>Algunas voces indican que es más complejo crear tareas programadas para <strong>systemd</strong> que en <strong>cron</strong>, pero supongo que eso es debido a la familiaridad que todos tenemos con este último. La realidad es que solo necesitamos 3 cosas:</p>
+
+<ul>
+<li>Un <em>script</em> o binario que tengamos que ejecutar</li>
+<li>Una <em>unit</em> de <strong>systemd</strong> definiendo el servicio que el <em>timer</em> lanzará</li>
+<li>Una <em>unit</em> de <strong>systemd</strong> definiendo el <em>timer</em> y su periodicidad</li>
+</ul>
+
+<p>Así pues, hoy voy a mostrar como se puede hacer para que <strong>systemd</strong> y sus <em>timers</em> ejecuten tareas por nosotros, creando un <em>script</em> que se vaya ejecutando cada cierto tiempo. Como añadido, lo vamos a hacer en modo usuario, para no necesitar permisos de <em>root</em>.</p>
+
+<h2 id="escenario-inicial">Escenario inicial</h2>
+
+<p>Disponemos de un <em>script</em> que supuestamente va a hacer un <em>backup</em> de nuestros ficheros sensibles. Para ser ordenados, vamos a poner este <em>script</em> en la carpeta <code>~/bin/</code> y vamos a crear una carpeta <code>~/log/</code> para alojar el fichero de trazas.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ tree
+.
+├── bin
+│   └── backup.sh
+└── log
+
+2 directories, 1 file
+gerard@eden:~$ 
+</code></pre>
+
+<p>Realmente, lo que hace el <em>script</em> no nos importa tanto como el hecho de que se ejecuta cuando toque; de momento vamos a hacer que deje en el <em>log</em> la fecha y hora en la que ejecutó, solo para poder comprobar que funciona. Asumiremos que no hay nada de lo que hacer <em>backup</em>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat bin/backup.sh 
+#!/bin/bash
+
+date +&quot;%FT%T%z&quot; &gt;&gt; /home/gerard/log/backup.log
+gerard@eden:~$ 
+</code></pre>
+
+<h2 id="el-servicio-systemd">El servicio systemd</h2>
+
+<p>El <em>timer</em> se limita a levantar un servicio cada cierto tiempo, de acuerdo con sus directivas de configuración. Por lo tanto necesitamos asegurar que el servicio existe y ejecuta sin problemas.</p>
+
+<p><strong>WARNING</strong>: Se espera que este servicio acabe y no se quede residente, para evitar solapamientos futuros con otras invocaciones.</p>
+
+<p>Creamos la estructura de carpetas en donde debemos dejar nuestras <em>units</em>:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ mkdir -vp ~/.config/systemd/user
+mkdir: se ha creado el directorio '/home/gerard/.config'
+mkdir: se ha creado el directorio '/home/gerard/.config/systemd'
+mkdir: se ha creado el directorio '/home/gerard/.config/systemd/user'
+gerard@eden:~$ 
+</code></pre>
+
+<p>Y creamos una <em>unit</em> de tipo servicio. Es importante indicar que es de tipo <em>oneshot</em> para que <strong>systemd</strong> vea normal que acabe y no lo reinicie.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/backup.service 
+[Unit]
+Description=Backup script
+
+[Service]
+Type=oneshot
+ExecStart=/home/gerard/bin/backup.sh
+gerard@eden:~$ 
+</code></pre>
+
+<p>Recargamos los servicios en <strong>systemd</strong> y probamos que nuestro servicio funciona bien cuando se hace el respectivo <code>start</code>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user daemon-reload
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user start backup.service
+gerard@eden:~$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: El servicio <strong>no se debe activar</strong> (no hay que hacer el <code>systemctl enable</code>); esto es porque no se debe levantar solo, sino a petición del <em>timer</em>.</p>
+
+<p>Podemos ver que se ha creado el fichero de <em>log</em> y, si lo revisamos, veremos que la hora actual en el <em>log</em>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ tree
+.
+├── bin
+│   └── backup.sh
+└── log
+    └── backup.log
+
+2 directories, 2 files
+gerard@eden:~$ 
+</code></pre>
+
+<h2 id="el-timer-systemd">El timer systemd</h2>
+
+<p>Nuevamente necesitaremos especificar un fichero tipo <em>unit</em> de <strong>systemd</strong>, pero esta vez necesitamos que tenga la extensión <code>.timer</code>. Para información sobre su sintaxis, podemos consultar la documentación:</p>
+
+<ul>
+<li><a href="https://www.freedesktop.org/software/systemd/man/systemd.timer.html">https://www.freedesktop.org/software/systemd/man/systemd.timer.html</a></li>
+<li><a href="https://www.freedesktop.org/software/systemd/man/systemd.time.html">https://www.freedesktop.org/software/systemd/man/systemd.time.html</a></li>
+</ul>
+
+<p>El <em>timer</em> puede funcionar de dos modos distintos: por intervalos de tiempo (por ejemplo, cada 30 minutos) y por momentos concretos (por ejemplo, cada lunes a las 08:00).</p>
+
+<p><strong>TRUCO</strong>: En todo momento podemos ver los <em>timers</em> activos con el comando <code>systemctl --user list-timers</code>. Esto nos dará una idea de cuando se ejecutó por última vez, cuando será la próxima vez y cuánto falta para una nueva ejecución.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user list-timers
+NEXT                          LEFT     LAST                          PASSED  UNIT         ACTIVATES
+Fri 2019-07-05 00:00:05 CEST  10h left Thu 2019-07-04 13:20:00 CEST  58s ago backup.timer backup.service
+
+1 timers listed.
+Pass --all to see loaded but inactive timers, too.
+gerard@eden:~$ 
+</code></pre>
+
+<h3 id="ejecuciones-por-intervalos-de-tiempo">Ejecuciones por intervalos de tiempo</h3>
+
+<p>Si quisiéramos ejecutar nuestro <em>script</em> cada 10 segundos podríamos indicarlo mediante la directiva <code>OnUnitActiveSec</code>. Esto indicará que se ejecute si la <em>unit</em> está activada, y que lo haga cada tantos segundos como indiquemos en la directiva.</p>
+
+<p><strong>TRUCO</strong>: La directiva, igual que todas las temporales, asume que se trata de segundos, pero acepta otras formas, de acuerdo a la documentación. Por ejemplo podríamos poner algo como <code>1d5h10s</code>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/backup.timer 
+[Unit]
+Description=Ejecutar backup cada 10 segundos
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=10
+AccuracySec=1us
+Unit=backup.service
+
+[Install]
+WantedBy=timers.target
+gerard@eden:~$ 
+</code></pre>
+
+<p>Hay otras directivas, que hacen lo siguiente:</p>
+
+<ul>
+<li><code>OnBootSec=60</code> &rarr; Evita que el <em>timer</em> ejecute hasta pasados 60 segundos desde el <em>boot</em> de la máquina. Esto es una decisión personal.</li>
+<li><code>AccuracySec=1us</code> &rarr; La invocación de <strong>systemd</strong> puede retardarse tanto tiempo como indique este valor (por defecto 1 minuto), en favor de la economía de CPU. He bajado esto al máximo porque un minuto de precisión es poco si queremos 10 segundos&hellip;</li>
+<li><code>Unit=backup.service</code> &rarr; Este es el servicio del que se va a hacer el <code>systemctl start</code>. Lo he puesto pero no es necesario; su valor por defecto es el mismo nombre del <em>timer</em> pero con extensión <code>.service</code>.</li>
+</ul>
+
+<p>Escrita la <em>unit</em> pertinente, recargamos la configuración de <strong>systemd</strong>, activamos el timer para que se levante en cada sesión de usuario, y lo levantamos para la sesión actual.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user daemon-reload
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user enable backup.timer
+Created symlink /home/gerard/.config/systemd/user/timers.target.wants/backup.timer → /home/gerard/.config/systemd/user/backup.timer.
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user start backup.timer
+gerard@eden:~$ 
+</code></pre>
+
+<p>Podemos ver el fichero de <em>logs</em> para comprobar como se va llenando cada 10 segundos.</p>
+
+<h3 id="ejecuciones-por-momentos-concretos">Ejecuciones por momentos concretos</h3>
+
+<p>Nadie hace un <em>backup</em> cada cierto tiempo; es mucho más habitual hacerlo a horas concretas. Por ello vamos a parar y deshabilitar el <em>timer</em> anterior y vamos a enfocar otra manera de lanzarlo.</p>
+
+<p>En vez de utilizar la directiva <code>OnUnitActiveSec</code>, se puede indicar una especificación temporal con la directiva <code>OnCalendar</code>. La documentación indica el formato que se acepta; como queremos hacer un <em>backup</em> diario, vamos a poner <code>daily</code>, lo que equivale a <code>*-*-* 00:00:00</code> (medianoche).</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/backup.timer 
+[Unit]
+Description=Ejecutar backup diario
+
+[Timer]
+Persistent=true
+OnCalendar=daily
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target
+gerard@eden:~$ 
+</code></pre>
+
+<p>Otras decisiones de diseño, son:</p>
+
+<ul>
+<li><code>Persistent=true</code> &rarr; Esto hace que <strong>systemd</strong> guarde el último <em>timestamp</em> de ejecución, y pueda saber si se ha saltado alguna ejecución, por ejemplo si la máquina estaba parada; en este caso la relanzaría inmediatamente.</li>
+<li><code>RandomizedDelaySec=10m</code> &rarr; Para no ejecutar todas las tareas <code>daily</code> a la vez (y saturar el sistema), podemos indicar un tiempo aleatorio de retraso, siendo el máximo lo indicado, 10 minutos.</li>
+</ul>
+
+<p>Siguiendo los pasos anteriores, recargamos la nueva <em>unit</em> en <strong>systemd</strong>, la activamos para que se levante en cada sesión nueva, y la levantamos para la sesión en curso.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user daemon-reload
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user enable backup.timer
+Created symlink /home/gerard/.config/systemd/user/timers.target.wants/backup.timer → /home/gerard/.config/systemd/user/backup.timer.
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user start backup.timer
+gerard@eden:~$ 
+</code></pre>
+
+<p>Y solo faltaría esperar a medianoche para ver que se ha lanzado el <em>script</em>. Por supuesto, a fin de probar este artículo, cambié la especificación <code>daily</code> a <code>hourly</code>; así que esto funciona seguro.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
