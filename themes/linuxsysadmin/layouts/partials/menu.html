@@ -1,6 +1,6 @@
 <div class="menu">
 	{{- range where .Site.Menus.main ".Weight" "lt" 0 }}
-	<a {{ if le .Weight -100 }}class="important"{{ end }}href="{{ .URL }}">{{ .Name }}</a>
+	<a {{ if le .Weight -100 }}class="important" {{ end }}href="{{ .URL }}">{{ .Name }}</a>
 	{{- end }}
 	<div class="right">
 	{{- range where .Site.Menus.main ".Weight" "ge" 0 }}
