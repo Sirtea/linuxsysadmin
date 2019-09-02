@@ -274,13 +274,14 @@ gerard@eden:~$
 
 <ul>
 <li>Cerrar sesión, dejando a <strong>systemd</strong> limpiar lo que hemos dejado en marcha.</li>
+<li>Utilizar el comando <code>systemctl stop</code> para parar el <em>target</em>, y con ello sus servicios <code>PartOf=</code>.</li>
+</ul>
 
-<li><p>Utilizar el comando <code>systemctl stop</code> para parar el <em>target</em>, y con ello sus servicios <code>PartOf=</code>; optamos por este, por probarlo.</p>
+<p>Vamos a optar por la segunda opción, solamente para probar que funciona:</p>
 
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user stop hugo.target
 gerard@eden:~$ 
-</code></pre></li>
-</ul>
+</code></pre>
 
 <p>Solo nos queda comprobar con un <code>ps faux</code> que no queda ni rastro del servidor web <strong>ran</strong>. Comprobar que el <em>builder</em> no sigue ejecutando es más complejo; podemos:</p>
 
