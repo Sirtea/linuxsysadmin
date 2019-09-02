@@ -4,41 +4,51 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2019/09/creando-targets-en-systemd-para-gestionar-grupos-de-servicios.html</loc>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/2019/08/programando-tareas-con-timers-en-systemd.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
-    <lastmod>2019-08-22T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/target.html</loc>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2019/08/programando-tareas-con-timers-en-systemd.html</loc>
     <lastmod>2019-08-22T00:00:00+00:00</lastmod>
   </url>
   

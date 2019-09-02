@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Creando targets en systemd para gestionar grupos de servicios - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Creando targets en systemd para gestionar grupos de servicios</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-09-02
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/target.html">target</a>
+</p>
+
+<p>Tras aprender más de <strong>systemd</strong> y su modo de usuario, vi infinitas posibilidades para los servicios de usuario. Dependiendo del tipo de tarea en la que iba a trabajar, parecía lógico tener un subconjunto de servicios ejecutando en segundo plano. ¿Había alguna manera de levantar varios con un solo comando?</p>
+
+<p>Hay muchas ideas corriendo por internet, pero parece que la más correcta es aquella que fue diseñada específicamente para ello: los <em>targets</em>. Básicamente se trata de un conjunto de otras <em>units</em> (sean <em>services</em>, <em>timers</em> u otros <em>targets</em>).</p>
+
+<p>Y es que no puede ser más fácil: se declara una <em>unit</em> tipo <em>target</em> y se hace que el resto de <em>units</em> tengan la directiva <code>WantedBy=</code>. Así pues, cuando se activa ese servicio con <code>systemctl enable</code>, se crea el árbol de dependencias que causa que -si se levanta el <em>target</em>- se levante todo el resto.</p>
+
+<p>A modo de ejemplo voy a documentar una de las tareas más simples que puse en práctica inmediatamente; se trata de un <em>target</em> para levantar dos &ldquo;servicios&rdquo; que utilizo cuando trabajo con el generador estático <strong>hugo</strong>:</p>
+
+<ul>
+<li>Un servidor web para servir el sitio</li>
+<li>Un timer que dispare una reconstrucción del sitio</li>
+</ul>
+
+<p>La configuración nos quedaría así:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ tree .config/systemd/
+.config/systemd/
+└── user
+    ├── build-loremipsum.service
+    ├── build-loremipsum.timer
+    ├── hugo.target
+    └── ran.service
+
+1 directory, 4 files
+gerard@eden:~$ 
+</code></pre>
+
+<p>La verdad es que mucho de este trabajo ya lo hicimos en otros artículos, concretamente <a href="/2019/08/utilizando-systemd-a-nivel-de-usuario.html">este</a> y <a href="/2019/08/programando-tareas-con-timers-en-systemd.html">este otro</a>; leerlos simplifica mucho este artículo.</p>
+
+<h2 id="el-target-para-trabajar-con-hugo">El target para trabajar con hugo</h2>
+
+<p>Un <em>target</em> es el más simple de las <em>units</em> de <strong>systemd</strong>. Como no hace nada y son los demás los que &ldquo;se le instalan&rdquo;, las directivas necesarias son mínimas:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/hugo.target 
+[Unit]
+Description=Hugo development: server and builder
+gerard@eden:~$ 
+</code></pre>
+
+<p>No he puesto sección <code>[Install]</code> porque no deseo hacer un <code>systemctl enable</code>; la idea es que este <em>target</em> no se levante solo, sino a petición mía. Esto lo voy a poder cambiar en el futuro si lo necesito.</p>
+
+<h2 id="creamos-un-sitio-web-básico">Creamos un sitio web básico</h2>
+
+<p>No tiene mucho sentido hablar de servir una web hecha con <strong>hugo</strong> o de construirla si no existe; así que necesitamos un esqueleto básico de trabajo.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ hugo new site loremipsum
+Congratulations! Your new Hugo site is created in /home/gerard/loremipsum.
+
+Just a few more steps and you're ready to go:
+
+1. Download a theme into the same-named folder.
+   Choose a theme from https://themes.gohugo.io/, or
+   create your own with the &quot;hugo new theme &lt;THEMENAME&gt;&quot; command.
+2. Perhaps you want to add some content. You can add single files
+   with &quot;hugo new &lt;SECTIONNAME&gt;/&lt;FILENAME&gt;.&lt;FORMAT&gt;&quot;.
+3. Start the built-in live server via &quot;hugo server&quot;.
+
+Visit https://gohugo.io/ for quickstart guide and full documentation.
+gerard@eden:~$ 
+</code></pre>
+
+<p>Basta que trabajemos en un esqueleto capaz de generar la carpeta <code>public/</code> (es la que vamos a servir) y el fichero <code>404.html</code> (porque <strong>ran</strong> requiere que exista este fichero).</p>
+
+<p>Vamos a poner un <em>theme</em> adecuado (basta que genere el fichero <code>404.html</code> por ahora) y vamos a generar la configuración mínima e indispensable, lo que nos deja un esqueleto así:</p>
+
+<pre><code class="language-bash">gerard@eden:~/loremipsum$ tree
+.
+├── config.toml
+├── content
+└── themes
+    └── loremipsum
+        ├── layouts
+        │   ├── 404.html
+        │   └── index.html
+        └── static
+
+5 directories, 3 files
+gerard@eden:~/loremipsum$ 
+</code></pre>
+
+<p>Generamos el contenido HTML para obtener el contenido a servir y verificamos que funciona y que cumplimos con los requisitos:</p>
+
+<pre><code class="language-bash">gerard@eden:~/loremipsum$ hugo
+
+                   | EN  
++------------------+----+
+  Pages            |  2  
+  Paginator pages  |  0  
+  Non-page files   |  0  
+  Static files     |  0  
+  Processed images |  0  
+  Aliases          |  0  
+  Sitemaps         |  0  
+  Cleaned          |  0  
+
+Total in 8 ms
+gerard@eden:~/loremipsum$ tree public/
+public/
+├── 404.html
+└── index.html
+
+0 directories, 2 files
+gerard@eden:~/loremipsum$ 
+</code></pre>
+
+<p>Y con esto podemos seguir.</p>
+
+<h2 id="el-servidor-web">El servidor web</h2>
+
+<p>Esto es prácticamente un <em>copy-paste</em> de <a href="/2019/08/utilizando-systemd-a-nivel-de-usuario.html">este artículo anterior</a>. Básicamente se trata de escribir una <em>service unit</em> y hacer el respectivo <code>systemctl enable</code>, para ligarlo con el nuevo <em>target</em>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/ran.service 
+[Unit]
+Description=Ran: a simple static web server written in Go
+PartOf=hugo.target
+
+[Service]
+ExecStart=/home/gerard/bin/ran -r /home/gerard/loremipsum/public/ -404=/404.html
+
+[Install]
+WantedBy=hugo.target
+gerard@eden:~$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: Se añade la directiva <code>PartOf=</code> para que se pare este <em>service</em> si se para el <em>target</em>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user enable ran.service
+Created symlink /home/gerard/.config/systemd/user/hugo.target.wants/ran.service → /home/gerard/.config/systemd/user/ran.service.
+gerard@eden:~$ 
+</code></pre>
+
+<p><strong>WARNING</strong>: Antes de levantar el servicio habría que asegurar que tanto la carpeta <code>/home/gerard/loremipsum/public/</code> como el fichero <code>404.html</code> existen, o <strong>ran</strong> va a acabar prematuramente con un error.</p>
+
+<h2 id="el-constructor-del-sitio">El constructor del sitio</h2>
+
+<p>Para que se vaya actualizando el contenido en función a los cambios de contenidos vamos a necesitar un &ldquo;algo&rdquo; que lo haga, y sea invocado cada cierto tiempo. Para la primera parte, vamos a hacer un <em>script</em> que construya el sitio, y vamos a confiar en un <em>timer</em> de <strong>systemd</strong> para que se vaya lanzando; nuevamente, es un <em>copy-paste</em> de <a href="/2019/08/programando-tareas-con-timers-en-systemd.html">un artículo anterior</a>.</p>
+
+<p>La parte importante para el <em>script</em> de construcción es que se ejecuta en la carpeta personal y sin las variables de entorno, especialmente el <code>PATH</code>. Podemos corregir ambos problemas utilizando <em>paths</em> absolutos en nuestro <em>script</em>.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat bin/build-loremipsum.sh 
+#!/bin/bash
+
+cd /home/gerard/loremipsum
+rm -Rf public/*
+/home/gerard/bin/hugo
+rm -Rf resources
+gerard@eden:~$ 
+</code></pre>
+
+<p>Comprobar su funcionamiento es trivial:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ ./bin/build-loremipsum.sh 
+
+                   | EN  
++------------------+----+
+  Pages            |  2  
+  Paginator pages  |  0  
+  Non-page files   |  0  
+  Static files     |  0  
+  Processed images |  0  
+  Aliases          |  0  
+  Sitemaps         |  0  
+  Cleaned          |  0  
+
+Total in 8 ms
+gerard@eden:~$ 
+</code></pre>
+
+<p>Para ejecutar periodicamente necesitamos dos <em>units</em>: un <em>timer</em> y el <em>service</em> para que este lo invoque. Mas información en el citado artículo.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/build-loremipsum.service 
+[Unit]
+Description=LoremIpsum site builder
+
+[Service]
+Type=oneshot
+ExecStart=/home/gerard/bin/build-loremipsum.sh
+gerard@eden:~$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/build-loremipsum.timer 
+[Unit]
+Description=Ejecutar build-loremipsum.sh cada 5 segundos
+PartOf=hugo.target
+
+[Timer]
+OnActiveSec=2
+OnUnitActiveSec=5
+AccuracySec=1us
+
+[Install]
+WantedBy=hugo.target
+gerard@eden:~$ 
+</code></pre>
+
+<p><strong>TRUCO</strong>: La directiva <code>PartOf=</code> es la responsable de parar este <em>timer</em> si se para el <em>target</em>.</p>
+
+<p><strong>TRUCO</strong>: Con la directiva <code>OnActiveSec=</code> conseguimos que se retrase el <em>timer</em> dos segundos desde su inicio; esto sirve para que <strong>ran</strong> se levante antes del <em>build</em> y no coincida el borrado del fichero <code>404.html</code> con el levantamiento de <strong>ran</strong>, lo que causaría un error.</p>
+
+<p>Activamos el <em>timer</em> para que se levante con el <code>hugo.target</code> y listo:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user enable build-loremipsum.timer
+Created symlink /home/gerard/.config/systemd/user/hugo.target.wants/build-loremipsum.timer → /home/gerard/.config/systemd/user/build-loremipsum.timer.
+gerard@eden:~$ 
+</code></pre>
+
+<h2 id="algunas-comprobaciones">Algunas comprobaciones</h2>
+
+<p>Como no hicimos el <code>systemctl --user enable hugo.target</code>, hay que levantar el <em>target</em> a mano. Lo hacemos:</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user start hugo.target
+gerard@eden:~$ 
+</code></pre>
+
+<p>Ahora ya podemos trabajar en el contenido o el tema del sitio <strong>hugo</strong>. Solo hay que tener en cuenta que el (re)generado de la web puede tardar hasta 5 segundos, pero nos ahorramos de hacerlo manualmente.</p>
+
+<p>Si abrimos la web en <code>https://localhost:8080/</code> veremos la versión inicial; creamos contenido en la carpeta del sitio web y, tras 5 segundos máximo, vemos los cambios si recargamos el navegador.</p>
+
+<p>Finalmente decidimos dejar de trabajar en el sitio, y decidimos que no necesitamos esos <em>services</em> y <em>timers</em>; queremos pararlos, y para ello disponemos de 2 maneras:</p>
+
+<ul>
+<li>Cerrar sesión, dejando a <strong>systemd</strong> limpiar lo que hemos dejado en marcha.</li>
+
+<li><p>Utilizar el comando <code>systemctl stop</code> para parar el <em>target</em>, y con ello sus servicios <code>PartOf=</code>; optamos por este, por probarlo.</p>
+
+<pre><code class="language-bash">gerard@eden:~$ systemctl --user stop hugo.target
+gerard@eden:~$ 
+</code></pre></li>
+</ul>
+
+<p>Solo nos queda comprobar con un <code>ps faux</code> que no queda ni rastro del servidor web <strong>ran</strong>. Comprobar que el <em>builder</em> no sigue ejecutando es más complejo; podemos:</p>
+
+<ul>
+<li>Lanzar <code>ps faux</code> a intervalos con la esperanza de ver que se ha lanzado el <em>builder</em>.</li>
+<li>Revisar el tiempo de generación del contenido y observar que no cambia su <em>timestamp</em>.</li>
+<li>Revisar los <em>logs</em> de <strong>systemd</strong> con <code>journalctl</code> para comprobar que no se sigue ejecutando nada.</li>
+</ul>
+
+<p>Visto que todo está correctamente parado, lo doy por bueno.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
