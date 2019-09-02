@@ -238,7 +238,9 @@ Si abrimos la web en `https://localhost:8080/` veremos la versión inicial; crea
 Finalmente decidimos dejar de trabajar en el sitio, y decidimos que no necesitamos esos *services* y *timers*; queremos pararlos, y para ello disponemos de 2 maneras:
 
 * Cerrar sesión, dejando a **systemd** limpiar lo que hemos dejado en marcha.
-* Utilizar el comando `systemctl stop` para parar el *target*, y con ello sus servicios `PartOf=`; optamos por este, por probarlo.
+* Utilizar el comando `systemctl stop` para parar el *target*, y con ello sus servicios `PartOf=`.
+
+Vamos a optar por la segunda opción, solamente para probar que funciona:
 
 ```bash
 gerard@eden:~$ systemctl --user stop hugo.target
