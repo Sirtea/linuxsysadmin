@@ -17,7 +17,7 @@ Mirando atrás con cierta nostalgia, y viendo como ha evolucionado la tecnologí
 contenedores, se me ocurrió la idea de recrear algo parecido basado en **docker swarm**.
 
 En este artículo pretendo mostrar como utilizar **docker swarm** para alojar un
-entorno clásico web, desde la infraestructura (máquinas y *firewall*) hasta los servicios
+entorno web clásico, desde la infraestructura (máquinas y *firewall*) hasta los servicios
 que en ellos vamos a desplegar (aplicaciones y bases de datos). Para no alargar el
 artículo, voy a crear un subconjunto mínimo desde el que se puede ir creciendo:
 
