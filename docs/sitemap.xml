@@ -4,47 +4,62 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/entorno.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/gateway.html</loc>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tags.html</loc>
-    <lastmod>2019-09-16T00:00:00+00:00</lastmod>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-2.html</loc>
+    <lastmod>2019-09-23T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -193,11 +208,6 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/gateway.html</loc>
-    <lastmod>2019-07-08T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html</loc>
     <lastmod>2019-07-08T00:00:00+00:00</lastmod>
   </url>
@@ -280,11 +290,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html</loc>
     <lastmod>2019-06-03T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
-    <lastmod>2019-05-27T00:00:00+00:00</lastmod>
   </url>
   
   <url>
