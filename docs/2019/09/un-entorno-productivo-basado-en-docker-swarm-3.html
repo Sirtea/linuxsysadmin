@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un entorno productivo basado en Docker Swarm (III) - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Un entorno productivo basado en Docker Swarm (III)</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-09-30
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/entorno.html">entorno</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/cluster.html">cluster</a> / <a href="/tag/autenticacion.html">autenticación</a>
+</p>
+
+<p>Continuamos la serie enfocada a construir un entorno entero basado en <strong>docker swarm</strong>
+siguiendo desde el punto en que lo dejamos: con los servidores a punto y el <em>cluster</em>
+en marcha. Ahora vamos a poner en marcha un <em>cluster</em> de base de datos en el mismo
+<em>swarm</em> que, por ejemplo, va a ser un <em>replica set</em> de <strong>mongodb</strong>.</p>
+
+<p>Como ya sabemos que en un entorno de bases de datos compartidas <strong>suceden cosas malas</strong>,
+vamos a habilitar autenticación, de forma que cada aplicación va a tener acceso a su
+propia base de datos, y a ninguna más. Como se trata de un <em>replica set</em>, hay un paso
+extra: los nodos del <em>cluster</em> también deben tener un mecanismo de autenticación propio.</p>
+
+<p><strong>NOTA</strong>: Este artículo combina el contenido de dos artículos anteriores, que indican
+como <a href="/2015/12/construyendo-una-replica-set-en-mongodb.html">montar un <em>replica set</em></a> y como <a href="/2018/03/usando-autenticacion-en-mongodb.html">habilitar autenticación</a>, aunque también
+incluye una parte adicional, que corresponde a la autenticación entre los nodos del <em>cluster</em>.</p>
+
+<h2 id="decisiones-de-diseño">Decisiones de diseño</h2>
+
+<p>Como vamos a utilizar <strong>docker</strong>, necesitamos pensar por un momento como nos lo vamos
+a hacer para tener los datos persistentes; además tenemos el <em>handicap</em> de que el <em>swarm</em>
+va a recolocar los nodos si fuera necesario.</p>
+
+<p>Para no montar un sistema de ficheros distribuido, he decidido que voy a utilizar
+volúmenes locales, lo que nos obliga a separar los contenedores en diferentes nodos del
+<em>swarm</em>; para asegurar que no acaban en el mismo (usarían el mismo volumen) y para
+evitar que <em>swarm</em> los recoloque (dejarían el volumen y los datos atrás), me he decidido
+por &ldquo;clavar&rdquo; cada instancia del <em>replica set</em> a un nodo concreto del <em>swarm</em>.</p>
+
+<p>Otra decisión de diseño será pasar los ficheros necesarios para cada servicio utilizando
+<a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">secretos y configuraciones</a>, lo que nos evita hacer una distribución de los mismos
+de forma manual.</p>
+
+<p>Finalmente, a nivel de <strong>docker</strong> los contenedores del <em>replica set</em> van ser servicios
+diferentes; de esta forma cualquier servicio se podrá referir a un nodo en particular
+por el nombre de su servicio, que es un balanceador <em>ingress</em> directo al único contenedor.</p>
+
+<p><strong>TRUCO</strong>: Todos los contenedores conectados a un red <em>overlay</em> van a poder utilizar
+el nombre del servicio del resto, a modo de resolución DNS. Como voy a poner un <em>stack</em>
+para cada aplicación y uno para la base de datos, necesito una red global, que no
+pertenezca a ningún <em>stack</em> particular. La llamaré <em>backend</em> y todos los contenedores
+que estén en ella podrán utilizar el nombre de servicio de los nodos de <strong>mongodb</strong>.</p>
+
+<h2 id="implementación-del-cluster">Implementación del <em>cluster</em></h2>
+
+<h3 id="el-fichero-keyfile">El fichero keyfile</h3>
+
+<p>Lo primero de todo es la creación de un fichero <a href="https://docs.mongodb.com/manual/tutorial/enforce-keyfile-access-control-in-existing-replica-set/"><em>keyFile</em></a>, ya que sin él, los nodos
+del <em>replica set</em> con autenticación habilitada no aceptarían operaciones de <em>cluster</em>.
+Siguiendo la documentación proporcionada, bastaría con poner un fichero con un contenido
+cualquiera entre 6 y 1024 bytes. Vamos a utilizar <strong>openssl</strong> para crear uno aleatorio:</p>
+
+<pre><code class="language-bash">gerard@docker01:~$ mkdir mongo
+gerard@docker01:~$ cd mongo/
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ openssl rand -base64 756 &gt; keyfile
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ cat keyfile 
+8OftSgxaHKz5+RD5ehmVgTQ+KjAptZq9qSVEb61YO9F0FIE6GRlus6GmdduzmMwE
+...
++0UZsNWMfkTDY53VpxY1qV+S7HzZ9Uc5RswLeKPJAnBxtunj
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<p><strong>NOTA</strong>: Podemos trabajar desde cualquier <em>manager</em> del <em>swarm</em>; utilizo <strong>docker01</strong>
+por utilizar alguno. Desde aquí empujaremos los cambios al resto utilizando el mismo <em>swarm</em>.</p>
+
+<p><strong>TRUCO</strong>: El fichero debe pertenecer al usuario que ejecute el proceso <code>mongod</code> y tener
+permisos 400 (o <code>-r--------</code>); esto lo conseguiremos en el mapeo del secreto en la declaración
+del <em>stack</em>. El usuario y su <em>uid</em> se pueden sacar del fichero <code>/etc/passwd</code> del contenedor.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/personal/mongo$ docker run -ti --rm sirrtea/mongo:debian cat /etc/passwd
+...
+mongodb:x:101:65534::/home/mongodb:/bin/false
+gerard@atlantis:~/personal/mongo$ 
+</code></pre>
+
+<h3 id="la-configuración-de-mongo">La configuración de mongo</h3>
+
+<p>Todos los nodos del <em>replica set</em> utilizan la misma, lo que nos simplifica el <em>setup</em>.
+Sin embargo, no nos vale la que viene en la imagen; no lleva ninguna configuración relativa
+al <em>replica set</em> ni a la autenticación. Simplemente copiamos la configuración de la imagen
+y le añadimos las claves <code>replication</code> y <code>security</code>.</p>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ cat mongod.conf 
+processManagement:
+  fork: false
+
+net:
+  bindIp: 0.0.0.0
+  port: 27017
+  unixDomainSocket:
+    enabled: false
+
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+
+replication:
+  replSetName: rs
+
+security:
+  keyFile: /run/secrets/keyfile
+  authorization: enabled
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<p><strong>NOTA</strong>: En este momento, vamos a hacer acto de fe, y nos vamos a creer que el <em>keyfile</em>
+estará en <code>/run/secrets/</code>, que es donde <em>swarm</em> deja todos los secretos.</p>
+
+<h3 id="los-servicios-del-stack">Los servicios del <em>stack</em></h3>
+
+<p>Nos limitamos a describir los servicios-contenedores que van a formar el <em>replica set</em>, sin
+olvidarnos del <em>keyfile</em> (y el <em>uid</em> 101 equivalente al usuario <code>mongodb</code>), ni de la
+configuración de <strong>mongo</strong>, ni de las restricciones de desplegar en nodos concretos (usando
+el <em>tag</em> <code>mongo</code>), ni del volumen local, ni de la red <em>backend</em>.</p>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ cat mongo.yml 
+version: &quot;3.3&quot;
+services:
+  mongo01:
+    image: sirrtea/mongo:debian
+    secrets:
+      - source: keyfile
+        uid: '101'
+        mode: 0400
+    configs:
+      - source: mongod.conf
+        target: /etc/mongod.conf
+    deploy:
+      placement:
+        constraints:
+        - node.labels.mongo == 01
+    volumes:
+      - data:/var/lib/mongodb
+    networks:
+      - backend
+  mongo02:
+    image: sirrtea/mongo:debian
+    secrets:
+      - source: keyfile
+        uid: '101'
+        mode: 0400
+    configs:
+      - source: mongod.conf
+        target: /etc/mongod.conf
+    deploy:
+      placement:
+        constraints:
+        - node.labels.mongo == 02
+    volumes:
+      - data:/var/lib/mongodb
+    networks:
+      - backend
+  mongo03:
+    image: sirrtea/mongo:debian
+    secrets:
+      - source: keyfile
+        uid: '101'
+        mode: 0400
+    configs:
+      - source: mongod.conf
+        target: /etc/mongod.conf
+    deploy:
+      placement:
+        constraints:
+        - node.labels.mongo == 03
+    volumes:
+      - data:/var/lib/mongodb
+    networks:
+      - backend
+secrets:
+  keyfile:
+    file: keyfile
+configs:
+  mongod.conf:
+    file: mongod.conf
+volumes:
+  data:
+networks:
+  backend:
+    external: true
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<h3 id="levantando-el-stack">Levantando el <em>stack</em></h3>
+
+<p><strong>WARNING</strong>: En este punto no existe ni la red <em>backend</em> ni los <em>tags</em> <code>mongo</code>
+para los nodos del <em>swarm</em>; es un buen momento para ponerlos. Vamos a desplegar
+los contenedores en <strong>docker04</strong>, <strong>docker05</strong> y <strong>docker06</strong> respectivamente
+para descargar de trabajo a los <em>managers</em>.</p>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker network create -d overlay backend
+07xs5ra32um3tb16coktynl2i
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker node update --label-add mongo=01 docker04
+docker04
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker node update --label-add mongo=02 docker05
+docker05
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker node update --label-add mongo=03 docker06
+docker06
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<p>Y solo nos falta desplegar el <em>stack</em>:</p>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker stack deploy -c mongo.yml mongo
+Creating secret mongo_keyfile
+Creating config mongo_mongod.conf
+Creating service mongo_mongo03
+Creating service mongo_mongo01
+Creating service mongo_mongo02
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<p>Si todo ha ido bien, tenemos el <em>stack</em> y sus servicios levantados:</p>
+
+<pre><code class="language-bash">gerard@docker01:~/mongo$ docker stack ls
+NAME                SERVICES            ORCHESTRATOR
+mongo               3                   Swarm
+gerard@docker01:~/mongo$ docker stack ps mongo
+ID                  NAME                IMAGE                  NODE                DESIRED STATE       CURRENT STATE                ERROR               PORTS
+utzhwaxskcmb        mongo_mongo02.1     sirrtea/mongo:debian   docker05            Running             Running 2 minutes ago                            
+4xn6emptjk6d        mongo_mongo01.1     sirrtea/mongo:debian   docker04            Running             Running about a minute ago                       
+ulfd25fqqbdd        mongo_mongo03.1     sirrtea/mongo:debian   docker06            Running             Running about a minute ago                       
+gerard@docker01:~/mongo$ 
+</code></pre>
+
+<h3 id="inicializando-el-replica-set-y-el-usuario-inicial">Inicializando el <em>replica set</em> y el usuario inicial</h3>
+
+<p><strong>NOTA</strong>: Este paso se hace una sola vez; esto queda guardado con los datos del
+<strong>mongo</strong> y no hace falta repetirlo nunca más.</p>
+
+<p>Para configurar el <em>replica set</em> necesitamos entrar en uno de ellos a ejecutar algunos pasos;
+por ejemplo entramos en <strong>mongo01</strong> que está &ldquo;clavado&rdquo; en <strong>docker04</strong>:</p>
+
+<pre><code class="language-bash">gerard@docker04:~$ docker ps
+CONTAINER ID        IMAGE                  COMMAND                  CREATED             STATUS              PORTS               NAMES
+4891c8b577e7        sirrtea/mongo:debian   &quot;/usr/bin/mongod --c…&quot;   8 minutes ago       Up 8 minutes                            mongo_mongo01.1.4xn6emptjk6duqse0tj9ey3hc
+gerard@docker04:~$ docker exec -ti 4891c8b577e7 mongo
+MongoDB shell version v4.0.11
+...
+&gt; 
+</code></pre>
+
+<p>Primero hay que atar la <em>replica set</em>; lo hago en un solo comando para aligerar, pero nada
+impediría hacer un <code>rs.initiate()</code> y varios <code>rs.add()</code>.</p>
+
+<pre><code class="language-bash">&gt; rs.initiate(
+...    {
+...       _id: &quot;rs&quot;,
+...       version: 1,
+...       members: [
+...          { _id: 0, host : &quot;mongo01:27017&quot; },
+...          { _id: 1, host : &quot;mongo02:27017&quot; },
+...          { _id: 2, host : &quot;mongo03:27017&quot; }
+...       ]
+...    }
+... )
+{ &quot;ok&quot; : 1 }
+rs:SECONDARY&gt; 
+</code></pre>
+
+<p>Para que la autenticación de usuarios se haga efectiva, debemos poner uno, con permisos
+suficientes para gestionar todo el resto. Voy a crear un usuario <strong>admin</strong> y luego ya
+pensaremos en hacer usuarios &ldquo;de uso habitual&rdquo; de la base de datos, más limitados a sus funciones.</p>
+
+<pre><code class="language-bash">rs:PRIMARY&gt; use admin
+switched to db admin
+rs:PRIMARY&gt; db.createUser({user: &quot;admin&quot;, pwd: &quot;s3cr3t&quot;, roles: [{role: &quot;root&quot;, db: &quot;admin&quot;}]})
+Successfully added user: {
+	&quot;user&quot; : &quot;admin&quot;,
+	&quot;roles&quot; : [
+		{
+			&quot;role&quot; : &quot;root&quot;,
+			&quot;db&quot; : &quot;admin&quot;
+		}
+	]
+}
+rs:PRIMARY&gt; 
+</code></pre>
+
+<p>Si lo hemos hecho bien, salimos del <em>mongo shell</em> y al entrar, nos obligará a autenticarnos
+para poder sacar un <code>rs.status()</code>, que de paso, confirmará que el <em>replica set</em> esta bien.</p>
+
+<pre><code class="language-bash">gerard@docker04:~$ docker exec -ti 4891c8b577e7 mongo
+...
+rs:PRIMARY&gt; rs.status()
+...
+	&quot;ok&quot; : 0,
+	&quot;errmsg&quot; : &quot;command replSetGetStatus requires authentication&quot;,
+	&quot;code&quot; : 13,
+	&quot;codeName&quot; : &quot;Unauthorized&quot;,
+...
+rs:PRIMARY&gt; 
+</code></pre>
+
+<p>Nos autenticamos como <strong>admin</strong> y repetimos:</p>
+
+<pre><code class="language-bash">rs:PRIMARY&gt; use admin
+switched to db admin
+rs:PRIMARY&gt; db.auth(&quot;admin&quot;, &quot;s3cr3t&quot;)
+1
+rs:PRIMARY&gt; rs.status()
+{
+	&quot;set&quot; : &quot;rs&quot;,
+...
+	&quot;members&quot; : [
+		{
+...
+			&quot;name&quot; : &quot;mongo01:27017&quot;,
+...
+			&quot;stateStr&quot; : &quot;PRIMARY&quot;,
+		},
+		{
+...
+			&quot;name&quot; : &quot;mongo02:27017&quot;,
+...
+			&quot;stateStr&quot; : &quot;SECONDARY&quot;,
+		},
+		{
+...
+			&quot;name&quot; : &quot;mongo03:27017&quot;,
+...
+			&quot;stateStr&quot; : &quot;SECONDARY&quot;,
+...
+		}
+	],
+	&quot;ok&quot; : 1,
+...
+}
+rs:PRIMARY&gt; 
+</code></pre>
+
+<p>Y de momento lo dejamos; habrá que crear usuarios para que las aplicaciones accedan a
+su propia base de datos, pero como de momento no servimos ninguna aplicación, ya lo
+revisaremos en futuros artículos de la serie.</p>
+
+<hr />
+
+<h2>Artículos de la serie "Un entorno productivo basado en Docker Swarm"</h2>
+<ul>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-3.html">Un entorno productivo basado en Docker Swarm (III)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-2.html">Un entorno productivo basado en Docker Swarm (II)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm.html">Un entorno productivo basado en Docker Swarm (I)</a></li>
+</ul>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
