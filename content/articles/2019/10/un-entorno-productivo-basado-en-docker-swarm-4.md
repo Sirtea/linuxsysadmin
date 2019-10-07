@@ -3,7 +3,7 @@ title: "Un entorno productivo basado en Docker Swarm (IV)"
 slug: "un-entorno-productivo-basado-en-docker-swarm-4"
 date: "2019-10-07"
 categories: ['Sistemas']
-tags: ['linux', 'entorno', 'docker', 'swarm']
+tags: ['linux', 'entorno', 'docker', 'swarm', 'traefik', 'keepalived']
 series: "Un entorno productivo basado en Docker Swarm"
 ---
 
