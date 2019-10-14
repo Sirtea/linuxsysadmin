@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un entorno productivo basado en Docker Swarm (V) - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Un entorno productivo basado en Docker Swarm (V)</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-10-14
+	<strong>Tiempo de lectura</strong>: 9 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/entorno.html">entorno</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/deployment.html">deployment</a> / <a href="/tag/python.html">python</a> / <a href="/tag/falcon.html">falcon</a> / <a href="/tag/httpie.html">httpie</a>
+</p>
+
+<p>En los anteriores artículos de la serie vimos como montar un entorno entero basado
+en <strong>docker swarm</strong>; añadimos un par de servicios de infraestructura básica, como
+son el balanceador y un <em>cluster</em> de bases de datos. Eran pasos que se hacen una
+sola vez y raramente se modifican. Ahora toca provisionar aplicaciones, en un proceso
+que vamos a repetir frecuentemente.</p>
+
+<p>Y es que ha llegado el momento de la verdad: nuestros desarrolladores han completado
+una <em>release</em>, y nos toca ponerla en funcionamiento. Para el caso, vamos a suponer
+que se trata de una API de gatitos, que nos permite (en su primera versión) proveer
+las operaciones más básicas de alta, baja, modificación y consulta.</p>
+
+<p><strong>NOTA</strong>: La aplicación usada <a href="/downloads/kittenapi.tar.gz">es esta</a>, que está hecha con <strong>python</strong> y
+<strong>falcon</strong>; con ella ilustro los ejemplos, aunque podéis escribir la vuestra propia
+en el lenguaje que más os apetezca.</p>
+
+<p>Normalmente tendríamos un <em>toolkit</em> para descargar el código de algún repositorio,
+compilar lo que tocara, crear la imagen de <strong>docker</strong> y publicar en algún registro;
+para no complicar el asunto en exceso, voy a hacer estos pasos manualmente.</p>
+
+<h2 id="etapa-de-build">Etapa de <em>build</em></h2>
+
+<p>El <em>tarball</em> con el código, o el clon del repositorio no nos sirven demasiado;
+queremos imagenes <strong>docker</strong> en un registro para que el <em>cluster</em> pueda hacer los
+respectivos <code>docker pull</code>. Así pues tenemos que hacer un <code>docker build</code> y el
+correspondiente <code>docker push</code>.</p>
+
+<p>No tenemos un registro privado, pero es fácil de hacer, tanto su <a href="/2017/01/un-registro-local-de-docker.html">uso simple</a>,
+como un uso profesional <a href="/2018/11/un-registro-docker-privado-por-https-con-autenticacion-basica.html">con autenticación y SSL</a>. Por simplicidad, voy a
+utilizar <a href="https://hub.docker.com/">Docker Hub</a>, aunque será solo de forma temporal; luego eliminaré la imagen.</p>
+
+<p>Empezamos con el <em>build</em>:</p>
+
+<pre><code class="language-bash">gerard@builder:~/kittenapi$ docker build -t sirrtea/kittenapi .
+...
+Successfully built 008e3cc7144a
+Successfully tagged sirrtea/kittenapi:latest
+gerard@builder:~/kittenapi$ 
+</code></pre>
+
+<p>Asumiendo que ya hemos creado el repositorio en <strong>Docker Hub</strong>, solo necesitamos
+hacer un <em>push</em>, para que la imagen esté disponible en un registro accesible
+por todas la partes que lo puedan necesitar.</p>
+
+<pre><code class="language-bash">gerard@builder:~/kittenapi$ docker login
+Login with your Docker ID to push and pull images from Docker Hub. If you don't have a Docker ID, head over to https://hub.docker.com to create one.
+Username: sirrtea
+Password: 
+...
+Login Succeeded
+gerard@builder:~/kittenapi$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@builder:~/kittenapi$ docker push sirrtea/kittenapi
+The push refers to repository [docker.io/sirrtea/kittenapi]
+...
+latest: digest: sha256:4116e4398a0e2852b0dd2dad0b6d080af9711f107400eaefaf644edeb5f0bf7a size: 1365
+gerard@builder:~/kittenapi$ 
+</code></pre>
+
+<h2 id="un-usuario-para-el-acceso-a-la-base-de-datos">Un usuario para el acceso a la base de datos</h2>
+
+<p>Nuestra nueva aplicación necesita una nueva base de datos <strong>mongodb</strong>. Ya creamos
+el <em>cluster</em> en un artículo anterior, pero es necesario crearle el usuario porque
+activamos la autenticación y, sin autenticarse, no va a poder hacer nada.</p>
+
+<p>Para ello necesitamos buscar el nodo primario del <em>cluster</em>, ya que la creación
+de un usuario es una escritura, que solo se acepta en un primario. Nos conectamos
+a un nodo cualquiera, nos autenticamos como <em>admin</em> y sacamos un <code>rs.status()</code>;
+con la salida es trivial saber cuál es el primario, al que nos vamos a conectar.</p>
+
+<pre><code class="language-bash">gerard@docker05:~$ docker ps
+CONTAINER ID        IMAGE                  COMMAND                  CREATED              STATUS              PORTS               NAMES
+077a6f40b30e        sirrtea/mongo:debian   &quot;/usr/bin/mongod --c…&quot;   About a minute ago   Up About a minute                       mongo_mongo02.1.ralisf5jh5etw5yc0fx3q95wi
+gerard@docker05:~$ docker exec -ti 077a6f40b30e mongo
+MongoDB shell version v4.0.11
+...
+rs:SECONDARY&gt; use admin
+switched to db admin
+rs:SECONDARY&gt; db.auth(&quot;admin&quot;, &quot;s3cr3t&quot;)
+1
+rs:SECONDARY&gt; rs.status()
+...
+	&quot;members&quot; : [
+		{
+...
+			&quot;name&quot; : &quot;mongo01:27017&quot;,
+...
+			&quot;stateStr&quot; : &quot;PRIMARY&quot;,
+...
+rs:SECONDARY&gt; 
+</code></pre>
+
+<p>Nos conectamos al primario, nos autenticamos y creamos un usuario para nuestra nueva
+aplicación, con el nombre de la base de datos, el usuario y la <em>password</em> que veamos
+conveniente. En mi caso, el nombre de la base de datos y el usuario coinciden;
+la contraseña ha sido autogenerada.</p>
+
+<pre><code class="language-bash">gerard@docker04:~$ docker ps
+CONTAINER ID        IMAGE                  COMMAND                  CREATED             STATUS              PORTS               NAMES
+092ce50d0bf6        sirrtea/mongo:debian   &quot;/usr/bin/mongod --c…&quot;   5 minutes ago       Up 5 minutes                            mongo_mongo01.1.uy2lcliipqo7glhp5y5miymq8
+gerard@docker04:~$ docker exec -ti 092ce50d0bf6 mongo admin
+...
+rs:PRIMARY&gt; db.auth(&quot;admin&quot;, &quot;s3cr3t&quot;)
+1
+rs:PRIMARY&gt; db.createUser({user: &quot;kittenapi&quot;, pwd: &quot;LCg1SMxoWDg7gkuQ&quot;, roles: [{role: &quot;readWrite&quot;, db: &quot;kittenapi&quot;}]})
+Successfully added user: {
+	&quot;user&quot; : &quot;kittenapi&quot;,
+	&quot;roles&quot; : [
+		{
+			&quot;role&quot; : &quot;readWrite&quot;,
+			&quot;db&quot; : &quot;kittenapi&quot;
+		}
+	]
+}
+rs:PRIMARY&gt; 
+</code></pre>
+
+<p>Y con esto ya tenemos un usuario para trabajar con la base de datos de la aplicación.</p>
+
+<h2 id="desplegando-el-servicio-en-el-swarm">Desplegando el servicio en el <em>swarm</em></h2>
+
+<p>Para mantener una estructura similar al resto de artículos, vamos a suponer que tenemos
+un clon del repositorio de ficheros de <em>stack</em>, con una carpeta para la base de datos,
+una carpeta para los balanceadores, y una carpeta para cada aplicación, como sigue:</p>
+
+<pre><code class="language-bash">gerard@docker01:~$ mkdir kittenapi
+gerard@docker01:~$ cd kittenapi/
+gerard@docker01:~/kittenapi$ 
+</code></pre>
+
+<p>La aplicación en sí misma no es muy compleja; no necesita secretos, ni configuraciones;
+solamente tenemos que aplicar las variables de entorno para configurar la aplicación,
+y las <em>labels</em> necesarias para que <strong>traefik</strong> lo reconozca. Haciendo memoria, este
+contenedor necesita estar conectada a las 2 redes creadas:</p>
+
+<ul>
+<li>A la red <em>frontend</em>, para que <strong>traefik</strong> le pueda pasar peticiones.</li>
+<li>A la red <em>backend</em>, que le garantiza acceso a la base de datos.</li>
+</ul>
+
+<p><strong>TRUCO</strong>: Se recomienda que no se ejecuten aplicaciones en los <em>managers</em> y que
+se utilicen solo para gestionar el <em>cluster</em>; en mi caso también deben alojar los
+contenedores de <strong>traefik</strong>. La forma para limitar el deploy es usando <em>labels</em>.</p>
+
+<pre><code class="language-bash">gerard@docker01:~/kittenapi$ docker node update --label-add usage=apps docker04
+docker04
+gerard@docker01:~/kittenapi$ docker node update --label-add usage=apps docker05
+docker05
+gerard@docker01:~/kittenapi$ docker node update --label-add usage=apps docker06
+docker06
+gerard@docker01:~/kittenapi$ 
+</code></pre>
+
+<p>De esta forma podemos escribir un fichero tipo <em>compose</em> de este estilo:</p>
+
+<pre><code class="language-bash">gerard@docker01:~/kittenapi$ cat kittenapi.yml 
+version: '3'
+services:
+  kittenapi:
+    image: sirrtea/kittenapi
+    environment:
+      MONGODB_URI: mongodb://kittenapi:LCg1SMxoWDg7gkuQ@mongo01:27017,mongo02:27017,mongo03:27017/kittenapi?replicaSet=rs&amp;authSource=admin
+    networks:
+      - frontend
+      - backend
+    deploy:
+      replicas: 2
+      labels:
+        traefik.http.routers.kittenapi.rule: Host(`kittenapi.example.com`)
+        traefik.http.services.kittenapi.loadbalancer.server.port: 8080
+        traefik.enable: &quot;true&quot;
+      placement:
+        constraints:
+        - node.labels.usage == apps
+networks:
+  frontend:
+    external: true
+  backend:
+    external: true
+gerard@docker01:~/kittenapi$ 
+</code></pre>
+
+<p><strong>NOTA</strong>: Las <em>labels</em> sirven para la versión 2.0 de <strong>traefik</strong>, que es la usada en el entorno.</p>
+
+<p>Y con esto ya podemos desplegar:</p>
+
+<pre><code class="language-bash">gerard@docker01:~/kittenapi$ docker stack deploy -c kittenapi.yml kittenapi
+Creating service kittenapi_kittenapi
+gerard@docker01:~/kittenapi$ 
+</code></pre>
+
+<p>Comprobamos que todo ha levantado como debe:</p>
+
+<pre><code class="language-bash">gerard@docker01:~/kittenapi$ docker stack ps kittenapi
+ID                  NAME                    IMAGE                      NODE                DESIRED STATE       CURRENT STATE           ERROR               PORTS
+tng8x8ly8ufq        kittenapi_kittenapi.1   sirrtea/kittenapi:latest   docker05            Running             Running 8 seconds ago                       
+owjvcv7dillq        kittenapi_kittenapi.2   sirrtea/kittenapi:latest   docker06            Running             Running 8 seconds ago                       
+gerard@docker01:~/kittenapi$ 
+</code></pre>
+
+<h2 id="comprobando-el-servicio">Comprobando el servicio</h2>
+
+<p>La comprobación es simple y se puede hacer de dos maneras:</p>
+
+<ul>
+<li>Mirar el <em>dashboard</em> de <strong>traefik</strong>, expuesto en el puerto 8080 del <em>gateway</em></li>
+<li>Interactuar con la API y ver que todo responde desde una máquina cualquiera</li>
+</ul>
+
+<p><strong>NOTA</strong>: La máquina <strong>desktop</strong> accede al puerto 80 del <em>gateway</em> mediante un
+<em>port forwarding</em> en el puerto 8000 (es el <em>host</em> de <strong>VirtualBox</strong>). Esto es
+arbitrario y va a depender de vuestro <em>setup</em> de red.</p>
+
+<p><strong>TRUCO</strong>: Como no he puesto los registros DNS, vamos a probarlo con la cabecera HTTP
+<code>Host</code>. También nos vamos a ayudar de una herramienta magnífica llamada <a href="https://httpie.org/">HTTPie</a>,
+que nos simplifica el uso de la API y nos formatea la salida.</p>
+
+<p>Partimos de una base de datos vacía, así que la API no nos devuelve ningún recurso
+para la colección <code>kittens</code> (estamos probando el método GET); sin sorpresas:</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ http get :8000/kittens Host:kittenapi.example.com
+HTTP/1.1 200 OK
+...
+
+[]
+
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Probamos ahora el método POST, creando algunos gatitos para la colección:</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ http post :8000/kittens Host:kittenapi.example.com name=Ginger
+HTTP/1.1 201 Created
+...
+gerard@desktop:~$ http post :8000/kittens Host:kittenapi.example.com name=Snowball
+HTTP/1.1 201 Created
+...
+gerard@desktop:~$ http post :8000/kittens Host:kittenapi.example.com name=Molly
+HTTP/1.1 201 Created
+...
+gerard@desktop:~$ http get :8000/kittens Host:kittenapi.example.com
+HTTP/1.1 200 OK
+...
+
+[
+    {
+        &quot;id&quot;: 1,
+        &quot;name&quot;: &quot;Ginger&quot;
+    },
+    {
+        &quot;id&quot;: 2,
+        &quot;name&quot;: &quot;Snowball&quot;
+    },
+    {
+        &quot;id&quot;: 3,
+        &quot;name&quot;: &quot;Molly&quot;
+    }
+]
+
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Para probar los métodos más inusuales (PUT y DELETE), hacemos las peticiones
+de modificación y borrado, cambiando el nombre de un gatito y eliminando otro:</p>
+
+<pre><code class="language-bash">gerard@desktop:~$ http put :8000/kittens/2 Host:kittenapi.example.com name=Snowball2
+HTTP/1.1 200 OK
+...
+gerard@desktop:~$ http delete :8000/kittens/1 Host:kittenapi.example.com
+HTTP/1.1 200 OK
+...
+gerard@desktop:~$ http get :8000/kittens Host:kittenapi.example.com
+HTTP/1.1 200 OK
+...
+
+[
+    {
+        &quot;id&quot;: 2,
+        &quot;name&quot;: &quot;Snowball2&quot;
+    },
+    {
+        &quot;id&quot;: 3,
+        &quot;name&quot;: &quot;Molly&quot;
+    }
+]
+
+gerard@desktop:~$ 
+</code></pre>
+
+<p>Y con esto nos damos por satisfechos.</p>
+
+<h2 id="siguientes-pasos">Siguientes pasos</h2>
+
+<h3 id="más-servicios">Más servicios</h3>
+
+<p>Para añadir más servicios a nuestro <em>cluster</em>, es tan simple como repetir todo el
+artículo, a excepción de las <em>labels</em>, que ya estarían presentes. Estos servicios
+puede estar en la misma <em>stack</em>, o estar repartidos en varias <em>stacks</em>, de acuerdo
+con la organización lógica que queráis imponer en vuestro <em>workflow</em>.</p>
+
+<h3 id="crear-entradas-dns-adecuadas">Crear entradas DNS adecuadas</h3>
+
+<p>Probar con la cabecera <code>Host</code> es útil, pero no es cómodo. Para llegar a esta API,
+se necesita un registro DNS en condiciones, para que todos los usuarios de la API
+puedan llegar cómodamente por nombre y les resuelva a una dirección IP a la que
+puedan acceder (posiblemente pública).</p>
+
+<p>Un cambio de nombre de dominio no solo depende de la entrada DNS; si lo cambiáis,
+recordad que <strong>traefik</strong> hace <em>virtualhosts</em>, tal como se define el las <em>labels</em>
+del servicio. No os olvidéis de cambiarlas.</p>
+
+<h3 id="usar-ssl-para-encriptar-las-conexiones">Usar SSL para encriptar las conexiones</h3>
+
+<p>Ninguna API debería servirse por HTTP plano. De hecho, ninguna web debería.
+<strong>Traefik</strong> soporta SSL a través de <strong>LetsEncrypt</strong> de forma nativa; si esto no
+es posible, delegad la capa SSL al balanceador o <em>proxy</em> externo.</p>
+
+<h3 id="más-servidores">Más servidores</h3>
+
+<p>Si nos quedamos cortos de recursos, el <em>cluster</em> es ampliable; solo necesitamos
+clonar de nuevo la máquina <strong>docker</strong> base, configurar el <em>gateway</em> para que le
+asigne una dirección IP fija y ejecutar el <em>join token</em> del <em>swarm</em>.</p>
+
+<p>Recordad que <em>swarm</em> no va a recolocar ningún servicio que no sea estrictamente
+necesario; podemos escalar los servicios para forzar nuevas instancias, que irían
+a parar a los nodos más desocupados, escalando nuevamente a la baja para eliminar
+contenedores de donde sobren.</p>
+
+<p>Hay que tener presente que todos los servicios tienen restricciones de <em>placement</em>;
+para que el nuevo servidor sea candidato para <strong>traefik</strong> deberá ser un <em>manager</em>
+(acordáos de <strong>keepalived</strong>), para mover algún nodo de la base de datos hará falta
+otra <em>label</em> (los datos no se moverán, así que confiad en la replicación del
+<em>replica set</em>), y para alojar aplicaciones hace falta la <em>label</em> <code>usage=apps</code>.</p>
+
+<h3 id="bakups">Bakups</h3>
+
+<p>No se están haciendo backups de ninguna parte del sistema. Hay que identificar
+las partes <em>stateful</em> de cada servicio para saber que es lo que hay que tener
+respaldado, a saber:</p>
+
+<ul>
+<li>Las configuraciones de la infraestructura (especialmente la configuración del <em>gateway</em>)</li>
+<li>Las recetas de despliegue de servicios, con sus ficheros de configuración</li>
+<li>Los datos que nuestras aplicaciones necesiten
+
+<ul>
+<li><strong>Traefik</strong> no tiene un estado que guardar</li>
+<li>Las aplicaciones no deberían generar datos en su contenedor</li>
+<li>La base de datos <strong>es crítica</strong>; pensad en su <em>backup</em> con urgencia</li>
+</ul></li>
+</ul>
+
+<p>Por suerte, los servicios de <em>backup</em> pueden ser contenedores que ejecutan <em>scripts</em>
+y sacan el resultado a un servicio externo; esto hace que todo quede en el <em>swarm</em> y
+no necesitemos modificar nuestros servidores. Esto hace el entorno 100% reconstruíble.</p>
+
+<hr />
+
+<h2>Artículos de la serie "Un entorno productivo basado en Docker Swarm"</h2>
+<ul>
+	<li><a href="https://www.linuxsysadmin.ml/2019/10/un-entorno-productivo-basado-en-docker-swarm-5.html">Un entorno productivo basado en Docker Swarm (V)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/10/un-entorno-productivo-basado-en-docker-swarm-4.html">Un entorno productivo basado en Docker Swarm (IV)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-3.html">Un entorno productivo basado en Docker Swarm (III)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-2.html">Un entorno productivo basado en Docker Swarm (II)</a></li>
+	<li><a href="https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm.html">Un entorno productivo basado en Docker Swarm (I)</a></li>
+</ul>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
