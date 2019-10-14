@@ -240,7 +240,5 @@ hay servicios expuestos, con lo que nos seguirá dando errores 404...
 según vayamos desplegando aplicaciones; **traefik** los separa usando *virtualhosts*.
 Lo siguiente es poner los servicios, pero esto queda para el siguiente artículo de la serie.
 
-[1a]: https://www.linuxsysadmin.ml/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html
 [1]: {{< relref "/articles/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.md" >}}
-[2a]: https://www.linuxsysadmin.ml/2019/05/un-cluster-de-3-nodos-con-failover-voluntario-usando-keepalived.html
 [2]: {{< relref "/articles/2019/05/un-cluster-de-3-nodos-con-failover-voluntario-usando-keepalived.md" >}}
