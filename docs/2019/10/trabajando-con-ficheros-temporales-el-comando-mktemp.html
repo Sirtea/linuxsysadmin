@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Trabajando con ficheros temporales: el comando mktemp - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Trabajando con ficheros temporales: el comando mktemp</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-10-21
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/fichero.html">fichero</a> / <a href="/tag/temporal.html">temporal</a> / <a href="/tag/script.html">script</a> / <a href="/tag/bash.html">bash</a>
+</p>
+
+<p>En uno de los sitios en los que estuve trabajando, tenía un compañero un poco desordenado.
+Cada vez que hacía un <em>script</em> que necesitaba guardar la salida en un fichero temporal,
+reutilizaba los nombres o los acumulaba infinitamente en una carpeta temporal, cuyo nombre
+dependía de la inspiración del momento.</p>
+
+<p>Ambos comportamientos suponen un problema a la larga:</p>
+
+<ul>
+<li>El llenado de espacio o de inodos puede causar problemas en un sistema <em>linux</em>
+
+<ul>
+<li>Son servidores, así que es improbable que se reinicien y se libere la carpeta <code>/tmp</code></li>
+<li>Tener varias carpetas de ficheros temporales nos garantiza el caos absoluto y perder nuestros datos</li>
+</ul></li>
+<li>El reusado de nombres de ficheros es todavía más peligroso
+
+<ul>
+<li>Podemos sobreescribir algo importante de una ejecución anterior</li>
+<li>Si hay dos ejecuciones paralelas de <em>scripts</em> que trabajen con ese fichero, los resultados serán impredecibles</li>
+</ul></li>
+</ul>
+
+<p>Así pues, cuando yo trabajo con ficheros temporales, siempre utilizo el comando <code>mktemp</code>,
+que nos crea un fichero vacío (garantizando que no existiera) y nos devuelve el <em>path</em>
+completo al mismo; sin embargo <strong>no lo elimina</strong>, siendo este nuestro trabajo.</p>
+
+<p>Para ello, hay dos técnicas utilizadas habitualmente por los que escribimos <em>scripts</em>:</p>
+
+<ul>
+<li>Lo creamos y lo eliminamos sin cerrarlo, con lo que no se eliminará efectivamente hasta que lo cerremos</li>
+<li>Podemos registrar un evento tipo <em>trap</em> para que al salir de nuestro <em>script</em> lo haga el propio <em>shell</em></li>
+</ul>
+
+<p>La que me gusta más es la segunda; es más limpia y no hay que ir con cuidado de no cerrar
+el fichero antes de tiempo. Además, si el <em>script</em> falla, los <em>traps</em> se ejecutan igualmente.</p>
+
+<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
+
+<p>Supongamos que tenemos un proceso de importación de datos de un sistema externo. Este
+sistema nos proporciona unos datos en bruto que hay que procesar, cambiar de formato y,
+posiblemente, insertar en una base de datos local.</p>
+
+<p>Para obtener los datos es muy fácil hacerlo en <strong>bash</strong>, o tal vez alguien externo escribió el
+<em>script</em> y no nos apetece reescribirlo; sin embargo, el procesado de datos lo vamos a hacer
+en <strong>python</strong> porque nos ofrece muchas más facilidades para el proceso e inserción de los datos.</p>
+
+<p>Así pues, tenemos un sistema de 3 <em>scripts</em>:</p>
+
+<ul>
+<li>Uno escrito en <strong>bash</strong> que obtiene los datos y los escribe en la salida estándar</li>
+<li>Uno en <strong>python</strong> que los procesa, los modifica y los guarda en la base de datos</li>
+<li>El <em>script</em> principal, también en <strong>bash</strong>, que llama a los otros dos</li>
+</ul>
+
+<p>Para la salida del primer <em>script</em>, necesitamos recoger la salida en un fichero, para poder
+pasárselo al segundo <em>script</em>; vamos a utilizar un fichero temporal para esto. El responsable
+de crear y borrar los ficheros temporales va a ser el <em>script</em> principal, dejando que los
+otros dos <em>scripts</em> simplemente los usen.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/scripts$ cat ingesta_datos_externos.sh 
+#!/bin/bash
+
+TEMPFILE=$(mktemp)
+echo &quot;'${TEMPFILE}' creado&quot;
+trap 'rm -v ${TEMPFILE}' EXIT
+
+./consultar_sistema_externo.sh &gt; ${TEMPFILE}
+./procesar_datos.py ${TEMPFILE}
+gerard@sirius:~/scripts$ 
+</code></pre>
+
+<p>Estos dos <em>scripts</em> invocados harán lo que deban: el primero escribirá los datos en
+la salida estándar, y el segundo los leerá para hacer lo que necesitemos; para limitar
+el alcance del artículo, vamos ha hacer que no hagan nada.</p>
+
+<pre><code class="language-bash">gerard@sirius:~/scripts$ cat consultar_sistema_externo.sh 
+#!/bin/bash
+gerard@sirius:~/scripts$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@sirius:~/scripts$ cat procesar_datos.py 
+#!/usr/bin/env python3
+gerard@sirius:~/scripts$ 
+</code></pre>
+
+<p>Nos quedamos con las tres ideas claves del artículo:</p>
+
+<ul>
+<li>Creamos un fichero temporal con <code>mktemp</code>, recogiendo su <em>path</em> en una variable</li>
+<li>Registramos un <em>trap</em> que elimine el fichero cuando el <em>script</em> principal acabe</li>
+<li>Trabajamos alegremente con nuestro fichero temporal, sin importar su nombre o su localización</li>
+</ul>
+
+<p>Si necesitamos más control sobre la posición o el nombre del fichero temporal, podemos
+poner algunos parámetros en la invocación de <code>mktemp</code>, aunque esto lo tendréis que
+estudiar por vosotros mismos; la información está fácilmente a la vista:</p>
+
+<pre><code class="language-bash">gerard@sirius:~/scripts$ mktemp --help
+Modo de empleo: mktemp [OPCIÓN]... [PLANTILLA]
+Crea un fichero o un directorio temporal, de forma segura, y muestra su nombre.
+TEMPLATE debe contener al menos 3 'X's consecutivas en la última componente.
+Si no se especifica PLANTILLA, utiliza tmp.XXXXXXXXXX e implica --tmpdir.
+los ficheros se crean con permisos u+rw, los directories con u+rwx,
+menos las restricciones de umask.
+
+  -d, --directory     crea un directorio, no un fichero
+  -u, --dry-run       no crea nada, simplemente muestra un nombre (inseguro)
+  -q, --quiet         elimina los mensajes sobre fallos de creación de
+                        ficheros/directorios
+      --suffix=SUF    añade SUF a PLANTILLA; SUF no debe contener la barra.
+                        Esta opción va implícita si TEMPLATE no termina en X
+  -p DIR --tmpdir[=DIR]  interpreta PLANTILLA relativa a DIR; si no se especifica
+                     DIR, utiliza $TMPDIR si existe, o si no /tmp.
+                     Con esta opción, PLANTILLA no debe ser un nombre absoluto;
+                     al contrario que con -t, PLANTILLA puede contener barras,
+                     pero mktemp solamente crea la última componente
+  -t               interpreta PLANTILLA como una sola componente de nombre de
+                     fichero relativa a un directorio: $TMPDIR, si existe;
+                     o si no el directorio especificado con -p; o si no /tmp
+                     (obsoleto)
+      --help     muestra esta ayuda y finaliza
+      --version  informa de la versión y finaliza
+
+ayuda en línea sobre GNU coreutils: &lt;http://www.gnu.org/software/coreutils/&gt;
+Informe de errores de traducción en mktemp a &lt;http://translationproject.org/team/es.html&gt;
+Full documentation at: &lt;http://www.gnu.org/software/coreutils/mktemp&gt;
+or available locally via: info '(coreutils) mktemp invocation'
+gerard@sirius:~/scripts$ 
+</code></pre>
+
+<p>Y con esto evitamos seguir acumulando ficheros innecesarios, que solo molestan.</p>
+
+<p><strong>Feliz <em>scripting</em>!</strong></p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
