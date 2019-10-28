@@ -3,17 +3,52 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
+    <loc>https://www.linuxsysadmin.ml/2019/10/algunos-trucos-con-el-cliente-ssh-y-su-configuracion.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
+    <loc>https://www.linuxsysadmin.ml/archives.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/configuracion.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/ssh.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2019-10-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
     <lastmod>2019-10-21T00:00:00+00:00</lastmod>
   </url>
   
@@ -23,22 +58,7 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/tag/script.html</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2019-10-21T00:00:00+00:00</lastmod>
   </url>
   
@@ -74,11 +94,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/httpie.html</loc>
-    <lastmod>2019-10-14T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
     <lastmod>2019-10-14T00:00:00+00:00</lastmod>
   </url>
   
@@ -354,11 +369,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html</loc>
-    <lastmod>2019-06-10T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/ssh.html</loc>
     <lastmod>2019-06-10T00:00:00+00:00</lastmod>
   </url>
   
@@ -2064,11 +2074,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/12factor.html</loc>
-    <lastmod>2016-09-12T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/configuracion.html</loc>
     <lastmod>2016-09-12T00:00:00+00:00</lastmod>
   </url>
   
