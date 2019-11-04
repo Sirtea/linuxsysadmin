@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Pruebas de carga HTTP como un Saiyan con Vegeta - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Pruebas de carga HTTP como un Saiyan con Vegeta</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-11-04
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/toolbox.html">toolbox</a> / <a href="/tag/vegeta.html">vegeta</a> / <a href="/tag/go.html">go</a> / <a href="/tag/carga.html">carga</a> / <a href="/tag/benchmark.html">benchmark</a>
+</p>
+
+<p>Hacía tiempo que no hacía pruebas de carga contra una web, pero como no podía
+ser de otra forma, me cayó una petición de este tipo el otro día. Reconociendo
+que el venerable <code>ab</code> se quedaba corto, decidí buscar una alternativa viable;
+encontré una que me sacó una sonrisa: <strong>vegeta</strong>.</p>
+
+<blockquote>
+<p><strong>HTTP load testing tool and library. It&rsquo;s over 9000!</strong><br />
+Vegeta is a versatile HTTP load testing tool built out of a need to drill HTTP services
+with a constant request rate. It can be used both as a command line utility and a library.</p>
+</blockquote>
+
+<p>Para los que no la conozcáis, la podéis encontrar <a href="https://github.com/tsenart/vegeta">aquí</a>. Siguiendo la moda
+actual, está escrita en <strong>go</strong> y no hay que instalar nada; ya de paso, en la
+sección de <em>releases</em>, podéis encontrar binarios precompilados.</p>
+
+<p>Como es un binario estático, no necesita librerías ni paquetería extra, y lo podemos
+&ldquo;dejar tirado&rdquo; en alguna carpeta personal. En mi caso, lo he dejado en <code>~/bin/</code>
+porque la tengo en el <em>path</em> y así no necesito indicar la ruta en cada invocación.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ wget https://github.com/tsenart/vegeta/releases/download/v12.7.0/vegeta-12.7.0-linux-amd64.tar.gz
+...
+gerard@atlantis:~$ tar xf vegeta-12.7.0-linux-amd64.tar.gz -C bin/ vegeta
+gerard@atlantis:~$ 
+</code></pre>
+
+<p>El protocolo de uso se basa en dos grandes pilares:</p>
+
+<ul>
+<li><code>vegeta attack</code> &rarr; Ejecuta el test de carga y genera un fichero binario de resultados</li>
+<li><code>vegeta report</code> &rarr; Analiza el fichero binario para agrupar resultados y convertirlo en legible</li>
+</ul>
+
+<p><strong>TRUCO</strong>: De hecho, ambos se pueden concatenar para no necesitar el fichero intermedio.</p>
+
+<p>El objetivo del ataque se especifica por entrada estándar o por parámetro; el formato
+es similar a la cabecera <em>HTTP request</em>: método y URL.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ echo &quot;GET http://localhost:8000&quot; | vegeta attack -duration 5s | vegeta report
+Requests      [total, rate, throughput]  250, 50.20, 50.17
+Duration      [total, attack, wait]      4.982561765s, 4.979865973s, 2.695792ms
+Latencies     [mean, 50, 95, 99, max]    2.628218ms, 2.618314ms, 2.894038ms, 3.791979ms, 3.951445ms
+Bytes In      [total, mean]              461500, 1846.00
+Bytes Out     [total, mean]              0, 0.00
+Success       [ratio]                    100.00%
+Status Codes  [code:count]               200:250  
+Error Set:
+gerard@atlantis:~$ 
+</code></pre>
+
+<p>En principio, el ataque tiene un número de peticiones por segundo predeterminado
+(parámetro <code>-rate</code>, por defecto 50/1s), pero es interesante recalcar que indicar &ldquo;0&rdquo;
+hace un ataque al máximo, para testear el límite de nuestro servidor, aunque entonces
+se nos solicitan más parámetros&hellip;</p>
+
+<pre><code class="language-bash">gerard@atlantis:~$ echo &quot;GET http://localhost:8000&quot; | vegeta attack -duration 5s -rate 0 -max-workers 10 | vegeta report
+Requests      [total, rate, throughput]  7749, 1549.75, 906.78
+Duration      [total, attack, wait]      8.54561648s, 5.00014542s, 3.54547106s
+Latencies     [mean, 50, 95, 99, max]    7.340269ms, 3.917375ms, 4.127071ms, 4.300204ms, 7.299045058s
+Bytes In      [total, mean]              16815330, 2170.00
+Bytes Out     [total, mean]              0, 0.00
+Success       [ratio]                    100.00%
+Status Codes  [code:count]               200:7749  
+Error Set:
+gerard@atlantis:~$ 
+</code></pre>
+
+<p>Considerando que se trata de un <code>python3 -m http.server</code> levantado temporalmente
+para escribir el artículo, y que no es un servidor pensado para ser estresado, no
+parecen unos números tan malos: 1549 peticiones por segundo. Ahora solo falta
+utilizarlo para unas pruebas un poco más reales&hellip;</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
