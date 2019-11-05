@@ -350,7 +350,7 @@ para que el nuevo servidor sea candidato para **traefik** deberá ser un *manage
 otra *label* (los datos no se moverán, así que confiad en la replicación del
 *replica set*), y para alojar aplicaciones hace falta la *label* `usage=apps`.
 
-### Bakups
+### Backups
 
 No se están haciendo backups de ninguna parte del sistema. Hay que identificar
 las partes *stateful* de cada servicio para saber que es lo que hay que tener
