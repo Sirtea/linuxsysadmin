@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Sirviendo diferentes certificados por virtualhost mediante SNI - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Sirviendo diferentes certificados por virtualhost mediante SNI</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-11-18
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/virtual-hosts.html">virtual hosts</a> / <a href="/tag/https.html">HTTPS</a> / <a href="/tag/sni.html">SNI</a> / <a href="/tag/haproxy.html">haproxy</a>
+</p>
+
+<p>Como el número de direcciones IPv4 empieza a escasear, es una práctica habitual
+utilizar varios dominios para una misma dirección IP. Con HTTP normal lo llamamos
+<strong>virtualhosts</strong> y es relativamente sencillo; la cosa se complica cuando estos
+dominios funcionan por HTTPS y hay que servirlos usando certificados distintos.</p>
+
+<p>El protocolo utilizado en estos casos es SNI, que básicamente significa que la
+cabecera de la petición viaja sin encriptar. Esto permite que el elemento web
+encargado de la terminación SSL sepa el dominio antes de seleccionar el certificado
+que debe presentar al que hizo la petición.</p>
+
+<p><strong>NOTA</strong>: La mayoría de navegadores admiten este protocolo, pero no todos.</p>
+
+<p>Cada servidor web tiene su forma para indicar el certificado de un dominio concreto:</p>
+
+<ul>
+<li><strong>Apache</strong> &rarr; Se puede indicar un certificado por <em>virtualhost</em>, cada uno con su <code>ServerName</code>.</li>
+<li><strong>Nginx</strong> &rarr; Cada bloque <code>upstream</code> (con su <code>server_name</code>) admite su propio certificado.</li>
+<li><strong>HAproxy</strong> &rarr; Los certificados se indican en los bloques <code>frontend</code>; hay que dar varios y dejar que <strong>haproxy</strong> elija.</li>
+</ul>
+
+<h2 id="un-ejemplo-con-haproxy">Un ejemplo con HAproxy</h2>
+
+<p>Vamos a crear un ejemplo en el que tenemos dos servidores de <em>backend</em>, ambos
+por HTTPS; uno sirve una web y el otro sirve una API. Como no queremos alargar
+el artículo, voy a poner un servidor <strong>nginx</strong> sirviendo dos webs simples, aunque
+el contenido va a indicar si es la web o la API.</p>
+
+<h3 id="los-servidores-web">Los servidores web</h3>
+
+<p>La configuración de los servidores web puede ser muy simple, ya que no incluye
+nada relacionado con SSL (de esto se encargará <strong>haproxy</strong>), y solo nos interesa
+servir una web pequeña:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ cat conf/www.conf 
+server {
+	listen 80;
+	server_name _;
+	root /srv/www;
+	index index.html;
+}
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ cat www/index_web.html 
+hello web
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ cat www/index_api.html 
+hello api
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<h3 id="la-terminación-ssl-con-haproxy">La terminación SSL con HAproxy</h3>
+
+<p>Delante de estos servidores web, vamos a poner una terminación SSL con <strong>haproxy</strong>.
+Para ello vamos a necesitar un certificado para cada dominio, que vamos a crear como
+autofirmados por ser un ejemplo rápido.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ mkdir certs
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ openssl req -newkey rsa:2048 -nodes -sha256 -keyout certs/web.local.pem -x509 -days 365 -out certs/web.local.pem -subj '/CN=web.local'
+Generating a RSA private key
+....................+++++
+...................+++++
+writing new private key to 'certs/web.local.pem'
+-----
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ openssl req -newkey rsa:2048 -nodes -sha256 -keyout certs/api.local.pem -x509 -days 365 -out certs/api.local.pem -subj '/CN=api.local'
+Generating a RSA private key
+.................................................+++++
+........+++++
+writing new private key to 'certs/api.local.pem'
+-----
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<p>Para especificar varios certificados en un <em>frontend</em> se indica en la directiva <code>bind</code>,
+necesitando solamente indicar varias veces la coletilla <code>crt &lt;certificado&gt;</code> tras <code>ssl</code>:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ cat conf/haproxy.cfg 
+global
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+    tune.ssl.default-dh-param 2048
+
+defaults
+    mode http
+    timeout connect 10s
+    timeout client 30s
+    timeout server 30s
+
+listen stats
+    bind *:8080
+    stats enable
+    stats uri /
+
+frontend www
+    bind *:80
+    bind *:443 ssl crt /run/secrets/web.local.pem crt /run/secrets/api.local.pem
+    http-request redirect scheme https unless { ssl_fc }
+    use_backend web if { hdr(host) -i web.local }
+    use_backend api if { hdr(host) -i api.local }
+
+backend web
+    server web web:80 check
+
+backend api
+    server api api:80 check
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<h3 id="levantando-los-servidores">Levantando los servidores</h3>
+
+<p>Para los que ya lo sospecharan por la posición de los certificados, vamos a utilizar
+<strong>docker</strong> para levantar todos los procesos de forma fácil. El truco reside en
+<a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">utilizar configuraciones y secretos</a>, tanto para inyectar las configuraciones,
+como para los ficheros HTML y los certificados.</p>
+
+<p>No es el objetivo de este artículo centrarnos en la parte de <strong>docker</strong>, así que
+solo incluyo la configuración para que no nos falte en un futuro. Por ejemplo podemos
+utilizar un <em>stack</em> como este:</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ cat stack.yml 
+version: '3.6'
+services:
+  lb:
+    image: sirrtea/haproxy:alpine
+    configs:
+      - source: haproxy.cfg
+        target: /etc/haproxy/haproxy.cfg
+    secrets:
+      - source: web.local.pem
+      - source: api.local.pem
+    ports:
+      - &quot;80:80&quot;
+      - &quot;443:443&quot;
+      - &quot;8080:8080&quot;
+  web:
+    image: sirrtea/nginx:alpine
+    configs:
+      - source: www.conf
+        target: /etc/nginx/conf.d/www.conf
+      - source: index_web.html
+        target: /srv/www/index.html
+  api:
+    image: sirrtea/nginx:alpine
+    configs:
+      - source: www.conf
+        target: /etc/nginx/conf.d/www.conf
+      - source: index_api.html
+        target: /srv/www/index.html
+configs:
+  haproxy.cfg:
+    file: conf/haproxy.cfg
+  www.conf:
+    file: conf/www.conf
+  index_web.html:
+    file: www/index_web.html
+  index_api.html:
+    file: www/index_api.html
+secrets:
+  web.local.pem:
+    file: certs/web.local.pem
+  api.local.pem:
+    file: certs/api.local.pem
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<p>Solo faltaría deplegar el <em>stack</em> en nuestro <strong>docker swarm</strong>. Si no diponéis
+de un <em>swarm</em> a mano, podéis convertir vuestra instalación en uno con el comando
+<code>docker swarm init</code>; cuando acabemos podéis destruirlo con <code>docker swarm leave -f</code>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ docker stack deploy -c stack.yml sni
+Creating network sni_default
+Creating secret sni_web.local.pem
+Creating secret sni_api.local.pem
+Creating config sni_www.conf
+Creating config sni_index_web.html
+Creating config sni_index_api.html
+Creating config sni_haproxy.cfg
+Creating service sni_web
+Creating service sni_api
+Creating service sni_lb
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<p>Y tras unos segundos necesarios para que se deplieguen los servicios de forma
+asíncrona, deberíamos tener todos los contenedores levantados, y listos para hacer
+nuestras pruebas. Podéis verificarlo en la página de estado de <strong>haproxy</strong> en
+el puerto 8080, que hemos publicado por conveniencia.</p>
+
+<h3 id="verificando-el-funcionamiento">Verificando el funcionamiento</h3>
+
+<p>Se puede verificar el funcionamiento con un navegador, pidiendo los dominios
+por HTTPS y verificando el certificado de forma manual, suponiendo que tenemos
+ya habilitada la resolución DNS de los nombres <code>web.local</code> y <code>api.local</code>.</p>
+
+<p>Lo cómodo, sin embargo, es utilizar herramientas en el mismo terminal en el que
+acabamos de montarlo todo. Para ello necesitamos una herramienta que acepte SNI
+para hacer las peticiones de prueba; el mismo <strong>curl</strong> nos sirve para este propósito.</p>
+
+<p><strong>NOTA</strong>: Como no dispongo de resolución DNS, voy a utilizar el <em>flag</em> <code>--resolve</code>
+como se indica en <a href="/2017/04/testear-dominios-sin-tener-el-dns-con-curl.html">este otro artículo</a>. Utilizar solamente la cabecera <code>Host</code>
+<strong>no funciona</strong>, ya que no activa las funciones SNI de <strong>curl</strong>.</p>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ curl -vk --resolve web.local:443:127.0.0.1 https://web.local/
+...
+* Server certificate:
+*  subject: CN=web.local
+...
+&gt; GET / HTTP/1.1
+&gt; Host: web.local
+&gt; User-Agent: curl/7.52.1
+&gt; Accept: */*
+...
+hello web
+...
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<pre><code class="language-bash">gerard@atlantis:~/sni_haproxy$ curl -vk --resolve api.local:443:127.0.0.1 https://api.local/
+...
+* Server certificate:
+*  subject: CN=api.local
+...
+&gt; GET / HTTP/1.1
+&gt; Host: api.local
+&gt; User-Agent: curl/7.52.1
+&gt; Accept: */*
+...
+hello api
+...
+gerard@atlantis:~/sni_haproxy$ 
+</code></pre>
+
+<p>En ambos casos podemos verificar los 3 puntos clave de la solución:</p>
+
+<ul>
+<li>Solicitamos el dominio <code>web.local</code> (cabecera <code>Host</code>)</li>
+<li>El certificado que se nos presenta es el adecuado (<em>subject</em> del certificado: <code>CN=web.local</code>)</li>
+<li>El contenido servido es el de la web, como vemos en la respuesta</li>
+</ul>
+
+<p>Podemos verificar los 3 puntos adaptados a la petición de <code>api.local</code>. De esta
+forma, podemos dar por validada la solución propuesta. La parte mala es que añadir
+más dominios y certificados va a suponer una larga lista en la directiva <code>bind</code>.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
