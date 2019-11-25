@@ -39,8 +39,8 @@ slug: "curriculum"
 <dl>
 <dt>Empresa:</dt><dd>Jumbo Tours / SII Concatel</dd>
 <dt>Periodo:</dt><dd>04/2019 - actualidad (consultor externo de SII Concatel)</dd>
-<dt>Actividades realizadas:</dt><dd>&nbsp;</dd>
-<dt>Tecnologías utilizadas:</dt><dd>&nbsp;</dd>
+<dt>Actividades realizadas:</dt><dd>Administrador de sistemas Linux, Operaciones, DBA de MongoDB y de DB2</dd>
+<dt>Tecnologías utilizadas:</dt><dd>DB2, MongoDB, Docker, Centos</dd>
 </dl>
 
 <dl>
