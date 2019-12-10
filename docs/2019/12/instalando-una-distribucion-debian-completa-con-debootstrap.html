@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Instalando una distribución Debian completa con debootstrap - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Instalando una distribución Debian completa con debootstrap</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2019-12-10
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/buster.html">buster</a> / <a href="/tag/debootstrap.html">debootstrap</a> / <a href="/tag/instalacion.html">instalación</a>
+</p>
+
+<p>Todos sabemos que podemos construir jaulas enteras de <strong>Debian</strong> con una
+herramienta propia llamada <strong>debootstrap</strong>, pero pocos saben que es la misma
+con la que se instala la distribución si usamos el instalador oficial que viene
+en los CDs descargables. sin embargo la configuración posterior no es trivial.</p>
+<p>Empujado por la curiosidad, y tras haber hecho <em>live CDs</em> con antelación intenté
+hacer una instalación simple si utilizar el instalador, y valiéndome de las
+herramientas que tenía a mano. El resultado es una distribución mínima y plenamente
+funcional (a falta de instalar los servicios que necesitemos); aquí expongo
+el resultado para futuras referencias.</p>
+<p><strong>NOTA</strong>: Todo el proceso se creó utilizando <strong>VirtualBox</strong>; eso me dio una gran
+libertad para &ldquo;poner&rdquo;, &ldquo;quitar&rdquo; y clonar los discos. Esa parte la tendréis que
+adaptar a vuestro sistema de virtualización o <em>cloud</em> habitual.</p>
+<h2>Las herramientas</h2>
+<p>Partiremos de una distribución estándar de <strong>Debian</strong> sin pretensiones (yo parto
+de una instalación <em>netinstall</em>, con SSH y nada más); el único requisito es
+disponer del paquete <strong>debootstrap</strong>, que seguramente tendremos que instalar,
+puesto que no suele estar por defecto.</p>
+<pre><code class="language-bash">gerard@builder:~$ sudo apt install debootstrap
+...
+gerard@builder:~$ 
+</code></pre>
+<h2>Preparar el disco destino</h2>
+<p>La idea inicial es la de crear un sistema de ficheros raíz en un disco secundario;
+este es el que luego servirá como disco primario para la máquina final. Por ello
+vamos a crear un disco nuevo y lo vamos a asignar a la máquina de construcción;
+no es necesaria mucha capacidad y dependerá de su función. He asignado uno de 4gb,
+pero en una de las pruebas puse uno de 1gb y me sobró espacio.</p>
+<p>Necesitamos localizar el dispositivo del nuevo disco y hay varias maneras de hacerlo:</p>
+<ul>
+<li>Hacer acto de fe y creernos que el segundo disco es <code>/dev/sdb</code></li>
+<li>Localizar el disco que está sin particionar</li>
+<li>Verificar la capacidad para asegurar que es el nuevo</li>
+</ul>
+<p>Lanzamos el comando <code>lsblk</code>, que nos permite comprobar los dos últimos métodos:</p>
+<pre><code class="language-bash">gerard@builder:~$ lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0    2G  0 disk 
+└─sda1   8:1    0    2G  0 part /
+sdb      8:16   0    4G  0 disk 
+sr0     11:0    1 1024M  0 rom  
+gerard@builder:~$ 
+</code></pre>
+<p><strong>WARNING</strong>: En este caso, el disco es <code>/dev/sdb</code>, pero revisad esto 2 veces:
+lanzar los siguientes comandos sobre el disco equivocado va a destruir todos
+sus datos. Si utilizáis virtualización o <em>cloud</em>, es un buen momento para
+hacer un <em>snapshot</em>.</p>
+<p>Absolutamente todos los comandos que siguen se hacen con el usuario <strong>root</strong> y,
+aunque va contra todas las buenas prácticas, me ahorro el comando <code>sudo</code> manteniendo
+abierta una sesión de <strong>root</strong>.</p>
+<pre><code class="language-bash">gerard@builder:~$ sudo su -
+root@builder:~# 
+</code></pre>
+<p>Voy a utilizar una única partición para todo el sistema y, por lo tanto, voy a
+ocupar con ella todo el disco; cambiad esto a vuestro gusto. Vamos a crear la
+partición con la herramienta que más os guste o que tengáis a mano:</p>
+<pre><code class="language-bash">root@builder:~# echo -e 'n\np\n1\n\n\nw' | fdisk /dev/sdb
+...
+root@builder:~# 
+</code></pre>
+<p><strong>TRUCO</strong>: Si optáis por el modo interactivo sería la secuencia &ldquo;n p 1 &lt;vacío&gt; &lt;vacío&gt; w&rdquo;.</p>
+<p>El siguiente paso sería formatear la partición:</p>
+<pre><code class="language-bash">root@builder:~# mkfs.ext4 /dev/sdb1
+...
+root@builder:~# 
+</code></pre>
+<p>Montamos la partición en <code>/mnt</code> para poder escribir los cambios en nuestro
+nuevo disco. Si tenéis varias particiones, respetad la jerarquía final, pero
+con el añadido <code>/mnt</code>; así pues, si tenéis una partición para <code>/home</code>, deberíais
+montarla en <code>/mnt/home</code>. Alternativamente podéis trocear en particiones después
+de realizar la imagen de disco completa, de forma manual.</p>
+<pre><code class="language-bash">root@builder:~# mount /dev/sdb1 /mnt/
+root@builder:~# 
+</code></pre>
+<h2>Crear el sistema de ficheros base</h2>
+<p>Esta es la gran función de <strong>debootstrap</strong>; basta con indicar la distribución que
+queremos descargar y la carpeta destino en donde va a dejarlo todo. Adicionalmente,
+el comando también admite una serie de paquetes extra que queramos añadir. En
+nuestro caso, vamos a poner algunos más:</p>
+<ul>
+<li><strong>grub2</strong> → Es el paquete del <em>bootloader</em>, es decir, el menú de selección de sistema operativo.</li>
+<li><strong>linux-image-amd64</strong> → El <em>kernel</em> acorde con nuestra arquitectura. Normalmente no viene porque no es necesario en una jaula.</li>
+<li><strong>openssh-server</strong> → El servidor SSH, que como estoy creando una imagen de servidor, es casi un requisito.</li>
+<li><strong>locales</strong> → El paquete con las traducciones idiomáticas. Es opcional, pero me gusta tener una instalación en español&hellip;</li>
+<li><strong>console-setup</strong> → Este paquete opcional permite personalizar la distribución del teclado y la codificación de la pantalla.</li>
+</ul>
+<p>Sabiendo esto, lanzamos el comando:</p>
+<pre><code class="language-bash">root@builder:~# debootstrap --include=grub2,linux-image-amd64,openssh-server,locales,console-setup buster /mnt/
+I: Target architecture can be executed
+...
+I: Base system installed successfully.
+root@builder:~# 
+</code></pre>
+<p><strong>TRUCO</strong>: Una vez instalado, el sistema no podía hacer <code>systemctl list-units</code>
+porque se quejaba de no tener DBUS. Con instalar el paquete <strong>dbus</strong> fue suficiente.</p>
+<h2>Configurar el sistema nuevo</h2>
+<p>Aunque <strong>Debian</strong> tiene una configuración por defecto excelente, siempre es
+necesario hacer algunos cambios. Para ello vamos a ejecutar una serie de comandos
+<strong>dentro de la jaula</strong>, durante todo este paso.</p>
+<pre><code class="language-bash">root@builder:~# mount -t proc /proc /mnt/proc/
+root@builder:~# mount -t sysfs /sys /mnt/sys/
+root@builder:~# mount -o bind /dev /mnt/dev/
+root@builder:~# chroot /mnt /bin/bash
+root@builder:/# 
+</code></pre>
+<h3>El disco inicial</h3>
+<p>Cuando el sistema operativo arranca, uno de los pasos es montar los discos.
+Para ello, lee el fichero <code>/etc/fstab</code> y saca los puntos de montaje y las opciones.
+Es crucial tener montado nuestro disco en la carpeta raíz, o no se podrá ejecutar
+absolutamente nada, ni siquiera el proceso inicial.</p>
+<p>Para ahorrarnos sorpresas, vamos a hacer el montaje en <code>/etc/fstab</code> usando el
+identificador del disco, que podemos sacar con un simple <code>blkid</code>:</p>
+<pre><code class="language-bash">root@builder:/# blkid 
+/dev/sda1: UUID=&quot;4833cc78-a8b2-4e82-8ce6-f73e5e54c165&quot; TYPE=&quot;ext4&quot; PARTUUID=&quot;59ebc34d-01&quot;
+/dev/sdb1: UUID=&quot;4b7bea93-6137-4640-997e-bd8af70629f3&quot; TYPE=&quot;ext4&quot; PARTUUID=&quot;1e3f0298-01&quot;
+root@builder:/# 
+</code></pre>
+<pre><code class="language-bash">root@builder:/# cat /etc/fstab 
+UUID=4b7bea93-6137-4640-997e-bd8af70629f3 / ext4 defaults 1 1
+root@builder:/# 
+</code></pre>
+<p><strong>TRUCO</strong>: Podemos liberar un poco de espacio en disco haciendo un <code>apt clean</code>.</p>
+<h3>La configuración de red</h3>
+<p>Configuramos los ficheros <code>/etc/hostname</code> y <code>/etc/hosts</code> para darle a nuestro
+nuevo sistema un nombre. Esto se puede cambiar en cualquier momento, pero lo
+vamos haciendo para que sepa el <em>hostname</em> que le debe asignar a la máquina en
+el primer <em>boot</em>.</p>
+<pre><code class="language-bash">root@builder:/# cat /etc/hostname 
+debian
+root@builder:/# 
+</code></pre>
+<pre><code class="language-bash">root@builder:/# cat /etc/hosts
+127.0.0.1	localhost
+127.0.1.1	debian
+root@builder:/# 
+</code></pre>
+<p>También necesitamos una configuración de red, que incluye las <em>interfaces</em> y los
+servidores DNS por defecto. Esto se configura en los ficheros <code>/etc/network/interfaces</code>
+y <code>/etc/resolv.conf</code>. Pongo una configuración básica y la cambiaré en un futuro.</p>
+<pre><code class="language-bash">root@builder:/# cat /etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto enp0s3
+iface enp0s3 inet dhcp
+root@builder:/# 
+</code></pre>
+<pre><code class="language-bash">root@builder:/# cat /etc/resolv.conf 
+nameserver 8.8.8.8
+root@builder:/# 
+</code></pre>
+<p><strong>NOTA</strong>: La configuración por DHCP va a sobreescribir el fichero <code>/etc/resolv.conf</code>
+con los servidores DNS que indique la respuesta DHCP. Solo pongo uno por defecto
+para el caso en el que ningún servidor DHCP responda.</p>
+<h3>Contraseña del usuario root</h3>
+<p>Para poder entrar en el nuevo sistema, vamos a necesitar un usuario. Normalmente me
+gusta la aproximación que usa <strong>Ubuntu</strong>, con un usuario de <strong>root</strong> bloqueado y un
+segundo usuario con permisos de <strong>sudo</strong>. En este caso, para simplificar, simplemente
+voy a desbloquear el usuario <strong>root</strong>, y eso se consigue asignándole una <em>password</em>.</p>
+<pre><code class="language-bash">root@builder:/# passwd
+Nueva contraseña: 
+Vuelva a escribir la nueva contraseña: 
+passwd: contraseña actualizada correctamente
+root@builder:/# 
+</code></pre>
+<h3>Zona horaria y locales (opcional)</h3>
+<p>Este paso es opcional. La zona horaria por defecto es UTC, y eso nos puede servir.
+En caso de que queramos algo más personalizado, basta reconfigurar el paquete <strong>tzdata</strong>:</p>
+<pre><code class="language-bash">root@builder:/# dpkg-reconfigure tzdata
+...
+Current default time zone: 'Europe/Madrid'
+Local time is now:      Fri Nov 15 14:57:56 CET 2019.
+Universal Time is now:  Fri Nov 15 13:57:56 UTC 2019.
+
+root@builder:/# 
+</code></pre>
+<p>Si queremos cambiar el idioma del sistema, basta con reconfigurar el paquete <strong>locales</strong>:</p>
+<pre><code class="language-bash">root@builder:/# dpkg-reconfigure locales
+...
+Generating locales (this might take a while)...
+  es_ES.UTF-8... done
+Generation complete.
+root@builder:/# 
+</code></pre>
+<h3>Configuración de la consola (opcional)</h3>
+<p>Si vamos a entrar en el sistema solamente por SSH, este paso no hace falta; solamente
+sirve para los casos en los que hacemos un <em>login</em> en la máquina de forma física. En estos
+casos, tanto la codificación de caracteres de la pantalla física como la configuración
+del teclado se vuelven importantes. Solo por si acaso, prefiero dejarlos configurados:</p>
+<pre><code class="language-bash">root@builder:/# dpkg-reconfigure console-setup
+root@builder:/# 
+</code></pre>
+<pre><code class="language-bash">root@builder:/# dpkg-reconfigure keyboard-configuration
+root@builder:/# 
+</code></pre>
+<h3>Preparando el bootloader</h3>
+<p>Para poder inciar un sistema <strong>Linux</strong>, es necesaria una pieza llamada <em>bootloader</em>.
+El que viene por defecto en <strong>Debian</strong> se llama <strong>GRUB</strong>, y es el que vamos a utilizar
+en este caso. Solamente necesitamos generar una configuración básica e instalar el
+primer sector en el disco de arranque.</p>
+<pre><code class="language-bash">root@builder:/# grub-mkconfig -o /boot/grub/grub.cfg
+Generando un fichero de configuración de grub...
+Encontrada imagen de linux: /boot/vmlinuz-4.19.0-5-amd64
+Encontrada imagen de memoria inicial: /boot/initrd.img-4.19.0-5-amd64
+hecho
+root@builder:/# 
+</code></pre>
+<pre><code class="language-bash">root@builder:/# grub-install /dev/sdb
+Instalando para plataforma i386-pc.
+Instalación terminada. No se notificó ningún error.
+root@builder:/# 
+</code></pre>
+<h3>Y todo listo</h3>
+<p>Como ya no hay nada más que hacer, <strong>podemos salir de la jaula <em>chroot</em></strong>. Desmontamos
+los sistemas de ficheros &ldquo;del sistema&rdquo; y desmontamos el disco que pusimos en <code>/mnt</code>.</p>
+<pre><code class="language-bash">root@builder:/# exit
+exit
+root@builder:~# 
+</code></pre>
+<pre><code class="language-bash">root@builder:~# umount /mnt/proc
+root@builder:~# umount /mnt/sys
+root@builder:~# umount /mnt/dev
+root@builder:~# 
+</code></pre>
+<pre><code class="language-bash">root@builder:~# umount /mnt/
+root@builder:~# 
+</code></pre>
+<p>Este disco contiene ahora una instalación básica de <strong>Debian</strong> y puede arrancar cualquier
+máquina en el que lo instalemos. Como yo utilizé <strong>VirtualBox</strong> solo necesito crear una
+máquina nueva (sin disco) y añadirle un clon del disco recién instalado.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2019 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
