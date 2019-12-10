@@ -53,11 +53,8 @@
 </p>
 
 <p>Si usamos <strong>ansible</strong> para configurar otras máquinas tenemos pleno poder para acceder a otras, sea mediante claves SSH o por accesos remotos normales. En este último caso, conviene aplicar un poco de seguridad para evitar que un posible intruso acceda libremente. Para esto podemos encriptar la información sensible con <strong>ansible-vault</strong>.</p>
-
 <p>Para hacer una demostración simple, vamos a partir de <a href="/2016/06/controlando-contenedores-docker-con-ansible.html">un artículo anterior</a>, por comodidad. En este artículo pusimos todos los datos de conexión a las máquinas controladas en el fichero de inventario <em>hosts</em>, que hoy vamos a trocear y a encriptar las partes sensibles.</p>
-
 <p>Partimos de un modelo en el que un <strong>master</strong> con las herramientas de <strong>ansible</strong> controla s un grupo de <strong>slaves</strong>, que solo ofrecen acceso SSH. El uso de <strong>docker</strong> es opcional, pero muy conveniente por la rapidez en montar el entorno.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ docker ps
 CONTAINER ID        IMAGE               COMMAND               CREATED             STATUS              PORTS               NAMES
 c2de340b9dac        master              &quot;/bin/sh&quot;             17 seconds ago      Up 16 seconds                           ansible
@@ -65,13 +62,9 @@ e6f0d2569207        slave               &quot;/usr/sbin/sshd -D&quot;   17 minut
 497357df848c        slave               &quot;/usr/sbin/sshd -D&quot;   17 minutes ago      Up 17 minutes                           slave1
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Todo el tutorial se va a hacer desde la máquina <strong>master</strong>.</p>
-
-<h2 id="estado-inicial">Estado inicial</h2>
-
+<h2>Estado inicial</h2>
 <p>Siguiendo el artículo mencionado, disponemos de un fichero de inventario <em>hosts</em> que declara todos los servidores y grupos que tenemos, conjuntamente con sus datos de conexión.</p>
-
 <pre><code class="language-bash">~ # cat hosts 
 [slaves:vars]
 ansible_user = ansible
@@ -86,9 +79,7 @@ slave1
 slave2
 ~ # 
 </code></pre>
-
 <p>Podemos ver que funciona como debe.</p>
-
 <pre><code class="language-bash">~ # ansible -i hosts -m ping slaves
 slave1 | SUCCESS =&gt; {
     &quot;changed&quot;: false, 
@@ -100,11 +91,8 @@ slave2 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
-<h2 id="separando-el-inventario-en-dos-partes">Separando el inventario en dos partes</h2>
-
+<h2>Separando el inventario en dos partes</h2>
 <p>Como solo queremos encriptar los datos de conexión, vamos a partir el inventario en dos ficheros, dentro de su carpeta. <strong>ansible</strong> va a recibir esa carpeta como inventario y va a juntar ambas partes para sacar la visión global.</p>
-
 <pre><code class="language-bash">~ # tree inventory/
 inventory/
 ├── hosts
@@ -113,9 +101,7 @@ inventory/
 0 directories, 2 files
 ~ # 
 </code></pre>
-
 <p>La idea es tener una parte visible con los grupos y los servidores que los componen, y otra parte secreta con los datos a ocultar. Así quedaría la partición:</p>
-
 <pre><code class="language-bash">~ # cat inventory/hosts 
 [slaves]
 slave1
@@ -130,9 +116,7 @@ ansible_become_user = root
 ansible_become_pass = s3cr3t
 ~ # 
 </code></pre>
-
 <p>Tras indicar a <strong>ansible</strong> que queremos utilizar esta nueva carpeta como inventario, vemos que sigue funcionando de manera adecuada.</p>
-
 <pre><code class="language-bash">~ # ansible -i inventory/ -m ping slaves
 slave2 | SUCCESS =&gt; {
     &quot;changed&quot;: false, 
@@ -144,20 +128,15 @@ slave1 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
-<h2 id="encriptando-el-fichero-secreto">Encriptando el fichero secreto</h2>
-
+<h2>Encriptando el fichero secreto</h2>
 <p>Para conseguir esto, se va a utilizar el comando <strong>ansible-vault</strong>, al que se le pide que encripte el fichero secreto. Es una encriptación simétrica que encripta y desencripta con la misma contraseña.</p>
-
 <pre><code class="language-bash">~ # ansible-vault encrypt inventory/vault 
 New Vault password: 
 Confirm New Vault password: 
 Encryption successful
 ~ # 
 </code></pre>
-
 <p>Podemos ver que el fichero ha quedado modificado, de forma que ya ni se puede curiosear:</p>
-
 <pre><code class="language-bash">~ # cat inventory/hosts 
 [slaves]
 slave1
@@ -179,9 +158,7 @@ $ANSIBLE_VAULT;1.1;AES256
 3336
 ~ # 
 </code></pre>
-
 <p>Cuando usemos fichero encriptados, <strong>ansible</strong> es capaz de desencriptarlos según se necesite. Solo hace falta indicarle la forma en la que queremos darle la contraseña, por ejemplo, por el terminal.</p>
-
 <pre><code class="language-bash">~ # ansible -i inventory/ -m ping slaves --ask-vault-pass
 Vault password: 
 slave1 | SUCCESS =&gt; {
@@ -194,9 +171,7 @@ slave2 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
 <p>Otra forma, menos segura pero mas conveniente, es tener la contraseña en un fichero, y dejar que <strong>ansible</strong> la lea de ese fichero. Esto es útil especialmente en <em>scripts</em>, en donde suministrar una contraseña por el terminal no es factible.</p>
-
 <pre><code class="language-bash">~ # cat .vault-passfile 
 supersecret
 ~ # ansible -i inventory/ -m ping slaves --vault-password-file=.vault-passfile
@@ -210,22 +185,16 @@ slave2 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
 <p>Es importante recalcar que solo se puede indicar una contraseña para nuestros <em>vaults</em>, sea por el terminal o por un fichero. Eso significa que todas las contraseñas usadas en un mismo comando deben ser las mismas.</p>
-
-<h2 id="limpiando-nuestras-líneas-de-comandos">Limpiando nuestras líneas de comandos</h2>
-
+<h2>Limpiando nuestras líneas de comandos</h2>
 <p>si el fichero de la <em>password</em> es siempre el mismo, nuestros comandos van a ser largos y repetitivos. La gracia es que podemos ocultar los parámetros permanentes en el fichero de configuración de <strong>ansible</strong>.</p>
-
 <pre><code class="language-bash">~ # cat .ansible.cfg 
 [defaults]
 host_key_checking = False
 vault_password_file = .vault-passfile
 ~ # 
 </code></pre>
-
 <p>De esta forma, podemos omitirlo:</p>
-
 <pre><code class="language-bash">~ # ansible -i inventory/ -m ping slaves
 slave1 | SUCCESS =&gt; {
     &quot;changed&quot;: false, 
@@ -237,9 +206,7 @@ slave2 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
 <p>De hecho, este parámetro también afecta a otras herramientas, como por ejemplo el mismo comando <strong>ansible-vault</strong>, por ejemplo, para inspeccionar el fichero encriptado.</p>
-
 <pre><code class="language-bash">~ # cat inventory/vault 
 $ANSIBLE_VAULT;1.1;AES256
 30313636313462346536346262333462633131633666653238313239333330343036346263653962
@@ -265,9 +232,7 @@ ansible_become_user = root
 ansible_become_pass = s3cr3t
 ~ # 
 </code></pre>
-
 <p>De hecho, también sirve para encriptar, de forma que si lo hubiésemos puesto al principio, ni siquiera tendríamos que usarla para esa función. Para ir mas lejos, podríamos haber generado la <em>password</em> de forma aleatorio y/o automatizada.</p>
-
 <pre><code class="language-bash">~ # cat aaaa 
 lorem ipsum
 ~ # ansible-vault encrypt aaaa 
@@ -281,7 +246,6 @@ $ANSIBLE_VAULT;1.1;AES256
 3964
 ~ # 
 </code></pre>
-
 <p>Y con esto nos quedan los ficheros sensibles un poco mas protegidos, aunque no tenemos porque encriptarlos todos.</p>
 
 <div id="disqus_thread"></div>

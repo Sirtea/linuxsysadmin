@@ -53,11 +53,8 @@
 </p>
 
 <p>El otro día cayó en mis manos un escaneo de la plataforma para uno de los servicios que gestiono. No voy a dar detalles al respecto en virtud del acuerdo de confidencialidad que mantengo con ellos, pero consideré interesante una de las herramientas que usaron para testear el dominio SSL.</p>
-
 <p>Se trata de una herramienta llamada <strong>sslyze</strong> y hecha en <strong>python</strong>, que podemos encontrar en <a href="https://pypi.python.org/pypi/SSLyze">PyPI</a> y que podemos instalar con un simple <code>pip install sslyze</code>. La parte mala es que tiene extensiones escritas en lenguaje C, que necesitan compilarse y requieren de otras librerías, además del compilador.</p>
-
 <p>Como me gusta mantener mi entorno minimalista, decidí crear una imagen con <strong>Docker</strong>, para disponer de ella cuando la necesite y poder deshacerme de ella cuando no. Este es el <em>Dockerfile</em> que he usado:</p>
-
 <pre><code class="language-bash">gerard@marcopolo:~$ cat sslyze/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache py-pip gcc python-dev musl-dev &amp;&amp; \
@@ -67,11 +64,8 @@ ENTRYPOINT [&quot;/usr/bin/sslyze&quot;, &quot;--regular&quot;]
 CMD [&quot;-h&quot;]
 gerard@marcopolo:~$ 
 </code></pre>
-
 <p>De esta manera puedo lanzar la imagen sin especificar los parámetros; por defecto va a ejecutar <code>sslyze --regular -h</code> para darnos una idea de lo que debemos hacer. En caso de especificar uno o más dominios después de la imagen durante el <code>docker run</code>, se lanza su escaneo directamente.</p>
-
 <p>Construimos la imagen de la forma habitual:</p>
-
 <pre><code class="language-bash">gerard@marcopolo:~$ docker build -t sslyze sslyze/
 Sending build context to Docker daemon 2.048 kB
 Step 1 : FROM alpine:3.4
@@ -155,9 +149,7 @@ Removing intermediate container 2e53a6f5f90b
 Successfully built 8e493a176b44
 gerard@marcopolo:~$ 
 </code></pre>
-
 <p>Vamos a lanzar dos veces el escaneo, contra dos conocidos dominios, solo para ver como funciona. El primero es el dominio español de <a href="https://www.google.es/">Google</a>. Este no presenta vulnerabilidades y su alta disponibilidad nos permite hacer pruebas de forma indiscriminada.</p>
-
 <pre><code class="language-bash">gerard@marcopolo:~$ docker run -ti --rm sslyze www.google.es
 
 
@@ -288,9 +280,7 @@ gerard@marcopolo:~$
 
 gerard@marcopolo:~$ 
 </code></pre>
-
 <p>El segundo es un dominio vulnerable cualquiera. Para este ejemplo, vamos a usar la página web del proveedor de servicios de internet que me está dando conectividad, <a href="https://www.telefonica.es/es/">Telefónica</a>. No hay malas intenciones, así que si alguien se da por ofendido o atacado, pido disculpas con anterioridad.</p>
-
 <pre><code class="language-bash">gerard@marcopolo:~$ docker run -ti --rm sslyze www.telefonica.es
 
 
@@ -422,9 +412,7 @@ gerard@marcopolo:~$
 
 gerard@marcopolo:~$ 
 </code></pre>
-
 <p>Vemos con este escaneo que tienen una vulnerabilidad. La verdad es que no tengo ni ganas ni tiempo para explotarla, pero como suelo estar en el lado de los buenos, mi trabajo sería detectarla y corregirla. En ambos casos podréis encontrar amplia información con una rápida búsqueda por internet.</p>
-
 <p>Y con esto ya podemos anticiparnos a cualquier escaneo que nos puedan hacer a nuestros dominios, quedando como auténticos profesionales, y ahorrándonos burocracia en forma de comunicaciones con nuestro auditor.</p>
 
 <div id="disqus_thread"></div>

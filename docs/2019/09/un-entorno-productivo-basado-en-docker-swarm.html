@@ -56,41 +56,34 @@
 Fueron de los primeros en adoptar <strong>docker</strong> y no utilizaban ninguna tecnología
 de <em>clusterización</em>. Los contenedores se ponían en alguna máquina con capacidad adecuada;
 los balanceadores y las bases de datos tenían máquinas dedicadas.</p>
-
 <p>La idea no estaba mal y se administraba el entorno mediante <em>playbooks</em> de <strong>ansible</strong>.
 Mirando atrás con cierta nostalgia, y viendo como ha evolucionado la tecnología de
 contenedores, se me ocurrió la idea de recrear algo parecido basado en <strong>docker swarm</strong>.</p>
-
 <p>En este artículo pretendo mostrar como utilizar <strong>docker swarm</strong> para alojar un
 entorno web clásico, desde la infraestructura (máquinas y <em>firewall</em>) hasta los servicios
 que en ellos vamos a desplegar (aplicaciones y bases de datos). Para no alargar el
 artículo, voy a crear un subconjunto mínimo desde el que se puede ir creciendo:</p>
-
 <ul>
 <li>Una red privada con sus servidores y su <em>gateway</em></li>
 <li>Un <em>cluster</em> de <strong>docker swarm</strong> que gestione los servicios</li>
 <li>Los servicios que se ejecutan en el <em>swarm</em>
-
 <ul>
 <li>El balanceador de carga</li>
 <li>El <em>cluster</em> de base de datos</li>
 <li>Las diferentes aplicaciones a desplegar</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p><strong>NOTA</strong>: Para virtualizar todas estas máquinas se va a utilizar <strong>Oracle VirtualBox</strong>
 porque es lo que tengo a mano, pero es bastante fácil adaptarlo para utilizar cualquier
 otro proveedor de máquinas virtuales, local o <em>cloud</em>. Solo hay que saber como crear
 servidores y como se comunican entre sí.</p>
-
 <p>En cuanto a tecnologías utilizadas, van a ser las que venimos viendo en el <em>blog</em>, que son
 aquellas con las que me siento cómodo; esto no quita que podáis adaptar lo aprendido a
 vuestras preferencias particulares. También he decidido que todos los servicios van a ser
 gestionados por <strong>docker swarm</strong>, restringiendo la administración desde un solo punto
 (que puede ser cualquiera de los <em>managers</em> del <em>swarm</em>), y añadiendo una capa de autoreparación.</p>
-
 <p>Para ser un poco más concretos, vamos a utilizar las siguientes tecnologías:</p>
-
 <ul>
 <li>Infraestructura basada en <strong>debian buster</strong>, que es la actual versión estable</li>
 <li><em>Gateway</em> hecho con <strong>shorewall</strong> y <strong>dnsmasq</strong>, con funciones de <em>firewall</em></li>
@@ -98,7 +91,6 @@ gestionados por <strong>docker swarm</strong>, restringiendo la administración 
 <li>Balanceadores <strong>traefik</strong> con una IP flotante, compartida mediante <strong>keepalived</strong></li>
 <li>Aplicaciones de ejemplo escritas en <strong>python</strong> y ejecutadas en <strong>gunicorn</strong></li>
 </ul>
-
 <p><strong>NOTA</strong>: Todas estas partes se comunican mediante protocolos estándares; eso las
 hace fácilmente reemplazables por otras tecnologías, según vuestras preferencias
 particulares; me comprometo a utilizar nombres de servicios genéricos donde sea factible.</p>

@@ -53,19 +53,12 @@
 </p>
 
 <p>Muchos de los servicios que necesitamos son siempre los mismos, cambiando solamente algunos parámetros. Incluso los mismos servicios pueden sufrir variaciones en su configuración, por ejemplo, un balanceador al que se añaden o quitan <em>hosts</em>. Siguiendo las prácticas de <a href="http://12factor.net/es/">12factor</a> podemos ahorrar trabajo, mediante el uso de variables de entorno.</p>
-
 <p>El problema es que las variables de entorno no siempre son bienvenidas en las configuraciones de una aplicación, siendo mucho mas comunes los ficheros con un formato concreto. Eso significa que necesitamos varias imágenes <strong>docker</strong> para los diferentes proyectos y entornos.</p>
-
 <p>Harto de escribir configuraciones <strong>nginx</strong> y reconstruir la imagen cada vez que añadíamos <em>hosts</em>, me hice la pregunta: ¿Hay alguna forma mas inteligente de hacer esto?</p>
-
 <p>La única forma de cambiar el contenido de una imagen <strong>docker</strong> es mapeando las configuraciones en volúmenes o mediante el uso de variables de entorno. Pero <strong>nginx</strong> no admite variables de entorno, y lo de los volúmenes me parece una chapuza.</p>
-
 <p>La solución es tan simple como efectiva: generar las configuraciones estáticas de forma dinámica. La idea es pasar las variables de entorno al contenedor, y que antes de ejecutar su servicio, genere la configuración a partir de las variables recibidas. Un ejercicio de <em>templating</em> básico.</p>
-
-<h2 id="un-ejemplo-un-balanceador-con-nginx-con-backends-variables">Un ejemplo: un balanceador con nginx con backends variables.</h2>
-
+<h2>Un ejemplo: un balanceador con nginx con backends variables.</h2>
 <p>El esquema de un balanceador en <strong>nginx</strong> sigue siempre el mismo patrón:</p>
-
 <pre><code class="language-nginx">upstream backend {
 	...
 }
@@ -79,9 +72,7 @@ server {
 	}
 }
 </code></pre>
-
 <p>El truco consiste en que el contenedor va a ejecutar un <em>script</em> que va a generar la configuración y va a lanzar nuestro binario. Para hacerlo limpiamente, vamos a separar la ejecución, del <em>script</em> de generación.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ cat entrypoint.sh 
 #!/bin/sh
 
@@ -89,9 +80,7 @@ server {
 exec /usr/sbin/nginx -g &quot;daemon off;&quot;
 gerard@sirius:~/docker/dynamic_configs$ 
 </code></pre>
-
 <p>Y el <em>script</em> de generación solo tiene la responsabilidad de leer las variables de entorno y sacar la configuración por pantalla. Por simplicidad, estoy usando un <em>script</em> en <strong>bash</strong>, pero se podría hacer con otro lenguaje e incluso con un motor de plantillas. Me gusta especialmente la combinación <strong>python</strong> + <strong>jinja2</strong>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ cat config.sh 
 #!/bin/sh
 
@@ -113,9 +102,7 @@ server {
 &quot;&quot;&quot;
 gerard@sirius:~/docker/dynamic_configs$ 
 </code></pre>
-
 <p>Podemos comprobar que la configuración generada depende de la variable de entorno <em>BACKENDS</em>, por ejemplo, con dos nodos.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ BACKENDS=server1:8080,server2:8080 ./config.sh 
 upstream backend {
 	server server1:8080;
@@ -133,9 +120,7 @@ server {
 
 gerard@sirius:~/docker/dynamic_configs$ 
 </code></pre>
-
 <p>El <em>script</em> <em>entrypoint.sh</em> llamará este otro <em>script</em> y va a salvar esta configuración en algún sitio que <strong>nginx</strong> pueda cargar, por ejemplo, en una carpeta incluida en la configuración principal.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ cat nginx.conf 
 worker_processes  1;
 events {
@@ -150,9 +135,7 @@ http {
 }
 gerard@sirius:~/docker/dynamic_configs$ 
 </code></pre>
-
 <p>Finalmente, solo nos queda poner todas las piezas en su sitio, mediante el <em>Dockerfile</em> correspondiente:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ cat Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache nginx &amp;&amp; \
@@ -164,9 +147,7 @@ COPY config.sh entrypoint.sh /
 ENTRYPOINT [&quot;/entrypoint.sh&quot;]
 gerard@sirius:~/docker/dynamic_configs$ 
 </code></pre>
-
 <p>Y finalmente podemos crear un balanceador indicando simplemente los parámetros en el <em>docker run</em>, previo <em>docker build</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/dynamic_configs$ docker run -ti --rm -e &quot;BACKENDS=server1:8080,server2:8080,server3:8080&quot; balancer
 ...  
 </code></pre>

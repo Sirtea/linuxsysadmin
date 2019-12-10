@@ -53,68 +53,51 @@
 </p>
 
 <p>Como bien sabemos los que trabajamos con <strong>Docker</strong>, el servidor es bastante malo comprobando si un contenedor está funcionando o no. El <em>check</em> que hace <strong>Docker</strong> solo se molesta en ver si el proceso invocado está ejecutando o no, aunque no esté respondiendo. Esto ha cambiado recientemente con los <em>healthchecks</em>.</p>
-
 <p>Y es que a partir de Docker 1.12, existe un nuevo concepto en <strong>Docker</strong> que nos permite indicar <strong>como se comprueba la salud de un contenedor</strong>. Para hacerlo, solo necesitamos declarar <strong>como se verifica si el contenedor está saludable o no</strong>, y es tan simple como un comando, que puede devolver:</p>
-
 <ul>
-<li>0 &rarr; Significa que el contenedor funcionaría bien y el servicio está correcto.</li>
-<li>1 &rarr; Este código de retorno significaría que el contenedor no está dando el servicio esperado.</li>
+<li>0 → Significa que el contenedor funcionaría bien y el servicio está correcto.</li>
+<li>1 → Este código de retorno significaría que el contenedor no está dando el servicio esperado.</li>
 </ul>
-
 <p>La naturaleza de este comando es variada: puede tratarse de un comando estándar del contenedor, un <em>script</em> propio o lo que nos apetezca; el único punto a tener en cuenta es que se ejecuta <strong>dentro del contenedor</strong>, y por lo tanto, va a necesitar tener las herramientas necesarias para ejecutarlo.</p>
-
 <p>Este <em>healthcheck</em> puede especificarse en el <code>Dockerfile</code> y en el <code>docker run</code> o <code>docker-compose.yml</code>. En caso de tener varios en el <code>Dockerfile</code>, solo queda activo el último declarado. Si se especifica uno en <em>runtime</em>, este tiene preferencia sobre el que declare la imagen; esto puede servir para sobreescribirlo o deshabilitarlo.</p>
-
-<h2 id="un-ejemplo">Un ejemplo</h2>
-
+<h2>Un ejemplo</h2>
 <p>Supongamos que queremos utilizar en contenedor <code>sirrtea/mongo:alpine</code> y queremos definir la salud del mismo con un <em>healthcheck</em> que asegure que el puerto 27017 está abierto.</p>
-
 <p>Esto se haría comprobando esta condición con cualquier herramienta que viniera con la imagen, o podemos poner un <em>script</em> o binario propio. Hay que asegurarse que el <em>healthcheck</em> devuelve 0 o 1, así que si no devuelve 0, vamos a forzar el 1 con un &ldquo;OR&rdquo; de <strong>bash</strong>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ cat Dockerfile 
 FROM sirrtea/mongo:alpine
 HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=2 CMD nc -nz localhost 27017 || exit 1
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
 <p>El comando no necesita grandes explicaciones, excepto por los parámetros:</p>
-
 <ul>
-<li><code>--interval</code> &rarr; El intervalo con el que se ejecutan los <em>checks</em> (por defecto 30s).</li>
-<li><code>--timeout</code> &rarr; El tiempo desde que se lanza un <em>check</em> hasta que se considera un fallo (por defecto 30s).</li>
-<li><code>--start-period</code> &rarr; Todo <em>check</em> que falle en este primer intervalo no se contabiliza  (por defecto 0s).</li>
-<li><code>--retries</code> &rarr; El número de <em>checks</em> consecutivos que deben fallar para dar la salud del contenedor por mala  (por defecto 3).</li>
+<li><code>--interval</code> → El intervalo con el que se ejecutan los <em>checks</em> (por defecto 30s).</li>
+<li><code>--timeout</code> → El tiempo desde que se lanza un <em>check</em> hasta que se considera un fallo (por defecto 30s).</li>
+<li><code>--start-period</code> → Todo <em>check</em> que falle en este primer intervalo no se contabiliza  (por defecto 0s).</li>
+<li><code>--retries</code> → El número de <em>checks</em> consecutivos que deben fallar para dar la salud del contenedor por mala  (por defecto 3).</li>
 </ul>
-
 <p>Aplicado a nuestro caso, lo que pasaría es lo siguiente:</p>
-
 <ul>
 <li>El contenedor empieza en el estado <code>health: starting</code>.</li>
 <li>Se hace un <em>check</em> cada 5 segundos, dándolo por malo a los 3 segundos si no hay respuesta.
-
 <ul>
 <li>Si el <em>check</em> falló en los 30 primeros segundos, no cuenta y seguimos en <code>health: starting</code>.</li>
 <li>Si el <em>check</em> es correcto, el estado pasa a <code>healthy</code> (aunque sea dentro de los 30 primeros segundos).</li>
 <li>Si el <em>check</em> falla pasados los 30 primeros segundos o tras un <code>healthy</code>, y lo hace tres veces seguidas (un fallo y dos reintentos), el estado se vuelve <code>unhealthy</code>.</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>En nuestro caso, si hacemos un <code>docker ps</code> veremos que pasamos de <code>health: starting</code> a <code>healthy</code>, en menos de 30 segundos:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                            PORTS               NAMES
 8d1ee9518d0b        healthymongo        &quot;/usr/bin/mongod --c…&quot;   5 seconds ago       Up 3 seconds (health: starting)                       hungry_blackwell
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                    PORTS               NAMES
 8d1ee9518d0b        healthymongo        &quot;/usr/bin/mongod --c…&quot;   27 seconds ago      Up 25 seconds (healthy)                       hungry_blackwell
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
 <p>Vamos a suponer que el servicio se presta en el puerto 27018 (que no tenemos escuchando, con lo que fallaríamos), pero esta vez vamos a sobreescribir el <em>healthcheck</em> en el <code>docker run</code>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ docker run --rm -d \
 &gt;   --health-cmd='nc -nz localhost 27018 || exit 1' \
 &gt;   --health-interval=5s \
@@ -125,9 +108,7 @@ gerard@atlantis:~/workspace/mongo_healthcheck$
 c99d20739079e7f36c517a643d8cf853aa1b9474713446632864eda6f7a61fec
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
 <p>Solo hay que ir mirando el <code>docker ps</code> para ver como deja pasar 30 segundos en <code>health: starting</code> a <code>unhealthy</code>:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ docker ps -a
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                            PORTS               NAMES
 c99d20739079        healthymongo        &quot;/usr/bin/mongod --c…&quot;   6 seconds ago       Up 5 seconds (health: starting)                       nervous_feistel
@@ -139,9 +120,7 @@ CONTAINER ID        IMAGE               COMMAND                  CREATED        
 c99d20739079        healthymongo        &quot;/usr/bin/mongod --c…&quot;   39 seconds ago      Up 38 seconds (unhealthy)                       nervous_feistel
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
 <p>Y si queremos saber porqué no esta saludable, podemos inspeccionar el contenedor (aunque en mi caso el comando no da salida, y por lo tanto, no hay diagnóstico):</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/mongo_healthcheck$ docker inspect c99d20739079
 ...
             &quot;Health&quot;: {
@@ -163,18 +142,13 @@ gerard@atlantis:~/workspace/mongo_healthcheck$
 ...
 gerard@atlantis:~/workspace/mongo_healthcheck$ 
 </code></pre>
-
-<h2 id="utilidad-de-los-healthchecks">Utilidad de los healthchecks</h2>
-
+<h2>Utilidad de los healthchecks</h2>
 <p>El estado de los contenedores es una información que <strong>Docker</strong> &ldquo;conoce&rdquo;, pero no hace nada con ella. Esto cambia con los orquestadores, como por ejemplo <strong>Docker Swarm</strong>. Este último tiene esta salud en cuenta para dos cosas:</p>
-
 <ul>
 <li>Reiniciar (y posiblemente recolocar) los contenedores <em>unhealthy</em> para asegurar que se da servicio con el número de contenedores especificado.</li>
 <li>Para hacer <em>rolling updates</em>, esperando a que los contenedores estén saludables antes de quitar los anteriores, resultando en despliegues sin <em>downtime</em>.</li>
 </ul>
-
 <p>Aparte de su uso en <em>cluster</em>, podemos utilizar esta propiedad para que contenedores dependientes no empiecen antes de tener sus requisitos listos, como por ejemplo, su base de datos. Algo así como el siguiente <code>docker-compose.yml</code>:</p>
-
 <pre><code class="language-bash">version: &quot;3&quot;
 services:
   database:
@@ -185,7 +159,6 @@ services:
         condition: service_healthy
 ...
 </code></pre>
-
 <p>Aunque es una opción posible, opino que es más fácil que el servicio de API conecte a la base de datos en su primera petición&hellip;</p>
 
 <div id="disqus_thread"></div>

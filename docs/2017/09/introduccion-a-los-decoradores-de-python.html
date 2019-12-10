@@ -53,15 +53,10 @@
 </p>
 
 <p>Mucha gente no sabe de lo que hablamos cuando nos referimos a <em>decoradores</em> en contexto de programación <em>python</em>. No es un concepto demasiado complejo, pero nos puede servir para simplificar bastante nuestro código. Sin embargo, hay que admitir que es un concepto difícil si intentamos estudiarlo sin ninguna ayuda externa.</p>
-
 <p>Los decoradores no son otra cosa que <strong>azúcar sintáctico</strong>. En realidad solo son funciones que aceptan una función origen por parámetro. Cuando llamemos a la función origen, en realidad estaremos llamando a la funcíon que devolvió la función decorador.</p>
-
 <p>Esto nos da varias posibilidades, como por ejemplo hacer cosas antes y después de declarar una función, o la posibilidad de suplantarla por completo, en vistas a añadir cosas a cada llamada, o a condicionar su ejecución. A continuación veremos algunos ejemplos:</p>
-
-<h2 id="el-decorador-simple">El decorador simple</h2>
-
+<h2>El decorador simple</h2>
 <p>Vemos un primer <em>script</em> hecho en <em>python</em>:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 def simple_decorator(func):
@@ -75,11 +70,8 @@ def myfunc():
 myfunc()
 myfunc()
 </code></pre>
-
 <p>La línea que empieza con <code>@</code> está <strong>decorando</strong> la función a la que precede. En este caso, <code>simple_decorator</code> es un decorador; esto es una función que acepta una función a la que decora.</p>
-
 <p>El script mencionado arriba es exactamente el mismo que el siguiente, en donde la aplicación del decorador es explícita.</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 def simple_decorator(func):
@@ -93,22 +85,16 @@ myfunc = simple_decorator(myfunc)
 myfunc()
 myfunc()
 </code></pre>
-
 <p>Ejecutamos el <em>script</em> y vemos como se comporta:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./simple.py
 Decorating &lt;function myfunc at 0x7f3433328668&gt;
 Hello world!
 Hello world!
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>La función se decora una sola vez, en tiempo de declaración; ejecutar varias veces la función no hace repetir el código de la función decoradora. De la misma forma, una llamada a <code>myfunc()</code> ejecuta la misma función, porque es la función que devolvió el decorador.</p>
-
-<h2 id="decoradores-parametrizados">Decoradores parametrizados</h2>
-
+<h2>Decoradores parametrizados</h2>
 <p>El ejemplo anterior era solo un ejemplo. En el mundo real nos puede interesar tener un decorador que sea parametrizable, cambiando sus parámetros para adaptarse a las necesidades.</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 def register_route(url):
@@ -131,11 +117,8 @@ print admin_panel()
 print home_page()
 print home_page()
 </code></pre>
-
 <p>Vemos que las funciones están decoradas por la misma función, pero esta viene parametrizada. No os dejéis engañar; la expresión entera es un decorador, haciendo que <code>register_route('/')</code> devuelva la función con la que vamos a decorar la función final.</p>
-
 <p>El decorador en sí mismo es <code>wrapper</code>, pero en este caso tenemos la ventaja de que el decorador tiene visibilidad a las variables y parámetros de <code>register_route</code>, que tiene la obligación de devolver el decorador, que como ya sabemos es una función que acepta a otra por parámetro.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./parametrized.py
 Registering function &lt;function home_page at 0x7f2c07d79758&gt; to /
 Registering function &lt;function admin_panel at 0x7f2c07d797d0&gt; to /admin
@@ -144,11 +127,8 @@ home page
 home page
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Es interesante recalcar que las decoraciones se hacen en tiempo de declaración de la función, y luego podemos observar las llamadas que hacemos a las mismas. Otra observación es que el código del decorador ve, no solamente la función decorada <code>func</code>, sino también los parámetros de la funcion <code>register_route</code>.</p>
-
 <p>Esta construcción es típica de algunos <em>frameworks</em> que usan esta misma forma para crear la tabla de rutas. El reactor del mismo <em>framework</em> va a ir llamando estas funciones según las peticiones lleguen. como ejemplo, podemos observar el caso del <em>framework</em> <strong>bottle</strong>:</p>
-
 <pre><code class="language-python">from bottle import Bottle
 
 app = Bottle()
@@ -157,15 +137,10 @@ app = Bottle()
 def index():
     return 'Hello world'
 </code></pre>
-
-<h2 id="reemplazando-la-función-decorada">Reemplazando la función decorada</h2>
-
+<h2>Reemplazando la función decorada</h2>
 <p>Hacer cosas en tiempo de declaración de una función puede ayudarnos en muchas ocasiones, pero la verdadera potencia de los decoradores viene cuando podemos interceptar cada llamada a una función, sea para enriquecerla, o para reemplazarla total o parcialmente. Veamos un ejemplo de cada:</p>
-
-<h3 id="enriqueciendo-una-función">Enriqueciendo una función</h3>
-
+<h3>Enriqueciendo una función</h3>
 <p>Este es un caso claro de <em>man-in-the-middle</em>. Queremos ejecutar una función que acabe llamando a la original, pero que haga algo más. En este ejemplo, queremos cronometrar nuestras funciones. Para ello hacemos el siguiente <em>script</em>:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 import time
@@ -187,11 +162,8 @@ def myfunc():
 myfunc()
 myfunc()
 </code></pre>
-
 <p>Con el decorador <code>measure_time</code>, conseguimos que <code>myfunc()</code> quede reemplazada por la función <code>wrapper()</code>, que va a guardar el valor inicial del cronómetro, va a llamar a nuestra función original, y finalmente va a escribir en pantalla la diferencia en el cronómetro.</p>
-
 <p>Fijaos que el decorador <code>measure_time</code> no devuelve nunca la función original <code>func</code>; en cambio declara y devuelve otra que será la función suplantante. Nuevamente, esta función <code>wrapper</code> tiene visibilidad por los parámetros de decorador, concretamente de <code>func</code>, que nos interesa conocer porque es la función original a la que queremos llamar.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./count_time.py
 Start
 End
@@ -201,13 +173,9 @@ End
 Execution time: 3.00343680382 seconds
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Haciendo dos llamadas podemos comprobar que la función <code>wrapper</code> es llamada cada vez que invocamos a <code>myfunc</code>.</p>
-
-<h3 id="reemplazando-parcial-o-totalmente-otra-función">Reemplazando parcial o totalmente otra función</h3>
-
+<h3>Reemplazando parcial o totalmente otra función</h3>
 <p>Hay situaciones en las que no interesa hacer el comportamiento habitual. Por ejemplo, podemos restringir ciertas funciones a usuarios validados en nuestra web, o limitarlos por cualquier otro criterio. Vamos a suponer que solo queremos que el usuario <em>root</em> pueda llegar a ejecutar una función:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 import os
@@ -226,30 +194,22 @@ def myfunc():
 
 myfunc()
 </code></pre>
-
 <p>Como en el caso anterior, la función original es reemplazada por <code>wrapper</code>; la diferencia es que en vez de enriquecerla, va a llamar a la función original solo si se cumple cierto criterio, que en este caso es ejecutar como <em>root</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./no_access.py
 You need root access to do this
 gerard@atlantis:~/projects/decorators$ sudo ./no_access.py
 Access granted
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Muchos <em>frameworks</em> web usan este truco para permitir ejecutar ciertas vistas a usuarios seleccionados.</p>
-
-<h2 id="parámetros-y-reemplazo-de-funciones-a-la-vez">Parámetros y reemplazo de funciones a la vez</h2>
-
+<h2>Parámetros y reemplazo de funciones a la vez</h2>
 <p>También es posible utilizar la técnica del reemplazo con un decorador parametrizado, aunque este caso se complica; solo hay que tener en cuenta que necesitamos 3 funciones:</p>
-
 <ul>
 <li>Una para los parámetros</li>
 <li>El decorador en sí mismo</li>
 <li>La funcion suplantante</li>
 </ul>
-
 <p>Podemos hacer un decorador para cachear resultados varios segundos:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 import datetime
@@ -282,17 +242,13 @@ for number in (3, 3, 5, 3):
     result = complex_math(number)
     print now(), 'Ended complex_math with n = %s with result = %s' % (number, result)
 </code></pre>
-
 <p>En este caso tenemos las 3 funciones citadas:</p>
-
 <ul>
 <li>La función parametrizada (<code>cache_result</code>)</li>
 <li>La función decoradora (<code>wrapper1</code>)</li>
 <li>La función suplantante (<code>wrapper2</code>)</li>
 </ul>
-
 <p>Cada vez que llamemos a la función <code>complex_math</code>, en realidad vamos a estar llamando a la función <code>wrapper2</code>, que va a poder acceder a los parámetros de las otras 2, siendo <code>func</code> la función original decorada.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./big_math.py
 13:32:45 Started complex_math with n = 3
 13:32:48 Ended complex_math with n = 3 with result = 4
@@ -304,13 +260,9 @@ for number in (3, 3, 5, 3):
 13:32:54 Ended complex_math with n = 3 with result = 4
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Solo queda verificar que el decorador hace realmente lo que deseábamos: <em>cachear</em> la primera llamada con <code>n = 3</code>, de forma que la segunda no tarda los 3 segundos de <em>delay</em>. La tercera con la misma entrada se recalcula porque el tiempo de <em>cache</em> se ha pasado mientras se hacía la llamanda con <code>n = 5</code>.</p>
-
-<h2 id="siendo-correctos-con-la-firma-de-la-función">Siendo correctos con la firma de la función</h2>
-
+<h2>Siendo correctos con la firma de la función</h2>
 <p>Cuando reemplazamos la función original por otra, no engañamos a nadie. Por ejemplo, en un caso simple como el siguiente:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 def decorator(func):
@@ -324,16 +276,12 @@ def myfunc():
 
 print myfunc.__name__
 </code></pre>
-
 <p>Toda ls información referente a la firma de la función sale de acuerdo a la nueva función.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./no_wrap.py
 wrapper
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Este cambio de firma puede suponer un problema en algún momento futuro. Para eso, la librería estándar nos ofrece una forma de copiar la firma de la función a la función suplantante: un decorador llamado <code>wraps</code> en el paquete <code>functools</code>.</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 import functools
@@ -350,14 +298,11 @@ def myfunc():
 
 print myfunc.__name__
 </code></pre>
-
 <p>Con este pequeño añadido nos evitamos el problema, ya que este se encarga de copiar el nombre de la función, los <em>docstrings</em>, la lista de argumentos y otras propiedades desde la función decorada a la función suplantante.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/decorators$ ./wrap.py
 myfunc
 gerard@atlantis:~/projects/decorators$
 </code></pre>
-
 <p>Parece una tontería, pero puede evitarnos muchos problemas difíciles de diagnosticar en un futuro no muy lejano.</p>
 
 <div id="disqus_thread"></div>

@@ -53,13 +53,9 @@
 </p>
 
 <p>Estaba yo el otro día buscando un servidor de aplicaciones para aplicaciones <em>python</em>, y entre todas las opciones encontré uno que es una auténtica joya: <strong>uWSGI</strong>. Se trata de un servidor modular, que permite servir un amplio abanico de posibilidades en cuanto a lenguajes se refiere, usando un <em>plugin</em> adecuado.</p>
-
 <p>Concretamente me llamó la atención el modo de funcionamiento llamado <em>emperor</em>, que es un proceso que se dedica a monitorizar una carpeta concreta, de forma que se asegura de que cada fichero de configuración mantiene levantada una instancia que la sirva.</p>
-
 <p>Si levantamos el <em>emperor</em>, leerá la carpeta de <em>vassals</em>, levantando todos los que entienda. Si añadimos un fichero de configuración nuevo en caliente, levantará una instancia nueva. Si eliminamos un fichero de configuración, matará la instancia referida. Finalmente, si ese mismo fichero de configuración se modifica (un <em>touch</em> vale), se adaptará a las nuevas directrices, recargando el código de nuestra aplicación.</p>
-
 <p>Vamos a empezar instalando la variante <em>emperor</em>, que no es mas que el <strong>uwsgi</strong> básico, con una configuración de <em>emperor</em> y un <em>init script</em> adecuado.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install -y uwsgi-emperor
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -71,9 +67,7 @@ Se utilizarán 5.724 kB de espacio de disco adicional después de esta operació
 ..  
 root@server:~#
 </code></pre>
-
 <p>Para entender un lenguaje cualquiera, hay que declarar el uso de un <em>plugin</em> para ese lenguaje. Vamos a poner los <em>plugins</em> para tres de los lenguajes mas utilizados, que nos van a servir como demostración para este artículo: <strong>python</strong>, <strong>PHP</strong> y <strong>ruby</strong>.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install -y uwsgi-plugin-python uwsgi-plugin-php uwsgi-plugin-rack-ruby2.1
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -85,9 +79,7 @@ Se utilizarán 49,9 MB de espacio de disco adicional después de esta operación
 ...  
 root@server:~#
 </code></pre>
-
 <p>Adicionalmente, el <em>plugin</em> de <strong>ruby</strong> necesita tener el paquete <em>rack</em> instalado, así que lo ponemos también.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install -y ruby-rack
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -99,26 +91,18 @@ Se utilizarán 2.687 kB de espacio de disco adicional después de esta operació
 ...  
 root@server:~#
 </code></pre>
-
 <p>En todos los casos, bastará con poner un fichero de configuración en <em>/etc/uwsgi-emperor/vassals/</em> para activar cada una de las aplicaciones.</p>
-
-<h2 id="sirviendo-ficheros-php">Sirviendo ficheros PHP</h2>
-
+<h2>Sirviendo ficheros PHP</h2>
 <p>Crearemos una carpeta contenedora para nuestros ficheros <strong>PHP</strong>:</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /opt/php/
 root@server:~#
 </code></pre>
-
 <p>En esa carpeta vamos a poner algún fichero <em>.php</em> para tener algo que servir y demostrar que funciona. Con algo simple nos vale.</p>
-
 <pre><code class="language-bash">root@server:~# cat /opt/php/index.php
 Hello from PHP, version &lt;?php echo phpversion(); ?&gt;
 root@server:~#
 </code></pre>
-
 <p>Vamos a poner un fichero de configuración que sirva <strong>PHP</strong>, prácticamente copiado de la documentación.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/uwsgi-emperor/vassals/php.ini
 [uwsgi]
 plugins = 0:php
@@ -134,24 +118,17 @@ php-allowed-ext = .php
 php-index = index.php
 root@server:~#
 </code></pre>
-
 <p>Y el <em>emperor</em> se dedicará a levantar un proceso para servir esta aplicación. No hay que reiniciar nada. Lo comprobamos con una petición desde una máquina que vea a nuestro servidor:</p>
-
 <pre><code class="language-bash">root@lxc:~# wget -qO- http://10.0.0.2:8080/; echo ''
 Hello from PHP, version 5.6.20-0+deb8u1
 root@lxc:~#
 </code></pre>
-
-<h2 id="sirviendo-una-aplicación-ruby-mediante-el-protocolo-rack">Sirviendo una aplicación ruby mediante el protocolo rack</h2>
-
+<h2>Sirviendo una aplicación ruby mediante el protocolo rack</h2>
 <p>Siguiendo los mismos pasos que en el paso anterior, creamos la carpeta contenedora.</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /opt/ruby/
 root@server:~#
 </code></pre>
-
 <p>En esta carpeta ponemos una aplicación <em>rack</em> mínima, que he copiado de internet. Normalmente, la gente suele usar <em>frameworks</em>, pero el resultado es el mismo.</p>
-
 <pre><code class="language-bash">root@server:~# cat /opt/ruby/ruby.ru
 app = lambda do |env|
   body = &quot;Hello, World!&quot;
@@ -159,9 +136,7 @@ app = lambda do |env|
 run app
 root@server:~#
 </code></pre>
-
 <p>Y basta con declarar un fichero de configuración para que se active la nueva aplicación.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/uwsgi-emperor/vassals/ruby.ini
 [uwsgi]
 plugins = rack_ruby21
@@ -171,33 +146,24 @@ workers = 2
 rack = /opt/ruby/ruby.ru
 root@server:~#
 </code></pre>
-
 <p>Nuevamente podemos comprobar que el resultado es el esperado:</p>
-
 <pre><code class="language-bash">root@lxc:~# wget -qO- http://10.0.0.2:3031/; echo ''
 Hello, World!
 root@lxc:~#
 </code></pre>
-
-<h2 id="sirviendo-una-aplicación-python-mediante-el-protocolo-wsgi">Sirviendo una aplicación python mediante el protocolo WSGI</h2>
-
+<h2>Sirviendo una aplicación python mediante el protocolo WSGI</h2>
 <p>Supongamos que tenemos una carpeta contenedora para nuestra aplicación, como en los casos anteriores:</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /opt/py/
 root@server:~#
 </code></pre>
-
 <p>En ella tenemos una aplicación que cumple con el protocolo <strong>WSGI</strong>. Nuevamente vamos a simplificar el ejemplo a base de no utilizar ningún <em>framework</em>.</p>
-
 <pre><code class="language-bash">root@server:~# cat /opt/py/app.py
 def application(environ, start_response):
     start_response('200 OK', [('Content-Type', 'text/plain')])
     yield 'Hello World from python'
 root@server:~#
 </code></pre>
-
 <p>Configuramos el <em>vassal</em> que va a dar a conocer la aplicación al <em>emperor</em>, de forma que este la pueda levantar automáticamente.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/uwsgi-emperor/vassals/py.ini
 [uwsgi]
 plugins = python
@@ -208,14 +174,11 @@ chdir = /opt/py/
 module = app:application
 root@server:~#
 </code></pre>
-
 <p>Y vemos como todo funciona como debe:</p>
-
 <pre><code class="language-bash">root@lxc:~# wget -qO- http://10.0.0.2:5000/; echo ''
 Hello World from python
 root@lxc:~#
 </code></pre>
-
 <p>Es importante indicar que el <em>plugin</em> de <strong>python</strong> soporta muchas mas directivas, entre ellas, la posibilidad de añadir variables de sistema como el <em>PYTHONPATH</em>, o la de usar un <em>virtualenv</em> propio para nuestra aplicación. Es por este motivo que me enamoré de este servidor de aplicaciones.</p>
 
 <div id="disqus_thread"></div>

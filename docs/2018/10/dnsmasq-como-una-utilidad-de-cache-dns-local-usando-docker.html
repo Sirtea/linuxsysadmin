@@ -53,24 +53,17 @@
 </p>
 
 <p>Ya vimos en otros artículos lo fácilmente que podemos utilizar <strong>dnsmasq</strong> en un <em>gateway</em> para ayudar a los servidores a que se conozcan entre sí por nombre y como una forma de ocultar el DNS real de la red interna. Sin embargo es una caché excelente para un sistema aislado.</p>
-
 <p>Cualquier sistema, sea un servidor o no, puede utilizar un proceso <strong>dnsmasq</strong> local como caché y como forma de resolver por nombre entornos que todavia no tienen un DNS disponible en internet. Realmente es un proceso que no consume casi ninguna memoria y nos puede ayudar mucho en caso de una caída del DNS global, o en caso de desconectarnos de la red por cualquier motivo.</p>
-
 <p>Lo que suele ser problemático es instalarlo en nuestro sistema, por un tema de permisos o de conflictos; en estos casos podemos confiar en convertirlo en un contenedor, que no pasa de los 5mb de disco.</p>
-
-<h2 id="la-imagen-con-dnsmasq">La imagen con DNSmasq</h2>
-
+<h2>La imagen con DNSmasq</h2>
 <p>La imagen en sí misma no oculta ninguna complicación; se trata de instalar <strong>dnsmasq</strong> en nuestro sistema base y asegurarnos que ejectua en <em>foreground</em>. Para evitar una imagen muy grande, podemos utilizar <strong>Alpine Linux</strong>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ cat build/Dockerfile
 FROM alpine:3.8
 RUN apk add --no-cache dnsmasq
 CMD [&quot;/usr/sbin/dnsmasq&quot;, &quot;-k&quot;]
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <p>Para construir y levantar el servicio, podemos utilizar <strong>docker-compose</strong>:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ cat docker-compose.yml
 version: '3'
 services:
@@ -87,7 +80,6 @@ services:
       - ./hosts:/etc/hosts:ro
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ docker-compose build
 Building dnsmasq
 ...
@@ -99,34 +91,23 @@ dnsmasq             latest              b43fd1b79394        7 minutes ago       
 ...
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <p>Y con esto tenemos nuestra imagen.</p>
-
-<h2 id="ejecutando-el-contenedor">Ejecutando el contenedor</h2>
-
+<h2>Ejecutando el contenedor</h2>
 <p>Como decisión de diseño, he preferido montar el fichero <code>/etc/hosts</code> desde una carpeta local, para poder modificarlo a placer y sin tener permisos de superusuario.</p>
-
 <p>Levantamos el servicio encima de la red local; de esta forma, crearemos la ilusión de que <strong>dnsmasq</strong> corre en la misma máquina que la va a utilizar directamente en <em>localhost</em>.</p>
-
 <p><strong>NOTA</strong>: <strong>dnsmasq</strong> utiliza algunas operaciones especiales de redes. Podéis ejecutar en modo privilegiado (<code>--privileged</code>) o podéis darle la <em>capability</em> <code>NET_ADMIN</code>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ docker-compose up -d
 Creating dnsmasq ... done
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <p>Y con esto tenemos el servicio <strong>dnsmasq</strong> accesible desde nuestro servidor, en el puerto estándar:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ ss -lnt | grep 53
 LISTEN     0      32           *:53                       *:*
 LISTEN     0      32          :::53                      :::*
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
-<h2 id="utilizando-el-nuevo-servidor-dns">Utilizando el nuevo servidor DNS</h2>
-
+<h2>Utilizando el nuevo servidor DNS</h2>
 <p>Solo falta indicar que el servidor DNS que nuestra máquina debe utilizar es <em>localhost</em> en <code>/etc/resolv.conf</code>, posiblemente seguido de otros. De esta forma, la primera petición DNS fallará, se irá a buscar en el siguiente servidor, y se guardará en <em>caché</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ cat /etc/resolv.conf
 domain ...
 search ...
@@ -135,19 +116,14 @@ nameserver ...
 nameserver ...
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <p>En el caso de utilizar DHCP para obtener dirección IP automáticamente, el fichero <code>/etc/resolv.conf</code> se sobreescribe con lo que nos pase el <em>router</em>. Podemos instruir al cliente de DHCP para que siempre nos añada <em>localhost</em> en el fichero (es lo que tuve que hacer yo).</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ cat /etc/dhcp/dhclient.conf 
 ...
 prepend domain-name-servers 127.0.0.1;
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
-<h2 id="probando-el-servidor-dns">Probando el servidor DNS</h2>
-
+<h2>Probando el servidor DNS</h2>
 <p>El paso más interesante de este <em>setup</em> es la capacidad de <em>cachear</em> las peticiones DNS, y esto lo podemos probar haciendo simplemente varias peticiones:</p>
-
 <pre><code class="language-bash">root@atlantis:~# dig www.linuxsysadmin.ml
 ...
 ;; Query time: 30 msec
@@ -165,16 +141,12 @@ root@atlantis:~# dig www.linuxsysadmin.ml
 ...
 root@atlantis:~#
 </code></pre>
-
 <p>Podemo ver claramente dos cosas:</p>
-
 <ul>
 <li>Estamos utilizando nuestro servidor local DNS</li>
 <li>La primera petición no está en <em>caché</em> y tarda un poco, pero el resto son inmediatas</li>
 </ul>
-
 <p>La otra funcionalidad que ganamos con <strong>dnsmasq</strong> es la de resolver nombres desde el fichero <code>/etc/hosts</code> del contenedor. Para evitarme modificar sistemas de ficheros privilegiados, el <em>docker-compose.yml</em> añade este fichero desde un fichero local, que podemos modificar a placer segun nuestros gustos (no os olvidéis de reiniciar el contenedor para que pille los cambios).</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dnsmasq$ cat hosts
 127.0.0.1 test.api.local
 10.0.0.3 auth.api.private
@@ -182,16 +154,13 @@ gerard@atlantis:~/workspace/dnsmasq$ docker-compose restart
 Restarting dnsmasq ... done
 gerard@atlantis:~/workspace/dnsmasq$
 </code></pre>
-
 <p>Y con esto podemos resolver dominios que no existen fuera de nuestra red, con la comodidad de hacerlo por nombre, y sin modificar direcciones IP si los recolocamos en otros servidores.</p>
-
 <pre><code class="language-bash">root@atlantis:~# dig test.api.local +short
 127.0.0.1
 root@atlantis:~# dig auth.api.private +short
 10.0.0.3
 root@atlantis:~#
 </code></pre>
-
 <p>Y con esto ya podemos decir que lo tenemos todo funcionando.</p>
 
 <div id="disqus_thread"></div>

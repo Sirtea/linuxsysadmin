@@ -53,15 +53,10 @@
 </p>
 
 <p>Algunas veces tenemos necesidad de crear un proyecto con un equipo pequeño y necesitamos versionarlo en un sitio accesible para todos los participantes involucrados. El precio de soluciones en la nube suele ser prohibitivo, y montar una solución gráfica puede ser demasiado. Lo podemos hacer simplemente usando <strong>git</strong> y <strong>ssh</strong>.</p>
-
 <p>La idea es muy simple; solo se necesita un servidor de <strong>ssh</strong>, que es la forma de transportar los datos, y los binarios de <strong>git</strong> para que los organice a placer. También vamos a necesitar un usuario <strong>git</strong>, que es el que vamos a usar para entrar, ya sea para crear y borrar repositorios, como para las operaciones remotas recibidas por el repositorio.</p>
-
 <p><strong>TRUCO</strong>: Podemos eliminar la petición de <em>password</em> para todos los accesos que se hagan por <strong>SSH</strong>, sean para entrar en las máquinas por <strong>SSH</strong> mediante cualquier <em>shell</em> de este artículo, o como resultado de una operación remota de <strong>git</strong>. Esto se puede hacer usando autenticación <strong>SSH</strong> por claves, como se explica en un <a href="/2016/05/autenticacion-ssh-por-claves.html">artículo anterior</a>.</p>
-
-<h2 id="montando-el-servidor">Montando el servidor</h2>
-
+<h2>Montando el servidor</h2>
 <p>Para crear la máquina base, vamos a utilizar <strong>Docker</strong> por comodidad. Aprovechando esta tecnología, podemos crear el contenedor partiendo de una imagen creada con un <em>Dockerfile</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ cat Dockerfile
 FROM debian:jessie
 RUN apt-get update &amp;&amp; \
@@ -72,9 +67,7 @@ RUN useradd git -G sudo -s /bin/bash -m &amp;&amp; \
 CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Construimos la imagen, basándonos en el anterior <em>Dockerfile</em>, y le añadimos el <em>tag</em> &ldquo;gitserver&rdquo;.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker build -t gitserver .
 Sending build context to Docker daemon 5.632 kB
 Step 1 : FROM debian:jessie
@@ -95,16 +88,12 @@ Removing intermediate container 67bbebe61c74
 Successfully built 81c2dd7b156a
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Lanzamos una instancia del contenedor para que podamos utilizarla. La parte importante es el <em>flag</em> <strong>-d</strong> para ejecutar el contenedor en <em>background</em>, y el <em>flag</em> <strong>-p</strong> que nos permite publicar el puerto 22 del contenedor en el puerto 22222 de la máquina <em>host</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker run -d --name gitserver1 -h gitserver1 -p 22222:22 gitserver
 c26f30a94bb75b35c6d6cfe6a6bc5b1ef6929aafe1b5636acd207e019743540b
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Vamos a entrar en el servidor <strong>SSH</strong> para crear el repositorio <em>myrepo.git</em> que nos va a servir de ejemplo.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ ssh git@localhost -p 22222
 git@localhost's password: 
 
@@ -121,9 +110,7 @@ logout
 Connection to localhost closed.
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Desde la máquina <em>host</em> (o desde cualquier otra), podemos clonar el repositorio. Como tenemos el puerto del contenedor publicado en el puerto 22222 de la máquina <em>host</em> (la de trabajo, en este caso), la usamos tal cual para clonar.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ git clone ssh://git@localhost:22222/home/git/myrepo.git
 Cloning into 'myrepo'...
 git@localhost's password: 
@@ -131,9 +118,7 @@ warning: You appear to have cloned an empty repository.
 Checking connectivity... done.
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Hacemos un poco de trabajo local, con sus respectivos <em>commits</em>. Finalmente podemos hacer un <em>push</em> a nuestro repositorio remoto, siguiendo el <em>workflow</em> de trabajo que queramos seguir.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ cd myrepo/
 gerard@sirius:~/build/myrepo$ echo 0.0.1 &gt; VERSION
 gerard@sirius:~/build/myrepo$ git add VERSION 
@@ -152,19 +137,12 @@ Branch master set up to track remote branch master from origin.
 gerard@sirius:~/build/myrepo$ cd ..
 gerard@sirius:~/build$ 
 </code></pre>
-
-<h2 id="añadiendo-restricciones-a-la-sesión-ssh">Añadiendo restricciones a la sesión SSH</h2>
-
+<h2>Añadiendo restricciones a la sesión SSH</h2>
 <p>Es un poco peligroso permitir que el usuario <em>git</em> entre mediante una sesión <strong>SSH</strong> para hacer lo que le parezca.</p>
-
 <p>Los mismos binarios de <strong>git</strong> incluyen <strong>git-shell</strong>, que es un <em>shell</em> que limita lo que puede hacer el usuario, aunque solo permitiría hacer las operaciones <em>push</em> y <em>pull</em> propias del trabajo remoto con <strong>git</strong>.</p>
-
 <p>¿Y como podemos crear y destruir repositorios? En principio, no se puede. Sin embargo, si creamos una carpeta <em>/home/git/git-shell-commands/</em>, el usuario va a poder ejecutar los <em>scripts</em> que allí pongamos.</p>
-
 <p>Siguiendo esta idea, vamos a mejorar el <em>Dockerfile</em> para asignar <strong>git-shell</strong> al usuario <em>git</em> y para ponerle un par de comandos.</p>
-
 <p>Vamos a crear dos <em>scripts</em> que nos permitan crear y destruir repositorios, que son los siguientes:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ cat create 
 #!/bin/bash
 
@@ -199,9 +177,7 @@ echo &quot;[ERROR] Repository ${1} does not exist&quot;
 exit -1
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>También vamos a reescribir el <em>Dockerfile</em> con las nuevas modificaciones.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ cat Dockerfile.shell 
 FROM debian:jessie
 RUN apt-get update &amp;&amp; \
@@ -217,9 +193,7 @@ RUN cp /usr/share/doc/git/contrib/git-shell-commands/help /home/git/git-shell-co
 CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Creamos la imagen usando el <em>Dockerfile</em> antes mencionado, siguiendo el mismo procedimiento de la versión básica. Le ponemos un <em>tag</em> distinto para tener ambas imágenes funcionales.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker build -f Dockerfile.shell -t gitserver:shell .
 Sending build context to Docker daemon 53.25 kB
 Step 1 : FROM debian:jessie
@@ -245,16 +219,12 @@ Removing intermediate container b94b8c1ddf8a
 Successfully built e484e1465480
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Lanzamos una instancia de la imagen creada. Es importante cambiar el puerto; puesto que el 22222 está ocupado por la instancia anterior, usaré el siguiente.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker run -d --name gitserver2 -h gitserver2 -p 22223:22 gitserver:shell
 e732027d11b90657ff109a455f032327f0e24eebe54a7e121d86eff6eab1bc4b
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Entramos por <strong>SSH</strong>. Nos podemos dar cuenta de que el <em>prompt</em> ha cambiado; estamos en el <strong>git-shell</strong> y tenemos limitados los comandos a los que añadimos en el <em>Dockerfile</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ ssh git@localhost -p 22223
 git@localhost's password: 
 
@@ -270,9 +240,7 @@ destroy
 list
 git&gt; 
 </code></pre>
-
 <p>Usamos el comando <em>create</em> para crear el repositorio y verificamos que está usando el comando <em>list</em>. Tendríamos disponible el comando <em>destroy</em>, pero de momento no lo vamos a utilizar.</p>
-
 <pre><code class="language-bash">git&gt; create myrepo2
 Initialized empty Git repository in /home/git/myrepo2.git/
 [OK] Repository myrepo2 created
@@ -282,9 +250,7 @@ git&gt; exit
 Connection to localhost closed.
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Verificamos que funciona, clonando el repositorio como hemos hecho antes.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ git clone ssh://git@localhost:22223/home/git/myrepo2.git
 Cloning into 'myrepo2'...
 git@localhost's password: 
@@ -292,9 +258,7 @@ warning: You appear to have cloned an empty repository.
 Checking connectivity... done.
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Hacemos algunos <em>commits</em> locales y finalmente los pasamos al repositorio remoto mediante un <em>push</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ cd myrepo2/
 gerard@sirius:~/build/myrepo2$ echo 0.0.1 &gt; VERSION
 gerard@sirius:~/build/myrepo2$ git add VERSION

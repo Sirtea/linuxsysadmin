@@ -56,64 +56,49 @@
 mis aplicaciones <strong>python</strong>. Sin embargo, en mi trabajo hay mucha gente que no confía
 en <strong>docker</strong> y que prefieren utilizar servidores como llevan haciéndolo toda su vida
 laboral, aunque se ha visto forzados a cambiar el lenguaje de programación usado.</p>
-
 <p>El choque cultural cuando se encuentran delante de una aplicación <strong>python</strong> es el
 descubrimiento de que se suele servir una aplicación concreta en un puerto diferente
 del resto. Por supuesto, ellos están acostumbrados a <em>subpaths</em> y a <em>virtualhosts</em>.</p>
-
 <p>En casos como estos, en donde pretenden poner varias aplicaciones en un solo servidor,
 la elección más conservadora es utilizar <strong>uwsgi</strong>, que les permite trabajar con
 versiones de <strong>python</strong> distintas y con conjuntos de librerías contenidas en sus
 propios <em>virtualhosts</em>, evitando mezclar las librerías.</p>
-
 <p><strong>NOTA</strong>: La posibilidad de <a href="/2015/11/escribiendo-units-en-systemd.html">escribir servicios y plantillas de systemd</a> para
 levantar varias veces un servidor <strong>gunicorn</strong> les suele parecer magia negra, y lo
 fácil para ellos es utilizar <strong>uwsgi</strong> en modo emperador.</p>
-
 <p>Por todo ello, vamos a montar un servidor destinado a alojar varias aplicaciones
 <strong>python</strong>, utilizando <em>unix sockets</em> para ocultar el tema de los puertos, y creando
 la ilusión de una fachada única mediante <em>virtualhosts</em> de un <strong>nginx</strong>.</p>
-
-<h2 id="paquetes-necesarios">Paquetes necesarios</h2>
-
+<h2>Paquetes necesarios</h2>
 <p>Para que el montaje funcione, necesitamos un <strong>nginx</strong> y un <strong>uwsgi</strong> (en modo) emperador.
 Como estamos hablando de servir aplicaciones en <strong>python</strong>, vamos a poner el <em>plugin</em>
 adecuado para esta carga de trabajo; como tenemos unos compañeros habituados a tocar
 <em>virtualenvs</em>, vamos a instalar también esta herramienta para disponer de ella.</p>
-
 <pre><code class="language-bash">gerard@debian:~$ sudo apt install nginx-light uwsgi-emperor uwsgi-plugin-python3 python3-venv
 ...
 gerard@debian:~$ 
 </code></pre>
-
-<h2 id="preparando-la-primera-aplicación">Preparando la primera aplicación</h2>
-
+<h2>Preparando la primera aplicación</h2>
 <p>Supongamos ahora que queremos desplegar una aplicación que nos viene hecha. Vamos
 a destinar una carpeta para contener nuestro código y librerías, por ejemplo,
 <code>/srv/demo/</code>, en donde estará nuestra aplicación de demostración.</p>
-
 <p>Creamos la carpeta con los permisos que más nos convengan, entendiendo que <strong>uwsgi</strong>
 solo necesita permisos de lectura. Por comodidad, me voy a poner de propietario
 para no tener que utilizar <strong>sudo</strong> todo el rato:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ sudo install -d -o gerard -g gerard /srv/demo
 gerard@debian:~$ cd /srv/demo/
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p>Esperamos separar código de librerías, y por ello voy a crear una carpeta <code>app</code>
 y un <em>virtualenv</em> <code>env</code>; dejaré el fichero <code>requirements.txt</code> fuera de ambas.</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ mkdir app
 gerard@debian:/srv/demo$ python3 -m venv env
 gerard@debian:/srv/demo$ touch requirements.txt
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p>Es momento de desplegar la aplicación en la carpeta <code>app</code> y modificar el fichero
 <code>requirements.txt</code> de acorde a nuestra aplicación. Por poner un ejemplo rápido,
 pondré un ejemplo sencillo:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ cat app/app.py 
 import bottle
 
@@ -126,19 +111,15 @@ gerard@debian:/srv/demo$ cat requirements.txt
 bottle==0.12.17
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p>Solo falta instalar las librerías especificadas en el fichero <code>requirements.txt</code>,
 que se hace de forma trivial, sin ninguna necesidad de activar el <em>virtualenv</em>:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ ./env/bin/pip install -r requirements.txt 
 Collecting bottle==0.12.17 (from -r requirements.txt (line 1))
 ...
 Successfully installed bottle-0.12.17
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p>si lo hemos hecho bien, tenemos todo lo necesario para ejecutar nuestra aplicación:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ tree -L 2
 .
 ├── app
@@ -155,15 +136,11 @@ gerard@debian:/srv/demo$
 7 directories, 3 files
 gerard@debian:/srv/demo$ 
 </code></pre>
-
-<h2 id="activando-la-aplicación">Activando la aplicación</h2>
-
+<h2>Activando la aplicación</h2>
 <p>Como ya sabemos, cuando <strong>uwsgi</strong> actúa en modo emperador, basta con dejar un fichero
 de configuración en la carpeta monitorizada para que levante una instancia que la gestione.</p>
-
 <p>En el caso concreto de <strong>Debian</strong>, esta carpeta es <code>/etc/uwsgi-emperor/vassals</code> y el
 fichero de configuración podría ser algo parecido a esto:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ cat /etc/uwsgi-emperor/vassals/demo.ini
 [uwsgi]
 plugins = python3
@@ -175,19 +152,15 @@ virtualenv = /srv/demo/env
 module = app:app
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p>Y con esto ya estamos; deberíamos tener un proceso <em>master</em> y dos <em>slaves</em> pendientes
 de nuestra aplicación, y un <em>unix socket</em> escuchando en <code>/tmp/demo.sock</code>. Si la versión
 de <strong>curl</strong> lo permite, podemos verificar que todo funciona en este punto:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ curl --unix-socket /tmp/demo.sock http://localhost/
 Hello world
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Podemos simplificar la configuración utilizando <em>magic variables</em>, utilizando
 el nombre del fichero de configuración como <code>%n</code>, lo que favorece el <em>copy-paste</em>.</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ cat /etc/uwsgi-emperor/vassals/demo.ini
 [uwsgi]
 plugins = python3
@@ -199,25 +172,19 @@ virtualenv = /srv/%n/env
 module = app:app
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p><strong>WARNING</strong>: No nos vale hacer un <em>soft link</em> a una plantilla, ya que un <code>touch</code> del mismo
 provocaría el <em>reload</em> de todas las aplicaciones basadas en la plantilla; hacer un <code>touch -h</code>
 tampoco ayuda, porque <strong>uwsgi</strong> seguiría monitorizando la plantilla y no el <em>soft link</em>.</p>
-
-<h2 id="escondiendo-nuestra-aplicación-tras-un-proxy-reverso-nginx">Escondiendo nuestra aplicación tras un proxy reverso nginx</h2>
-
+<h2>Escondiendo nuestra aplicación tras un proxy reverso nginx</h2>
 <p>Esta parte requiere un conocimiento de la configuración de <strong>nginx</strong>, tema en el que
 no voy a entrar. Jugando con el <code>server_name</code>, los puertos y las <code>location</code> podemos simular
 una estructura de <em>virtualhosts</em> y de <em>urls</em> a nuestro gusto.</p>
-
 <p>La única parte importante es como pasar las peticiones a las aplicaciones <strong>python</strong>:
 basta con hacer un <code>proxy_pass</code> al <em>unix socket</em>, y de acuerdo a la documentación, tendría
 la forma tipo <code>&lt;protocolo&gt;://unix://&lt;path-al-unix-socket&gt;</code>.</p>
-
 <p>Suponiendo que queramos pasar todas la peticiones de <code>demo.example.org</code> de forma
 transparente a nuestra aplicación de demostración sin modificar la URL, bastaría una
 configuración como la que sigue:</p>
-
 <pre><code class="language-bash">gerard@debian:/srv/demo$ cat /etc/nginx/sites-enabled/demo 
 server {
 	listen 8080;
@@ -230,9 +197,7 @@ server {
 }
 gerard@debian:/srv/demo$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Este <strong>nginx</strong> también es un buen candidato para hacer balanceo o terminación SSL.</p>
-
 <p>A partir de aquí, poner y quitar aplicaciones es trivial.</p>
 
 <div id="disqus_thread"></div>

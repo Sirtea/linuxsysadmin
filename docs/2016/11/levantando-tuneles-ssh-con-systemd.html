@@ -53,15 +53,10 @@
 </p>
 
 <p>Ya vimos en un <a href="/2016/10/creando-tuneles-con-ssh.html">artículo anterior</a> como levantar túneles <strong>SSH</strong> para llegar a través del protocolo <strong>SSH</strong>, a destinos que no están alcanzables normalmente. Esto está muy bien para aplicaciones puntuales, pero si tenemos que usar esos túneles una temporada, y deseamos que se mantengan levantados, ya es mas difícil.</p>
-
 <p>Hay miles de gestores de procesos que pueden hacer este trabajo por nosotros, como <strong>runit</strong>, <strong>monit</strong>, <strong>supervisor</strong> entre otros. Personalmente no soy fan de instalar nada que proporcione una funcionalidad duplicada, así que&hellip; ¿por que no <strong>systemd</strong>?</p>
-
 <p>Para este tutorial vamos a suponer que tenemos acceso a un servidor intermedio con <strong>SSH</strong>, que ve a un servidor de bases de datos, y a través del que vamos a hacer el salto. Respectivamente, los vamos a llamar <em>jump</em> y <em>database</em>, en una explosión de creatividad.</p>
-
-<h2 id="el-túnel-básico">El túnel básico</h2>
-
+<h2>El túnel básico</h2>
 <p>Lo primero es darnos cuenta que no llegamos a la base de datos; no importa que intentemos conectar a <em>localhost</em> o a <em>database</em> directamente. No llegamos y punto.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ mongo
 MongoDB shell version: 3.2.10
 connecting to: test
@@ -73,17 +68,12 @@ connect@src/mongo/shell/mongo.js:229:14
 exception: connect failed
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Vamos a levantar un túnel <strong>SSH</strong> que muestre en el puerto local 27017 el destino <em>database</em>, al puerto 27017, tal como lo ve el servidor de salto.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ ssh -L 27017:database:27017 jump@jump -N
 Warning: Permanently added 'jump' (ECDSA) to the list of known hosts.
 </code></pre>
-
 <p>Es especialmente importante que pongamos autenticación por claves, de forma que no nos pida la contraseña para levantar el túnel. Ahora no es un gran problema, pero si pretendemos que lo haga <strong>systemd</strong>, no podemos instruirle a poner una contraseña dada.</p>
-
 <p>Ahora podemos comprobar que si llegamos a la base de datos, en nuestro puerto local:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ mongo
 MongoDB shell version: 3.2.10
 connecting to: test
@@ -134,11 +124,8 @@ Server has startup warnings:
 }
 &gt; 
 </code></pre>
-
-<h2 id="añadiendo-systemd-a-la-ecuación">Añadiendo systemd a la ecuación</h2>
-
+<h2>Añadiendo systemd a la ecuación</h2>
 <p>Vamos a escribir nuestro propio <em>service</em> de <strong>systemd</strong>. Para ello, vamos a seguir <a href="/2015/11/escribiendo-units-en-systemd.html">otro artículo</a>. Solo por la posibilidad de tener que levantar varios túneles, vale la pena usar las plantillas. Como solo podemos pasar un parámetro al <em>service</em>, vamos a crear un <em>script</em> que nos permita elegir los parámetros del túnel en función de una palabra clave.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat /home/gerard/bin/tunnel_to.sh 
 #!/bin/bash
 
@@ -147,27 +134,19 @@ case &quot;$1&quot; in
 esac
 gerard@aldebaran:~/docker/systemd-tunnel$ 
 </code></pre>
-
 <p>Y le damos permisos de ejecución.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/systemd-tunnel$ chmod +x /home/gerard/bin/tunnel_to.sh 
 gerard@aldebaran:~/docker/systemd-tunnel$ 
 </code></pre>
-
 <p>De momento tenemos el mismo túnel, pero simplificado a un <em>script</em> con un solo parámetro:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ tunnel_to.sh database
 Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
 </code></pre>
-
 <p>Vamos a trabajar en las carpetas de sistema de <strong>systemd</strong>, en donde se supone que, por convención, debemos dejar nuestras <em>units</em>.</p>
-
 <pre><code class="language-bash">root@aldebaran:~# cd /etc/systemd/system/
 root@aldebaran:/etc/systemd/system# 
 </code></pre>
-
 <p>Siguiendo el citado artículo, creamos la plantilla base que va a invocar el <em>script</em> de los túneles, con el parámetro que le demos.</p>
-
 <pre><code class="language-bash">root@aldebaran:/etc/systemd/system# cat tunnel\@.service 
 [Unit]
 Description=SSH Tunnel
@@ -181,25 +160,19 @@ Restart=always
 WantedBy=multi-user.target
 root@aldebaran:/etc/systemd/system# 
 </code></pre>
-
 <p>Creamos un <em>soft link</em> para cada uno de los túneles que queramos levantar:</p>
-
 <pre><code class="language-bash">root@aldebaran:/etc/systemd/system# ls -lh tunnel*
 lrwxrwxrwx 1 root root  15 oct 17 15:43 tunnel@database.service -&gt; tunnel@.service
 -rw-r--r-- 1 root root 134 oct 17 15:43 tunnel@.service
 root@aldebaran:/etc/systemd/system# 
 </code></pre>
-
 <p>De esta forma, el servicio <em>tunnel@database</em> va a levantar el <em>script</em> con el parámetro <em>database</em>, que a su vez, va a levantar el túnel como le hayamos indicado. Activamos el servicio para futuros reinicios de la máquina, y lo levantamos para esta sesión.</p>
-
 <pre><code class="language-bash">root@aldebaran:/etc/systemd/system# systemctl enable tunnel@database
 Created symlink from /etc/systemd/system/multi-user.target.wants/tunnel@database.service to /etc/systemd/system/tunnel@.service.
 root@aldebaran:/etc/systemd/system# systemctl start tunnel@database
 root@aldebaran:/etc/systemd/system# 
 </code></pre>
-
 <p>Y ya podemos comprobar como el túnel está levantado, sea mediante la inspección de los procesos en <em>runtime</em> o directamente accediendo a la base de datos.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ mongo
 MongoDB shell version: 3.2.10
 connecting to: test
@@ -215,24 +188,18 @@ gerard   22679  0.0  0.0  13228  2632 ?        Ss   15:46   0:00 /bin/bash /home
 gerard   22680  0.0  0.0  44428  5320 ?        S    15:46   0:00  \_ ssh -L 27017:database:27017 jump@localhost -N
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Solo nos queda comprobar que si matamos el proceso, simulando que se cae solo, <strong>systemd</strong> se encarga de levantarlo de nuevo, en honor a la directiva <em>reload=always</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ kill 22679
 gerard@aldebaran:~$ ps faux | grep database | grep -v grep
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Y antes de que podamos siquiera repetir el comando <em>ps</em>, ya lo tenemos de nuevo en marcha:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ ps faux | grep database | grep -v grep
 gerard   22854  0.0  0.0  13228  2632 ?        Ss   15:49   0:00 /bin/bash /home/gerard/bin/tunnel_to.sh database
 gerard   22855  0.0  0.0  44428  5200 ?        S    15:49   0:00  \_ ssh -L 27017:database:27017 jump@localhost -N
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: A pesar de que nuestro túnel pueda estar vivo, algunos servidores están configurados para cerrar conexiones que llevan mucho tiempo de inactividad. Podemos generar tráfico de <em>keepalive</em> para que esto no suceda, con una simple directiva <strong>SSH</strong> cliente. Por ejemplo, la podemos poner en la configuración local del usuario que levante los túneles.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat .ssh/config 
 ...
 Host *

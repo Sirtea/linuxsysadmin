@@ -53,37 +53,25 @@
 </p>
 
 <p>Cuando usamos herramientas concretas para todos los miembros de un mismo equipo, suele ser problemático instalarlo en sus equipos. Por la ausencia de instalación y su gran reproducibilidad, es cada vez más frecuente distribuir esas herramientas en una imagen de <strong>Docker</strong>, aunque esto no garantiza estar libres de otros problemas.</p>
-
 <p>El tema más problemático suele ser la diferencia entre el usuario del equipo y el del contenedor <strong>Docker</strong>; un fichero guardado con el usuario <em>john</em> en el contenedor pasaria a pertenecer, por ejemplo, al usuario <em>james</em> en el <em>host</em>.</p>
-
 <p>Esto se debe a que el usuario se guarda en el disco como su identificador numérico, que luego se interpreta de acuerdo al fichero <em>/etc/passwd</em> del sistema operativo que lo lea. Afortunadamente, este es un problema menor que puede ser solventado con un poco de habilidad.</p>
-
-<h2 id="un-ejemplo-práctico-un-contenedor-para-usar-python">Un ejemplo práctico: un contenedor para usar Python</h2>
-
+<h2>Un ejemplo práctico: un contenedor para usar Python</h2>
 <p>Hay pocos motivos para no instalar <strong>python</strong> directamente en el sistema <em>host</em>; para su fácil distribución, para utilizar diferentes versiones o simplemente para disponer de ellas en un servidor donde no podríamos instalarlo normalmente por seguridad. Sin embargo es un ejemplo con alto valor didáctico.</p>
-
 <p>Empezaremos con una imagen que solo contenga los binarios que usamos habitualmente; vamos a montar la carpeta de trabajo desde el <em>host</em> de <strong>docker</strong>. Los binarios que suelo utilizar son los siguientes:</p>
-
 <ul>
 <li>python</li>
 <li>virtualenv</li>
 <li>pep8</li>
 </ul>
-
 <p>Así pues, nos limitaremos a utilizar un <em>Dockerfile</em> básico con estas tres herramientas, y la distribución que más nos guste:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/pyenv$ cat Dockerfile
 FROM alpine:3.6
 RUN apk add --no-cache py-virtualenv py-pep8
 gerard@atlantis:~/projects/pyenv$
 </code></pre>
-
 <p><strong>NOTA</strong>: No se indica <strong>python</strong> ya que es una dependencia de los otros paquetes.</p>
-
-<h3 id="el-problema">El problema</h3>
-
+<h3>El problema</h3>
 <p>Vamos a trabajar un poco con las nuevas herramientas, aunque solo sea para crear un proyecto vacío:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/pyenv$ docker run -ti --rm --volume /home/gerard/projects/pyenv/workspace:/workspace pyenv
 / # adduser -u 1200 gerard
 Changing password for gerard
@@ -125,15 +113,10 @@ gerard@atlantis:~/projects/pyenv$ tree -ug
 1 directory, 2 files
 gerard@atlantis:~/projects/pyenv$
 </code></pre>
-
 <p>Si trabajamos como <em>root</em>, el fichero del <em>host</em> queda con el propietario incorrecto, y si usamos un usuario con el mismo nombre, no tenemos garantias de que casen, siendo el caso peor el de no poder escribir en el entorno de trabajo.</p>
-
 <p>En mi caso, el usuario <em>gerard</em> en el <em>host</em> tiene identificador 1000, y he creado el usuario <em>gerard</em> del contenedor con identificador 1200 adrede para que se evidencie el problema.</p>
-
-<h3 id="la-solución">La solución</h3>
-
+<h3>La solución</h3>
 <p><strong>Docker</strong> nos ofrece una solución muy interesante: podemos ejecutar un contenedor especificando el usuario, sea en modo texto o en modo numérico. Como en mi caso el usuario <em>gerard</em> tiene identificador 1000 y el grupo <em>gerard</em> también, basta con indicar el <em>flag</em> <code>-u 1000:1000</code>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/pyenv/workspace$ docker run -ti --rm --volume /home/gerard/projects/pyenv/workspace:/workspace -u 1000:1000 pyenv
 / $ cd workspace/
 /workspace $ echo aaa &gt; run.py
@@ -152,17 +135,13 @@ drwxr-xr-x 5 gerard gerard 4,0K nov 14 17:23 env
 -rw-r--r-- 1 gerard gerard    4 nov 14 17:23 run.py
 gerard@atlantis:~/projects/pyenv/workspace$
 </code></pre>
-
 <p><strong>TRUCO</strong>: Podemos usar el comando <strong>id</strong> para sacar ambos valores numéricos de forma automatizable.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/pyenv/workspace$ docker run -ti --rm --volume /home/gerard/projects/pyenv/workspace:/workspace -u $(id -u):$(id -g) pyenv
 / $ id
 uid=1000 gid=1000
 / $
 </code></pre>
-
 <p>Y con esto los identificadores cuadran y no tenemos más problemas, aunque el identificador 1000 no se asocia con ningún usuario del contendor y se lista en modo numerico. La relación entre el valor numérico y nombre del usuario está en el fichero <em>/etc/passwd</em> y el del grupo en <em>/etc/group</em>; podemos simplemente mapear esos ficheros del <em>host</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/pyenv/workspace$ docker run -ti --rm -v /home/gerard/projects/pyenv/workspace:/workspace -u $(id -u):$(id -g) -v /etc/passwd:/etc/passwd -v /etc/group:/etc/group pyenv
 / $ ls workspace/ -lh
 total 8
@@ -170,9 +149,7 @@ drwxr-xr-x    5 gerard   gerard      4.0K Nov 14 16:23 env
 -rw-r--r--    1 gerard   gerard         4 Nov 14 16:23 run.py
 / $
 </code></pre>
-
 <p>Solo nos quedaría encapsular esa línea de comandos en un script para su fácil invocación, por ejemplo mapeando la carpeta actual al <em>workspace</em> del contenedor, de la siguiente forma:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/newproject$ cat /home/gerard/bin/pyenv
 #!/bin/bash
 

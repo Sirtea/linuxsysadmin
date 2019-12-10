@@ -56,42 +56,33 @@
 varias instancias sincronizadas entre sí y modificar los <em>pools</em> de balanceo cada vez
 que hay que hacer un despliegue, he optado por la versión fácil de <strong>traefik</strong>, que
 nos permite &ldquo;montar y olvidar&rdquo;, con mantenimiento cero.</p>
-
 <p><strong>NOTA</strong>: El artículo está enormemente basado en <a href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">este otro</a>, aunque esta vez sí
 que disponemos de varios nodos <em>managers</em>. Una vez montado, podremos apuntar a cada
 uno de los nodos indistintamente con los mismos resultados; resolveré la parte de alta
 disponibilidad usando una IP flotante entre los <em>managers</em>, con un procedimiento similar
 al de <a href="/2019/05/un-cluster-de-3-nodos-con-failover-voluntario-usando-keepalived.html">este otro artículo</a> (aunque sin el <em>failover</em> voluntario, para abreviar).</p>
-
-<h2 id="los-balanceadores-individuales">Los balanceadores individuales</h2>
-
+<h2>Los balanceadores individuales</h2>
 <p>Lo que vamos a hacer es montar una instancia de <strong>traefik</strong> en cada <em>manager</em>, así
 tendremos varios y cumpliremos con la restricción de ejecutar en un <em>manager</em> del <em>swarm</em>.
 Ya vimos que <strong>traefik</strong> no requiere ningún mantenimiento una vez montado, así que es de
 esperar que cada instancia sepa reconfigurarse individualmente. De esta forma aseguramos
 que no importa el que usemos; todos están configurados de forma idéntica.</p>
-
 <p>De forma similar al artículo anterior, vamos a crear una red <em>overlay</em> llamada <em>frontend</em>,
 que nos permita comunicar los balanceadores con la capa de aplicación. De esta manera,
 una aplicación que pertenezca a las redes de <em>backend</em> y <em>frontend</em> podrá ser balanceada
 y, a su vez, acceder a la capa de bases de datos, en un intento de separar partes lógicas.</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ docker network create -d overlay frontend
 51rx4s8znxrmhkreeouf9bzxv
 gerard@docker01:~$ 
 </code></pre>
-
 <p>Vamos a poner las recetas en una carpeta, lo que lo mantiene todo ordenado y nos permite
 trabajar con un sistema de versiones, en vista a utilizar buenas prácticas en el futuro.</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ mkdir traefik
 gerard@docker01:~$ cd traefik/
 gerard@docker01:~/traefik$ 
 </code></pre>
-
 <p>En este caso, no necesitamos para nada varios servicios, porque no nos interesa resolver
 sus direcciones IP por el nombre de servicio concreto; esto nos simplifica mucho la receta.</p>
-
 <pre><code class="language-bash">gerard@docker01:~/traefik$ cat traefik.yml 
 version: '3.2'
 services:
@@ -121,28 +112,22 @@ networks:
     external: true
 gerard@docker01:~/traefik$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: <strong>Traefik</strong> tiene una visión de todos los contenedores y redes del <strong>swarm</strong>,
 y es capaz de ver las redes a las que pertenece cada contenedor. Sin embargo, no es tan
 bueno para detectar la red por la que debe enrutar las peticiones a los diferentes contenedores.
 Eso se puede indicar en las <em>labels</em> de cada contenedor, e incluso dar un valor por defecto;
 en este caso es lo que usamos porque todos los contenedores están en la red <em>frontend</em>.</p>
-
 <p><strong>NOTA</strong>: En el <a href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">citado artículo</a> se utilizaba la versión <em>latest</em> de <strong>traefik</strong>,
 que correspondía con la versión 1.7. Se ha especificado el <em>tag</em> por ser una buena
 práctica y se ha utilizado la última versión, que es la 2.0; esto nos obliga a
 actualizar los <em>flags</em> usados, que han cambiado considerablemente.</p>
-
 <p>Simplemente tenemos que desplegar el servicio:</p>
-
 <pre><code class="language-bash">gerard@docker01:~/traefik$ docker stack deploy -c traefik.yml traefik
 Creating service traefik_traefik
 gerard@docker01:~/traefik$ 
 </code></pre>
-
 <p>En este punto solo nos quedaría confirmar que tenemos una instancia en cada nodo,
 y que cada máquina expone su propio <strong>traefik</strong> individualmente.</p>
-
 <pre><code class="language-bash">gerard@docker01:~/traefik$ docker stack ls
 NAME                SERVICES            ORCHESTRATOR
 mongo               3                   Swarm
@@ -154,7 +139,6 @@ jnt8uuudu82s        traefik_traefik.ai1kllx5blrdxqq0r8azm8lam   traefik:latest  
 d0og9xnx5xip        traefik_traefik.i8gf5d8zmpikkwep0yu4ml105   traefik:latest      docker03            Running             Running about a minute ago                       *:80-&gt;80/tcp,*:8080-&gt;8080/tcp
 gerard@docker01:~/traefik$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker01:~/traefik$ for domain in docker0{1,2,3,4,5,6}; do echo -n &quot;${domain} -&gt; &quot;; curl http://${domain}:80/; done
 docker01 -&gt; 404 page not found
 docker02 -&gt; 404 page not found
@@ -164,45 +148,34 @@ docker05 -&gt; curl: (7) Failed to connect to docker05 port 80: Conexión rehusa
 docker06 -&gt; curl: (7) Failed to connect to docker06 port 80: Conexión rehusada
 gerard@docker01:~/traefik$ 
 </code></pre>
-
 <p>Eso significa que se llega a un <strong>traefik</strong> en los nodos <strong>docker01</strong>, <strong>docker02</strong> y
 <strong>docker03</strong> (aunque no hay ningún servicio expuesto), pero no al resto (ya que no son
 <em>managers</em> y por lo tanto, no tienen una instancia ejecutando, como indica el <code>docker stack ps</code>).</p>
-
-<h2 id="alta-disponibilidad-con-una-ip-flotante">Alta disponibilidad con una IP flotante</h2>
-
+<h2>Alta disponibilidad con una IP flotante</h2>
 <p>Ahora mismo, vayamos al <em>manager</em> que vayamos tenemos servicio. Sin embargo, el
 <em>gateway</em> solo puede pasar las peticiones externas a <strong>una sola dirección IP</strong>.</p>
-
 <p>Para asegurar que el servidor apuntado por el <em>gateway</em> esté disponible, vamos a
 utilizar <strong>keepalived</strong>, de forma que se pasen la IP flotante de uno a otro en
 caso necesario. De esta forma, el <em>gateway</em> solo tiene que apuntar a la IP flotante.</p>
-
 <p><strong>NOTA</strong>: Esto lo vamos a hacer <strong>sin docker</strong>; es posible, pero implica privilegios
 adicionales y no vale la pena. Así que lo vamos a hacer a la antigua, servidor por servidor.</p>
-
 <p>Empezaremos instalando el servicio <strong>keepalived</strong> en los 3 servidores:</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ sudo apt install keepalived
 ...
 gerard@docker01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker02:~$ sudo apt install keepalived
 ...
 gerard@docker02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker03:~$ sudo apt install keepalived
 ...
 gerard@docker03:~$ 
 </code></pre>
-
 <p>Los configuramos de la forma más básica posible; pongo solamente la configuración para
 <strong>docker01</strong> ya que el resto son iguales. Solo voy a cambiar la directiva <code>priority</code> para
 que sea previsible quién tiene la VIP en cada momento. He decidido utilizar la dirección
 <code>10.0.0.2/24</code> que ya dejé libre en la asignación DHCP del <em>gateway</em> para este fin.</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ cat /etc/keepalived/keepalived.conf
 vrrp_instance VI_1 {
     interface enp0s3
@@ -214,43 +187,31 @@ vrrp_instance VI_1 {
 }
 gerard@docker01:~$ 
 </code></pre>
-
 <p><strong>NOTA</strong>: No hay que olvidarnos de configurar todos los <em>managers</em> del <em>swarm</em>.</p>
-
 <p>Solo nos faltaría reiniciar el servicio de los 3 <em>managers</em>:</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ sudo systemctl restart keepalived
 gerard@docker01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker02:~$ sudo systemctl restart keepalived
 gerard@docker02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker03:~$ sudo systemctl restart keepalived
 gerard@docker03:~$ 
 </code></pre>
-
 <p>Con esto ya deberíamos tener la VIP asignada a uno de los nodos (seguramente a <strong>docker01</strong>).</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ ssh 10.0.0.2 hostname
 gerard@10.0.0.2's password: 
 docker01
 gerard@gateway:~$ 
 </code></pre>
-
-<h2 id="dirigir-el-tráfico-a-la-ip-flotante">Dirigir el tráfico a la IP flotante</h2>
-
+<h2>Dirigir el tráfico a la IP flotante</h2>
 <p><strong>Traefik</strong> utiliza dos puertos con la actual configuración:</p>
-
 <ul>
 <li>El 80 para el tráfico balanceado normal</li>
 <li>El 8080 para exponer el <em>dashboard</em></li>
 </ul>
-
 <p>Nos interesa exponer ambos para mirar cómodamente desde un navegador. Esto lo hacemos con
 dos simples reglas DNAT en el <em>gateway</em> (una por puerto). Luego reiniciamos <strong>shorewall</strong>.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/rules 
 ACCEPT net fw tcp 22
 DNS(ACCEPT) loc fw
@@ -258,15 +219,12 @@ DNAT net loc:10.0.0.2:80 tcp 80
 DNAT net loc:10.0.0.2:8080 tcp 8080
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo systemctl restart shorewall
 gerard@gateway:~$ 
 </code></pre>
-
 <p>Podemos ver el <em>dashboard</em> en un navegador, usando la URL <code>http://gateway:8080/dashboard/</code>,
 y podríamos hacer peticiones web en el puerto 80 del <em>gateway</em>, aunque de momento, no
 hay servicios expuestos, con lo que nos seguirá dando errores 404&hellip;</p>
-
 <p><strong>NOTA</strong>: Lo importante es que la plataforma está lista; solo tendremos que ir poniendo servicios
 según vayamos desplegando aplicaciones; <strong>traefik</strong> los separa usando <em>virtualhosts</em>.
 Lo siguiente es poner los servicios, pero esto queda para el siguiente artículo de la serie.</p>

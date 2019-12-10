@@ -53,30 +53,20 @@
 </p>
 
 <p>Para muchas aplicaciones caseras, nos importa poco parar un servidor de aplicaciones o web. Sin embargo, en el mundo empresarial, un corte de servicio o <em>downtime</em> son palabras mayores, y normalmente vienen seguidos de un papeleo espectacular; otras veces se puede calmar la situación mediante el despido del pobre operador.</p>
-
 <p>En un mundo <em>agile</em> en donde los despliegues son el pan de cada semana, nos interesa minimizar, o incluso suprimir, cualquier mención a la probabilidad de un <em>downtime</em>. Para esto existe un patrón que se llama <a href="https://martinfowler.com/bliki/BlueGreenDeployment.html">blue-green deployment</a>.</p>
-
 <p>La idea de fondo es muy simple: tenemos dos entornos iguales llamados <strong>blue</strong> y <strong>green</strong>, precedidos con un <em>proxy</em> o un balanceador que hace fácil dirigir el tráfico hacia uno u otro. Esto significa que podemos modificar uno de los entornos en caliente, sabiendo que <strong>no es producción</strong>. Solamente cuando el entorno secundario funciona bien podemos dirigir el tráfico hacia él, que <strong>se convierte en producción</strong>.</p>
-
-<p><img src="/images/blue-green_deployments.jpg" alt="Blue-green deployment" /></p>
-
+<p><img src="/images/blue-green_deployments.jpg" alt="Blue-green deployment"></p>
 <p>En caso de un error catastrófico no detectado, basta con volver a dirigir el tráfico al entorno anterior, que todavía tenemos funcional. Si no hubieran errores, podremos reinstalar este entorno anterior, en vistas a que pase a ser producción en un futuro cercano. Los montajes más habituales ofrecen ambos entornos, sirviendo dos puntos de entrada: uno como entorno de producción y el otro como entorno de pruebas.</p>
-
-<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
-
+<h2>Un ejemplo práctico</h2>
 <p>Vamos a exponer una API de ejemplo que no hace nada en especial; es lo de menos en este momento. Vamos a poner dos servidores de aplicaciones por entorno y vamos a hacer balanceo de carga además de la función de dirección de tráfico. Estas son las decisiones de diseño de este ejemplo:</p>
-
 <ul>
 <li>Tenemos un servidor llamado <em>proxy</em> que va a ejecutar un <strong>nginx</strong> como balanceador y <em>switch</em>, aunque serviría otro (un <strong>haproxy</strong>, por ejemplo)</li>
 <li>El entorno <strong>blue</strong> se compone de dos servidores <em>blue1</em> y <em>blue2</em> escuchando en el puerto 8080</li>
 <li>El entorno <strong>green</strong> se compone de dos servidores <em>green1</em> y <em>green2</em> escuchando en el puerto 8080</li>
 <li>El puerto 80 del <em>proxy</em> será producción, y el puerto 8080 del mismo servidor servirá como entorno de pruebas</li>
 </ul>
-
-<h3 id="el-estado-inicial">El estado inicial</h3>
-
+<h3>El estado inicial</h3>
 <p>Tenemos una versión 1.0.0 en todos los servidores de aplicaciones. La API de ejemplo que ponemos nos muestra claramente la versión y el servidor que atendió la petición, para mayor claridad.</p>
-
 <pre><code class="language-bash">root@proxy:~# wget -qO- http://blue1:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue1&quot;}
 root@proxy:~# wget -qO- http://blue2:8080/fake/
@@ -87,9 +77,7 @@ root@proxy:~# wget -qO- http://green2:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;green2&quot;}
 root@proxy:~# 
 </code></pre>
-
 <p>Decidimos que el entorno <strong>blue</strong> es actualmente producción, y por lo tanto, <strong>green</strong> es el entorno de pruebas. Simplemente necesitamos modificar la configuración del <strong>nginx</strong> para que apunte cada puerto al entorno que toca, por ejemplo:</p>
-
 <pre><code class="language-bash">root@proxy:~# cat /etc/nginx/conf.d/api.conf 
 upstream blue {
 	server blue1:8080;
@@ -116,16 +104,12 @@ server {
 }
 root@proxy:~# 
 </code></pre>
-
 <p>Recargamos el <strong>nginx</strong> y ya tenemos lo que queríamos:</p>
-
 <ul>
 <li>Entorno de producción en el puerto 80, apuntando al entorno <strong>blue</strong></li>
 <li>Entorno de pruebas en el puerto 8080, apuntando al entorno <strong>green</strong></li>
 </ul>
-
 <p>Faltaría verificar que recibimos las respuestas esperadas:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy/fake/
@@ -136,7 +120,6 @@ gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;green1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
@@ -147,44 +130,32 @@ gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;green2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
-<h3 id="un-despliegue-fallido">Un despliegue fallido</h3>
-
+<h3>Un despliegue fallido</h3>
 <p>Desplegamos una nueva versión en el entorno de pruebas, actualmente como entorno <strong>green</strong>. Eso significa deplegar nueva versión en <em>green1</em> y en <em>green2</em>. Como el entorno de producción es <strong>blue</strong>, cualquier desastre que pase en <strong>green</strong> no va a afectar a la operativa.</p>
-
 <p>Tras subir <strong>green</strong> a la versión 1.1.0, vemos en el <em>endpoint</em> de pruebas que no funciona:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;500&quot;, &quot;message&quot;: &quot;Errors everywhere...&quot;, &quot;version&quot;: &quot;1.1.0&quot;, &quot;server&quot;: &quot;green1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;500&quot;, &quot;message&quot;: &quot;Errors everywhere...&quot;, &quot;version&quot;: &quot;1.1.0&quot;, &quot;server&quot;: &quot;green2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p>Pero no pasa nada; el entorno de producción sigue apuntando a <strong>blue</strong>, que no hemos modificado y por lo tanto, sigue funcionando con la versión anterior.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.0.0&quot;, &quot;server&quot;: &quot;blue2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p>Basta con no cambiar la configuración del <strong>nginx</strong> en el servidor <em>proxy</em> para no exponer el desastre más allá del entorno de pruebas. Si algún manazas hubiera cambiado ya la configuración del <em>proxy</em>, el <em>rollback</em> consistiría en modificar de nuevo la configuración del <em>proxy</em>.</p>
-
-<h3 id="un-despliegue-con-éxito">Un despliegue con éxito</h3>
-
+<h3>Un despliegue con éxito</h3>
 <p>Tras investigar el problema de la nueva versión, se localiza un <em>bug</em> que causa los errores y se escribe un <em>hotfix</em>, que se libera como version 1.1.1; supongamos que tenemos éxito.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.1.1&quot;, &quot;server&quot;: &quot;green1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy:8080/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.1.1&quot;, &quot;server&quot;: &quot;green2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p>Basta con modificar la configuración del <em>proxy</em> para que producción apunte a <strong>green</strong>, en donde tenemos la nueva versión estable. En el caso de la configuración expuesta anteriormente, bastaría con cambiar las directivas <code>proxy_pass</code>.</p>
-
 <pre><code class="language-bash">root@proxy:~# cat /etc/nginx/conf.d/api.conf 
 upstream blue {
 	server blue1:8080;
@@ -213,38 +184,27 @@ root@proxy:~# nginx -s reload
 2018/05/07 17:43:26 [notice] 21#21: signal process started
 root@proxy:~# 
 </code></pre>
-
 <p>Puesto que un <em>reload</em> del <strong>nginx</strong> no provoca pérdida de paquetes ni de peticiones, solo queda ver que las peticiones del entorno de producción son atendidas en los servidores <em>green1</em> y <em>green2</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.1.1&quot;, &quot;server&quot;: &quot;green1&quot;}
 gerard@sirius:~/workspace$ curl http://proxy/fake/
 {&quot;status&quot;: &quot;200&quot;, &quot;message&quot;: &quot;Everything is OK&quot;, &quot;version&quot;: &quot;1.1.1&quot;, &quot;server&quot;: &quot;green2&quot;}
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p>En este punto, el estado de nuestro servicio ha cambiado; ahora tenemos:</p>
-
 <ul>
 <li>Entorno de producción en el puerto 80, apuntando al entorno <strong>green</strong>, con versión 1.1.1</li>
 <li>Entorno de pruebas en el puerto 8080, apuntando al entorno <strong>blue</strong>, con versión 1.0.0</li>
 </ul>
-
 <p>Por lo tanto, los nuevos despliegues se harían en el entorno <strong>blue</strong>, que ha dejado de ser el entorno de producción en favor del entorno <strong>green</strong>. Como pequeño detalle, sería interesante subir <strong>blue</strong> a la versión nueva, para tener ambos entornos idénticos, como punto de partida para una posible nueva versión.</p>
-
-<h2 id="y-que-pasa-con-las-bases-de-datos">Y que pasa con las bases de datos?</h2>
-
+<h2>Y que pasa con las bases de datos?</h2>
 <p>En realidad es un problema que no solo atañe a las bases de datos; otras partes <em>stateful</em> como sistemas de ficheros, colas y APIs remotas también deben ser tratadas en este caso. Este es un tema que no queda bien reflejado, habiendo dos corrientes enfrentadas que defienden sus puntos de vista:</p>
-
 <ul>
 <li>Bases de datos duplicadas</li>
 <li>Bases de datos compartidas</li>
 </ul>
-
 <p>En caso de duplicar la base de datos en ambos entornos, ganamos la posibilidad de modificarla en nuestros <em>tests</em>, ya que las pruebas en el entorno de pruebas no van a afectar al entorno de producción. El problema en este punto es que tenemos la necesidad de mantenerlas sincronizadas, pudiendo ser un proceso lento en caso de un conjunto de datos grande.</p>
-
 <p>Si compartimos la base de datos entre los entornos <strong>blue</strong> y <strong>green</strong>, nos ahorramos la sincronización, a costa de no poder modificar nada en el entorno de pruebas, ya que estaríamos modificando los mismos datos que se usan en el entorno de producción.</p>
-
 <p>Un punto espinoso en esta configuración compartido son las migraciones de la base de datos; hacerlas antes causaría <em>downtime</em> en la versión anterior hasta instalar la nueva versión, y hacerlas después causaría <em>downtime</em> en la nueva versión hasta poder hacer la migración. La solución más aceptada es hacer una <em>release</em> intermedia, capaz de trabajar con la base de datos migrada y sin migrar; sería responsabilidad de esta <em>release</em> intermedia detectar si la base de datos está migrada o no, y suplir las carencias mediante lógica específica.</p>
 
 <div id="disqus_thread"></div>

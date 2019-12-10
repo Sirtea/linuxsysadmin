@@ -53,34 +53,23 @@
 </p>
 
 <p>Buscar en los <em>logs</em> es fácil cuando tenemos una máquina de cada tipo, pero es una actividad muy poco gratificante cuando tenemos un número grande o variable de cada tipo. La mejor manera de tenerlos controlados es hacer que envíen sus <em>logs</em> a un almacén central, para su fácil consulta.</p>
-
 <p>En este artículo se pretende dar a conocer una de estas soluciones de acumulación y búsqueda de <em>logs</em>, conocida como <strong>ELK</strong> (hace poco se renombró a <strong>Elastic Stack</strong>). Se trata de un conjunto de servicios que cooperan para obtener una solución completa:</p>
-
 <ul>
 <li><strong>Elastic search</strong>: se trata de la base de datos que almacena todos los <em>logs</em> que se le envían.</li>
 <li><strong>Logstash</strong>: Es un agente que envía los <em>logs</em> de varias fuentes al <strong>elastic search</strong>.</li>
 <li><strong>Kibana</strong>: Es una interfaz gráfica que nos permite buscar <em>logs</em> y dibujar bonitas gráficas, partiendo de los datos del <strong>elastic search</strong>.</li>
 </ul>
-
-<p><img src="/images/the-elk-stack.jpg" alt="Esquema de un ELK" /></p>
-
+<p><img src="/images/the-elk-stack.jpg" alt="Esquema de un ELK"></p>
 <p>De esto se puede deducir que vamos a necesitar una instancia de cada tipo, a excepción de <strong>logstash</strong>, que debe ponerse en todos los servidores que recojan <em>logs</em>. Se podría poner, por ejemplo, el <strong>elastic search</strong> y el <strong>kibana</strong> en una misma máquina, dedicada solamente al consumo de los <em>logs</em> de todos los servidores productivos.</p>
-
-<h2 id="un-ejemplo-rápido">Un ejemplo rápido</h2>
-
+<h2>Un ejemplo rápido</h2>
 <p>Si miramos en <a href="https://hub.docker.com/">DockerHub</a>, podremos comprobar que las 3 piezas disponen de una imagen que las satisface. Eso nos va a ahorrar mucho tiempo, a costa de las particularidades de cada imagen.</p>
-
 <p>Vamos a poner todas las imágenes en el mismo servidor por economía, pero lo ideal sería un <strong>logstash</strong> por servidor y otro servidor con <strong>elastic search</strong> y <strong>kibana</strong>.</p>
-
 <p>El primer paso es acondicionar la memoria que pueden usar nuestros procesos. Esto se hace porque el <strong>elastic search</strong> consume mucha memoria y va a fallar iniciándose.</p>
-
 <pre><code class="language-bash">gerard@styx:~/docker/elk$ sudo sysctl -w vm.max_map_count=262144
 vm.max_map_count = 262144
 gerard@styx:~/docker/elk$ 
 </code></pre>
-
 <p>La mayoría de imágenes funcionan bien de serie, pero no es el caso de <strong>logstash</strong>, que necesita una configuraciṕon para indicar qué <em>logs</em> recoger, las transformaciones que deben sufrir, y el destino al que ir. Más información en <a href="https://www.elastic.co/guide/en/logstash/current/index.html">la documentación</a>. De momento nos vamos a limitar a recoger todos los ficheros <em>.log</em> recursivamente de la carpeta <em>/logs</em>; esta va a ser un volumen de <em>/var/log</em> del servidor real.</p>
-
 <pre><code class="language-bash">gerard@styx:~/docker/elk$ cat logstash.conf 
 input {
   file {
@@ -96,9 +85,7 @@ output {
 }
 gerard@styx:~/docker/elk$ 
 </code></pre>
-
 <p>Para simplificar el despliegue, vamos a usar <strong>docker-compose</strong>, con algunas variaciones interesantes.</p>
-
 <pre><code class="language-bash">gerard@styx:~/docker/elk$ cat docker-compose.yml 
 version: '2'
 services:
@@ -123,9 +110,7 @@ services:
     command: [bash, -c, &quot;logstash -f /logstash.conf&quot;]
 gerard@styx:~/docker/elk$ 
 </code></pre>
-
 <p>Se hace notar especialmente que publicamos el puerto del <strong>kibana</strong>, para poderlo ver cómodamente en nuestro navegador. Aparte de esto, vamos a poner el fichero de configuración de <strong>logstash</strong> como un volumen local, tal como la carpeta de <em>logs</em>. Un último detalle es que modificamos el comando a ejecutar para que el <em>entrypoint</em> que viene por defecto no nos fuerce el usuario <em>logstash</em>, puesto que entonces no podríamos leer muchos de los <em>logs</em>.</p>
-
 <pre><code class="language-bash">gerard@styx:~/docker/elk$ docker-compose up -d
 Creating network &quot;elk_default&quot; with the default driver
 Creating elasticsearch
@@ -133,10 +118,8 @@ Creating logstash
 Creating kibana
 gerard@styx:~/docker/elk$ 
 </code></pre>
-
 <p>Solo nos falta acceder a la interfaz del <strong>Kibana</strong> en <code>http://localhost:5601/</code> y disfrutar del resultado.</p>
-
-<p><img src="/images/kibana-frontend.jpg" alt="Frontend de Kibana" /></p>
+<p><img src="/images/kibana-frontend.jpg" alt="Frontend de Kibana"></p>
 
 <div id="disqus_thread"></div>
 <script type="application/javascript">

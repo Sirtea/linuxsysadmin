@@ -53,31 +53,21 @@
 </p>
 
 <p>Tenemos en el trabajo uno de esos <em>enginjerks</em> que lanzan acciones <em>random</em> para justificar su trabajo. Cortó el acceso a <em>Dropbox</em>, en donde tengo cosas útiles para mi trabajo. Harto de encender los datos móviles de mi móvil para ir sincronizando ficheros, me he montado un proxy <strong>SOCKS</strong> para mí.</p>
-
 <p>Se trata de una tocada de narices tener que encender los datos móviles de mi <em>smartphone</em> para sincronizar la carpeta de <em>Dropbox</em> periódicamente. También es completamente inútil como medida de seguridad, puesto que muevo con frecuencia mi ordenador portátil por obligaciones profesionales.</p>
-
 <p>Sin embargo, hay un acceso más allá de los puertos 80 y 443; se trata del puerto 22, específicamente hacia un servidor bastión que nos sirve para acceder a los entornos en donde corren nuestras aplicaciones. Por supuesto están fuera de nuestra infraestructura.</p>
-
 <p>La idea es muy simple: levantamos un <em>proxy SOCKS</em> en la máquina remota (con pleno acceso a internet), en un puerto al que podamos llegar con nuestro ordenador; configuramos nuestro ordenador para usar ese <em>proxy</em> remoto. Alternativamente, como no tengo más puertos por los que pasar, puedo levantar el puerto del <em>proxy</em> en mi mismo ordenador, de la misma forma que los túneles SSH.</p>
-
-<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
-
+<h2>Un ejemplo práctico</h2>
 <p>Vamos a suponer que tenemos dos máquinas; también vamos a suponer que levantamos el <em>proxy SOCKS</em> en nuestro escritorio:</p>
-
 <ul>
 <li><strong>alphacentauri</strong>: Es nuestra máquina remota, tiene instalado <strong>SSH</strong> y tiene acceso libre a internet.</li>
 <li><strong>capella</strong>: es nuestro escritorio, en donde desarrollamos nuestro trabajo.</li>
 </ul>
-
 <p>El responsable de levantar el <em>proxy SOCKS</em> es el mismo SSH. Para ello basta el <em>flag -D</em>.</p>
-
 <pre><code class="language-bash">gerard@capella:~$ ssh -N -D 9999 proxy@alphacentauri -p 2222 -f
 Warning: Permanently added 'alphacentauri:2222' (ECDSA) to the list of known hosts.
 gerard@capella:~$ 
 </code></pre>
-
 <p>Hay una serie de consideraciones en este comando:</p>
-
 <ul>
 <li>Existe un usuario <em>proxy</em> en <em>alphacentauri</em>. Es un usuario normal y tenemos autenticación por par de claves (opcional, pero muy cómodo).</li>
 <li>Por cortesía del <em>flag -N</em> no vamos a abrir un terminal.</li>
@@ -85,11 +75,8 @@ gerard@capella:~$
 <li>El servidor SSH en <em>alphacentauri</em> escucha en el puerto 2222, y por eso usamos el <em>flag -p</em>.</li>
 <li>Gracias al <em>flag -D</em>, el <em>proxy</em> se levanta en el puerto 9999, escuchando en <em>localhost</em> (por defecto).</li>
 </ul>
-
 <p>A partir de este momento, todas las conexiones que usen <em>localhost:9999</em> como <em>proxy SOCKS</em>, van a acceder a internet como lo hace la máquina <em>alphacentauri</em>.</p>
-
 <p>Sin más esperas, vamos al cliente de <em>dropbox</em>; podemos configurar el <em>proxy</em> en &ldquo;Preferencias &gt; Proxies&rdquo;. Basta con indicar la opción &ldquo;Tipo de proxy&rdquo; como &ldquo;SOCKS5&rdquo; y el servidor como &ldquo;127.0.0.1:9999&rdquo;.</p>
-
 <p>Como ya sabemos que los túneles SSH se caen, os recomiendo altamente usar un mecanismo de levantamiento automático, como <em>autossh</em> o directamente <a href="/2016/11/levantando-tuneles-ssh-con-systemd.html">usando SystemD</a>.</p>
 
 <div id="disqus_thread"></div>

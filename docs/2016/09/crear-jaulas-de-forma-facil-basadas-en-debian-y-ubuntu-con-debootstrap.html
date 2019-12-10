@@ -53,13 +53,9 @@
 </p>
 
 <p>Cuando creamos jaulas nos enfrentamos siempre al mismo dilema: usar una imagen de dudoso origen o perder nuestro tiempo investigando y buscando librerías que falten. Sin embargo, hay una forma mejor, que es descargar un sistema básico con herramientas oficiales que nos van a dar hasta un gestor de paquetes.</p>
-
 <p>Hay algunas distribuciones que nos ofrecen herramientas para descargar un sistema base a partir de sus repositorios, y que a menudo son la base de sus propias instalaciones. En el caso de las distribuciones <strong>Debian</strong> y derivadas (<strong>Ubuntu</strong>, <strong>Knoppix</strong>, &hellip;) esta herramienta se llama <strong>debootstrap</strong> y de uso bastante sencillo.</p>
-
 <p>De hecho, otras herramientas parten de estas herramientas para usar como base para las suyas. Un ejemplo serían las imágenes de <strong>docker</strong>, que no son mas que el resultado de la ejecución de <strong>debootstrap</strong>.</p>
-
 <p>Este tutorial se ha ejecutado en un contenedor <strong>docker</strong> de usar y tirar, para no polucionar mi máquina con herramientas innecesarias. También se asume que se dispone de la herramienta instalada que, por si no la tuvierais, se instala así:</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# apt-get install debootstrap
 Reading package lists... Done
 Building dependency tree       
@@ -77,9 +73,7 @@ Do you want to continue? [Y/n] y
 ...
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Esta herramienta viene acompañada de los diferentes <em>scripts</em> que conocen la forma de llegar al resultado deseado. Cabe remarcar que cuando mas reciente es la versión, mas <em>scripts</em> lleva incorporados. En mi caso, usé <strong>Debian Jessie</strong>, que como podéis ver, sabe construir <strong>Ubuntu 9.10 (Karmic Koala)</strong>, pero no <strong>Ubuntu 16.04 (Xenial Xerus)</strong>.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# dpkg -L debootstrap | grep scripts
 /usr/share/debootstrap/scripts
 /usr/share/debootstrap/scripts/hoary
@@ -126,20 +120,14 @@ root@8e7b4f301aa0:~#
 /usr/share/debootstrap/scripts/vivid
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Para ejecutar <strong>debootstrap</strong> en un contenedor <strong>docker</strong> (de usar y tirar, por ejemplo), hace falta correr el contenedor con un <em>flag</em> especial: <em>&ndash;privileged</em>. Esto es debido a que <strong>debootstrap</strong> intenta montar el sistema de ficheros <em>/proc</em> y no dispone de permisos para hacerlo en circunstancias normales.</p>
-
-<h2 id="un-ejemplo-de-uso-básico">Un ejemplo de uso básico</h2>
-
+<h2>Un ejemplo de uso básico</h2>
 <p>A priori, este comando solo necesita saber la distribución que queremos descargar y la carpeta donde lo queremos hacer.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap jessie jail
 ...
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Podemos contar con varios <em>flags</em> que van a modificar ligeramente su comportamiento. A lo largo del tutorial vamos a utilizar el <em>flag &ndash;variant=minbase</em> que va a descargar menos paquetes todavía, acelerando su ejecución. Yo suelo usar siempre este <em>flag</em>, porque al instalar con <em>apt-get</em> otros paquetes, ya se incorporarían las dependencias.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase jessie jail 
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -156,9 +144,7 @@ I: Checking component main on http://ftp.us.debian.org/debian...
 I: Base system installed successfully.
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Tras ejecutar el comando, podemos ver que tenemos una carpeta <em>jail/</em> en donde podemos encontrar un sistema <strong>Linux</strong> bastante estándar, que corresponde con la distribución <strong>Debian Jessie</strong> pedida.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# ls -1 jail/
 bin
 boot
@@ -181,34 +167,24 @@ usr
 var
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Vemos que la instalación es bastante básica y tiene un tamaño reducido, ya que solo lleva lo mas básico, sin <em>kernel</em> y sin <em>bootloader</em>. Por no llevar, no lleva ni <strong>nano</strong> ni <strong>vi</strong>, por ejemplo. Usad <em>apt-get</em> para instalar los paquetes que veáis necesarios, una vez dentro de la jaula.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# du -sh jail/
 202M	jail/
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>De hecho, mucho de lo que hay en la jaula son ficheros de <em>apt-get</em>, que sirven para acelerar la operación normal de estas herramientas, pero que resultan inútiles si queremos una imagen mínima. Son ficheros que vuelven a aparecer con el uso normal de <em>apt-get</em> y que van cambiando con el tiempo. Como se trata de la caché de paquetes descargados y de los índices de los repositorios, nos los cargamos.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# chroot jail/ apt-get clean
 root@8e7b4f301aa0:~# rm -rf jail/var/lib/apt/lists/*
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Esto libera un 33% del espacio ocupado. Ahora sería un buen momento para sacar un fichero comprimido para guardar la imagen.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# du -sh jail/
 136M	jail/
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Si la carpeta <em>jail/</em> estuviera mapeada a un dispositivo tendríamos un disco de sistema operativo casi completo. Bastaría con instalarle un <em>kernel</em> y un <em>bootloader</em> para tener un sistema operativo funcional.</p>
-
-<h2 id="haciendo-un-fichero-comprimido-de-paquetes-descargados">Haciendo un fichero comprimido de paquetes descargados</h2>
-
+<h2>Haciendo un fichero comprimido de paquetes descargados</h2>
 <p>Si la idea de ir copiando la jaula anterior no nos convence, podemos tener los paquetes <em>.deb</em> descargados y comprimidos en un fichero <em>.tar.gz</em>, para no tener que descargar todos los paquetes cada vez. Basta con poner el <em>flag &ndash;make-tarball</em>. En este caso, la carpeta de descarga es una carpeta temporal, que va a ser eliminada al terminar.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase --make-tarball=debian-jessie.tgz jessie temporal
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -225,16 +201,12 @@ I: Checking component main on http://ftp.us.debian.org/debian...
 I: Deleting target directory
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Finalmente obtenemos nuestro fichero comprimido, que es mas fácil de copiar a diferentes máquinas, por tamaño y por velocidad de transmisión.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# du -sh debian-jessie.tgz 
 43M	debian-jessie.tgz
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Este fichero contiene solamente los ficheros que descartamos al final del proceso, que son los <em>.deb</em> ya instalados y los índices del repositorio.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# tar tf debian-jessie.tgz | grep \/$
 var/lib/apt/
 var/lib/apt/lists/
@@ -255,9 +227,7 @@ var/cache/apt/archives/libbz2-1.0_1.0.6-7+b3_amd64.deb
 var/cache/apt/archives/bash_4.3-11+b1_amd64.deb
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Cuando queramos utilizar este fichero comprimido para crear una jaula, basta con indicar que use los paquetes en el fichero, mediante el <em>flag &ndash;unpack-tarball</em>.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase --unpack-tarball=/root/debian-jessie.tgz jessie rootfs
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -273,15 +243,10 @@ I: Checking component main on http://ftp.us.debian.org/debian...
 I: Base system installed successfully.
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Este proceso sigue necesitando de conexión a internet, porque consulta al índice del repositorio para saber que paquetes necesita. Sin embargo, estos paquetes ya los tenemos, con lo que es un proceso bastante mas rápido y menos estresante para nuestra red.</p>
-
-<h2 id="construyendo-una-jaula-para-otra-máquina">Construyendo una jaula para otra máquina</h2>
-
+<h2>Construyendo una jaula para otra máquina</h2>
 <p>Supongamos ahora que tenemos una máquina que es de otra arquitectura y le descargamos el sistema de ficheros en nuestro local. Normalmente no sería posible ya que podemos descargar los ficheros <em>.deb</em> de la otra arquitectura, pero no podemos configurar los paquetes porque para esto se necesita ejecutar binarios que, por supuesto, no funcionan en nuestro local.</p>
-
 <p>El comando <strong>debootstrap</strong> también nos permite esto. La idea está en &ldquo;dejar listo&rdquo; una estructura, de forma que solo haga falta copiar en destino y configurar los paquetes. Esto es tan fácil como indicar el <em>flag &ndash;foreign</em>, y adicionalmente, indicar la arquitectura deseada con <em>&ndash;arch</em>.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase --arch=armhf --foreign jessie rootfs
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -297,18 +262,13 @@ I: Checking component main on http://ftp.us.debian.org/debian...
 ...
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Esto nos deja un sistema &ldquo;a medias&rdquo;, con un <em>script</em> que nos permita continuar a partir de este punto, una vez hayamos copiado la estructura generada en destino.</p>
-
 <p>Si miramos el sistema de ficheros, veremos que se trata de la jaula casi acabada, con una carpeta <em>debootstrap/</em> que contiene lo necesario para continuar, incluido el <em>script</em> llamado <em>debootstrap</em>.</p>
-
 <pre><code class="language-bash">root@8e7b4f301aa0:~# ls rootfs/debootstrap/
 arch  base  debootstrap  debootstrap.log  debpaths  devices.tar.gz  functions  required  suite	suite-script  variant
 root@8e7b4f301aa0:~# 
 </code></pre>
-
 <p>Para continuar el proceso en la nueva máquina, tenemos que copiar en ella toda la carpeta <em>rootfs/</em>. Solo nos quedará usar <em>chroot</em> para entrar en la jaula y ejecutar el <em>script</em> para configurar lo que falte y eliminar las herramientas intermedias. Este proceso no requiere conexión a internet.</p>
-
 <pre><code class="language-bash">root@odroid:~# chroot rootfs/
 # /debootstrap/debootstrap --second-stage
 I: Keyring file not available at /usr/share/keyrings/debian-archive-keyring.gpg; switching to https mirror https://mirrors.kernel.org/debian
@@ -318,9 +278,7 @@ I: Unpacking required packages...
 I: Base system installed successfully.
 # 
 </code></pre>
-
 <p>Y finalmente podemos disfrutar de nuestra jaula en la nueva máquina.</p>
-
 <pre><code class="language-bash"># ls
 bin  boot  dev	etc  home  lib	lib64  media  mnt  opt	proc  root  run  sbin  srv  sys  tmp  usr  var
 # 

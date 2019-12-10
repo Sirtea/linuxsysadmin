@@ -53,15 +53,10 @@
 </p>
 
 <p>En el día a día de mi trabajo, me encuentro con un conjunto muy variado de ficheros <em>Dockerfile</em> que vienen a hacer lo mismo, pero de formas muy distintas. El fichero original se pasa de mano en mano, pervirtiéndose en cada paso y al final queda hecho un gran asco.</p>
-
 <p>Para evitar la reinvención de la rueda me propuse crear una imagen base, para que los desarrolladores no tuvieran que crear una imagen, que muchas veces está mal por falta de conocimiento de <em>Linux</em>, y que reduzca al máximo su participación.</p>
-
-<h2 id="un-caso-simple">Un caso simple</h2>
-
+<h2>Un caso simple</h2>
 <p>Imaginemos una aplicación hecha con <em>NodeJS</em>, que es el caso más frecuente en mi trabajo; nuestro flujo de trabajo exige el uso de <em>npm</em> y del correspondiente <em>package.json</em>. Una instalación básica es bastante simple: se trata de copiar la aplicación, ejecutar el <code>npm install</code> de rigor y declarar que se va a ejecutar con <code>npm start</code>.</p>
-
 <p>Tomemos como ejemplo el básico de <em>express</em>:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nodetest/v1$ cat app/app.js 
 const express = require('express')
 const app = express()
@@ -92,9 +87,7 @@ gerard@aldebaran:~/docker/nodetest/v1$ cat app/package.json
 }
 gerard@aldebaran:~/docker/nodetest/v1$ 
 </code></pre>
-
 <p>Siguiendo las instrucciones descritas más arriba, el <em>Dockerfile</em> no guarda ninguna complicación:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nodetest/v1$ cat Dockerfile 
 FROM node:6-slim
 COPY app/ /srv/app/
@@ -104,15 +97,10 @@ USER node
 CMD [&quot;npm&quot;, &quot;start&quot;]
 gerard@aldebaran:~/docker/nodetest/v1$ 
 </code></pre>
-
 <p>Este <em>Dockerfile</em> nos genera una imagen adecuada, pero este fichero peca del mismo error que el resto: va a mutar un poco por cada mano por la que pase. Sin embargo, no podemos hacer una imagen base porque necesitamos la aplicación en la primera instrucción tras el <strong>FROM</strong>.</p>
-
-<h2 id="la-imagen-base-onbuild">La imagen base onbuild</h2>
-
+<h2>La imagen base onbuild</h2>
 <p>Si miramos <a href="https://docs.docker.com/engine/reference/builder/#onbuild">la documentación</a>, podemos ver que podemos declarar algunas operaciones para que se lancen automáticamente tras todo <strong>FROM</strong> que herede de nuestra imagen base. De esta forma, podemos declarar operaciones pendientes, al no disponer todavía de la aplicación final que va a tener que ejecutar nuestro contenedor.</p>
-
 <p>Vamos a retrasar la ejecución de todas aquellas instrucciones que dependan de la aplicación, que por cierto no está en este contexto, al no existir todavía:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nodetest/onbuild$ cat Dockerfile 
 FROM node:6-slim
 ONBUILD COPY app/ /srv/app/
@@ -122,17 +110,13 @@ ONBUILD USER node
 CMD [&quot;npm&quot;, &quot;start&quot;]
 gerard@aldebaran:~/docker/nodetest/onbuild$ 
 </code></pre>
-
 <p>Con este <em>Dockerfile</em> podemos generar una imagen base, que registre nuestras operaciones pendientes. Si construimos la imagen, veremos que no se ejecuta el <code>npm install</code>, ni las otras instrucciones precedidas por <strong>ONBUILD</strong>. Cualquier <em>Dockerfile</em> que extienda esta imagen base, conseguirá varias cosas:</p>
-
 <ul>
 <li>Va a disponer de todos los añadidos por instrucciones lanzadas sin el <strong>ONBUILD</strong></li>
 <li>Inmediatamente tras el <strong>FROM</strong> se van a ejecutar las operaciones indicadas en el <strong>ONBUILD</strong> (el <strong>COPY</strong>, el <strong>WORKDIR</strong>, el <strong>RUN</strong> y el <strong>USER</strong>)</li>
 <li>El desarrollador no necesita declarar todas estas operaciones; solo va a necesitar aquellas que sean específicas de su proyecto.</li>
 </ul>
-
 <p>Veamos el mismo ejemplo de antes; creamos un contexto con la misma aplicación y un <em>Dockerfile</em>, aunque este último queda bastante simplificado (suponiendo que la imagen base ha sido etiquetada como <em>gerard/node:onbuild</em>):</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nodetest/v2$ tree
 .
 ├── app
@@ -145,9 +129,7 @@ gerard@aldebaran:~/docker/nodetest/v2$ cat Dockerfile
 FROM gerard/node:onbuild
 gerard@aldebaran:~/docker/nodetest/v2$ 
 </code></pre>
-
 <p>Si la construimos, vemos que justo tras acabar el paso del <strong>FROM</strong>, van a saltar de forma automática los <em>triggers</em>  declarados por la instrucción <strong>ONBUILD</strong>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nodetest/v2$ docker build -t gerard/app:v2 .
 Sending build context to Docker daemon  4.608kB
 Step 1/1 : FROM gerard/node:onbuild
@@ -168,7 +150,6 @@ Successfully built d4661e9857e8
 Successfully tagged gerard/app:v2
 gerard@aldebaran:~/docker/nodetest/v2$ 
 </code></pre>
-
 <p>Y con esto aseguramos que el desarrollador pasa por el aro, usando las instrucciones que realmente necesitamos para ejecutar la aplicación.</p>
 
 <div id="disqus_thread"></div>

@@ -53,11 +53,8 @@
 </p>
 
 <p>El otro día estaba habilitando un servidor de <em>mongodb</em> para un entorno de producción. Como me interesaba mejorar el rendimiento de los accesos a disco y no disponía de discos SSD con una durabilidad aceptable, me propuse montar un <em>array de discos</em> en configuración de <strong>RAID 10</strong>, como se recomienda.</p>
-
 <p>Para este tutorial vamos a tener una máquina virtual (es una <em>Debian</em>, pero vale cualquier otra distribución) con 5 discos, 1 de sistema y otros 4 para usar en la configuración <strong>RAID 10</strong>, cada uno con 8gb, a efecto de demostración.</p>
-
 <p>En este caso, el sistema operativo estaba en <em>/dev/sda</em> y sus particiones, mientras que los discos para los datos de <em>mongodb</em> fueron <em>/dev/sdb</em>, <em>/dev/sdc</em>, <em>/dev/sdd</em>, <em>/dev/sde</em>.</p>
-
 <pre><code class="language-bash">root@server:~# ls /dev/sd* -1
 /dev/sda
 /dev/sda1
@@ -67,11 +64,8 @@
 /dev/sde
 root@server:~# 
 </code></pre>
-
-<h2 id="creación-del-dispositivo-raid-10">Creación del dispositivo RAID 10</h2>
-
+<h2>Creación del dispositivo RAID 10</h2>
 <p>Empezamos instalando el controlador de <strong>RAID</strong> por software:</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install mdadm
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias       
@@ -87,9 +81,7 @@ W: mdadm: /etc/mdadm/mdadm.conf defines no arrays.
 W: mdadm: no arrays defined in configuration file.
 root@server:~# 
 </code></pre>
-
 <p>Con las herramientas instaladas, procedemos a crear un <em>/dev/md0</em> que será nuestro <strong>disco RAID</strong>, indicando el nivel <strong>RAID 10</strong> y los 4 discos reales que van a formarlo.</p>
-
 <pre><code class="language-bash">root@server:~# mdadm -v --create /dev/md0 --level=raid10 --raid-devices=4 /dev/sdb /dev/sdc /dev/sdd /dev/sde
 mdadm: layout defaults to n2
 mdadm: layout defaults to n2
@@ -99,25 +91,16 @@ mdadm: Defaulting to version 1.2 metadata
 mdadm: array /dev/md0 started.
 root@server:~# 
 </code></pre>
-
 <p>Para que ese array de discos sea reconocido en cada inicio del sistema, hay que añadir en <em>/etc/mdadm/mdadm.conf</em> la información relacionada al array, de la misma forma que la tengamos en este momento.</p>
-
 <pre><code class="language-bash">root@server:~# mdadm --detail --scan --verbose &gt;&gt; /etc/mdadm/mdadm.conf
 root@server:~# 
 </code></pre>
-
 <p>Y ya tenemos nuestro dispositivo <strong>RAID 10</strong>.</p>
-
-<h2 id="preparación-del-dispositivo">Preparación del dispositivo</h2>
-
+<h2>Preparación del dispositivo</h2>
 <p>Ahora disponemos de un <strong>RAID 10</strong> de 4 discos de 8gb, que corresponden a una capacidad total de 16gb utilizables, como el dispositivo <em>/dev/md0</em>.</p>
-
 <p>Este dispositivo es transparente para nosotros y no es diferente de cualquier otro dispositivo de bloques, con lo que se puede particionar, formatear e incluso actuar como un <em>physical volume</em> en caso de usar <strong>LVM</strong>.</p>
-
 <p>Para esta demostración, se creará una única partición que ocupe todo el disco y que será montada en <em>/data</em>.</p>
-
 <p>Así pues, sin mas preámbulo la particionamos; en mi caso lo hice con <em>cfdisk</em>. Este es el resultado:</p>
-
 <pre><code class="language-bash">root@server:~# fdisk -l /dev/md0
 
 Disco /dev/md0: 16 GiB, 17163091968 bytes, 33521664 sectores
@@ -132,9 +115,7 @@ Device     Start      End  Sectors Size Type
 
 root@server:~# 
 </code></pre>
-
 <p>La primera (y única partición) se llama <em>/dev/md0p1</em> y es el dispositivo que vamos a formatear, para posteriormente montarlo.</p>
-
 <pre><code class="language-bash">root@server:~# mkfs.ext4 /dev/md0p1 
 mke2fs 1.42.12 (29-Aug-2014)
 Se está creando El sistema de ficheros con 4189947 4k bloques y 1048576 nodos-i
@@ -151,22 +132,16 @@ Escribiendo superbloques y la información contable del sistema de ficheros:   h
 
 root@server:~# 
 </code></pre>
-
 <p>Creamos la carpeta que va a servir de <em>mountpoint</em> para esta nueva partición:</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /data
 root@server:~# 
 </code></pre>
-
 <p>Añadimos la partición en el fichero <em>/etc/fstab</em>, para que se monte automáticamente tras cada reinicio:</p>
-
 <pre><code class="language-bash">root@server:~# grep md0p1 /etc/fstab 
 /dev/md0p1 /data ext4 defaults 0 0
 root@server:~# 
 </code></pre>
-
 <p>Finalmente la montamos. Como esta información ya está en el fichero <em>/etc/fstab</em> no es necesario especificar los detalles.</p>
-
 <pre><code class="language-bash">root@server:~# mount /data
 root@server:~# df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
@@ -179,9 +154,7 @@ tmpfs            124M      0  124M   0% /sys/fs/cgroup
 /dev/md0p1        16G    44M   15G   1% /data
 root@server:~# 
 </code></pre>
-
 <p>Como detalle, al no tratarse de una partición raíz de sistema operativo, no hace falta reservar bloques de emergencia; se trata de un 5% de la capacidad que podemos liberar (5% de 16gb son 800mb que podemos usar).</p>
-
 <pre><code class="language-bash">root@server:~# tune2fs -m 0 /dev/md0p1 
 tune2fs 1.42.12 (29-Aug-2014)
 Se pone el porcentaje de bloques reservados a 0% (0 bloques)
@@ -196,11 +169,8 @@ tmpfs            124M      0  124M   0% /sys/fs/cgroup
 /dev/md0p1        16G    44M   16G   1% /data
 root@server:~# 
 </code></pre>
-
-<h2 id="verificación">Verificación</h2>
-
+<h2>Verificación</h2>
 <p>Podemos ver la información de estado del array de discos con el mismo comando <em>mdadm</em>, como sigue:</p>
-
 <pre><code class="language-bash">root@server:~# mdadm --detail /dev/md0
 /dev/md0:
         Version : 1.2
@@ -233,7 +203,6 @@ Working Devices : 4
        3       8       64        3      active sync set-B   /dev/sde
 root@server:~# 
 </code></pre>
-
 <p><strong>RESUMEN</strong>: Ahora tengo un disco doble de rápido, doble de capacidad y con doble copia de datos. Afortunadamente, los discos duros son baratos&hellip;</p>
 
 <div id="disqus_thread"></div>

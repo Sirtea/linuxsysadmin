@@ -53,29 +53,21 @@
 </p>
 
 <p>Algunas veces queremos probar nuestras aplicaciones en local y necesitamos una base de datos <strong>MongoDB</strong>; en estos casos, <strong>Docker</strong> nos presta un gran servicio. Es posible que en estos casos necesitemos un <strong>replica set</strong> para probar; aunque <strong>Docker</strong> sigue ayudando, la inicialización del <em>cluster</em> sigue siendo un tedioso proceso manual.</p>
-
 <p>Así que me puse a pensar&hellip; ¿Por qué no puedo atar el <strong>replica set</strong> directamente en el proceso de <em>runtime</em>?</p>
-
 <ul>
 <li><strong>Docker</strong> ejecuta un solo proceso (que debe ser <em>mongod</em>)</li>
 <li>Necesitamos un proceso auxiliar para atar el <em>cluster</em></li>
 <li>No queremos más contenedores que los que hacen falta</li>
-<li>No quiero imágenes específicas de un &ldquo;<em>mongodb leader</em>&ldquo;</li>
+<li>No quiero imágenes específicas de un &ldquo;<em>mongodb leader</em>&rdquo;</li>
 </ul>
-
 <p>Tras muchas vueltas a la cabeza, llegué a un conclusión interesante:</p>
-
 <ol>
 <li>Podemos crear el comportamiento líder mediante variables de entorno</li>
 <li>Este líder puede lanzar un proceso en <em>background</em> que se dedique a atar el <em>cluster</em> y luego muera</li>
 </ol>
-
 <p>Para conseguir este doble proceso condicionado, nos vemos obligados a cambiar el comando <em>mongod</em> por un <em>script</em> que ejecute el <em>setup</em> del <em>cluster</em> (si procede) y el proceso <em>mongod</em>.</p>
-
-<h2 id="la-imagen-única">La imagen única</h2>
-
+<h2>La imagen única</h2>
 <p>Partimos de un <em>Dockerfile</em> bastante estándar; las únicas excepciones van a ser el <em>script</em> inicial y otro <em>script</em> auxiliar que configure nuestro <em>cluster</em> en una sola de las máquinas.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica/mongo$ cat Dockerfile 
 FROM debian:jessie-slim
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6 &amp;&amp; \
@@ -89,9 +81,7 @@ USER mongodb
 CMD [&quot;/start.sh&quot;]
 gerard@aldebaran:~/docker/replica/mongo$ 
 </code></pre>
-
 <p>La configuración de <strong>mongodb</strong> es bastante estándar y solo se incluye por completitud:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica/mongo$ cat mongod.conf 
 processManagement:
   fork: false
@@ -111,13 +101,9 @@ replication:
    replSetName: rs
 gerard@aldebaran:~/docker/replica/mongo$ 
 </code></pre>
-
 <p>Y este es el truco: vamos a definir dos variables de entorno, llamadas <strong>ROLE</strong> y <strong>REPLICAS</strong>. La idea es que el que tenga que configurar el <em>cluster</em> va a tener en <strong>ROLE</strong> algún valor que le dé a entender que es el elegido, y la variable <strong>REPLICAS</strong> que le indica los otros miembros a añadir en el <em>cluster</em>.</p>
-
 <p>De hecho, las variables no necesitan estar en las réplicas, porque <strong>bash</strong> va a interpretar la variable <strong>ROLE</strong> inexistente como vacía y no va a lanzar el proceso de configuración, haciendo de la variable <strong>REPLICAS</strong> algo innecesario.</p>
-
 <p>El contenedor con el rol <em>orchestrator</em> va a levantar otro <em>script</em> en <em>background</em>, dejando así el flujo de ejecución para el proceso <em>mongod</em>. Este <em>script</em> tiene permisos de ejecución.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica/mongo$ cat start.sh 
 #!/bin/bash
 
@@ -128,17 +114,13 @@ fi
 exec mongod --config /etc/mongod.conf
 gerard@aldebaran:~/docker/replica/mongo$ 
 </code></pre>
-
 <p>El <em>script setup_cluster.sh</em> (también ejecutable) es complejo, pero no complicado:</p>
-
 <ul>
 <li>Espera a que todos los procesos <em>mongod</em> respondan</li>
 <li>Conecta a su mismo contenedor para lanzar el <code>rs.initiate()</code> y el <code>rs.add(...)</code> de las <em>replicas</em></li>
 <li>Espera que todas las <em>replicas</em> estén como secundarias, mediante <code>rs.status()</code></li>
 </ul>
-
 <p>y así queda esta primera versión:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica/mongo$ cat setup_cluster.sh 
 #!/bin/bash
 
@@ -161,11 +143,8 @@ until [ ${online} -eq ${replicas} ]; do
 done
 gerard@aldebaran:~/docker/replica/mongo$ 
 </code></pre>
-
-<h2 id="testeando-nuestro-deploy">Testeando nuestro deploy</h2>
-
+<h2>Testeando nuestro deploy</h2>
 <p>Levantar 3 contenedores es muy pesado y nada apetecible, así que haremos con <strong>Docker Compose</strong>. Veamos un <em>docker-compose.yml</em> de ejemplo:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica$ cat docker-compose.yml 
 version: '3'
 services:
@@ -186,9 +165,7 @@ services:
     container_name: rs03
 gerard@aldebaran:~/docker/replica$ 
 </code></pre>
-
 <p>De esta forma, y de acuerdo a las decisiones de diseño, el contenedor <em>rs01</em> inicializaría el <em>cluster</em> consigo mismo y añadiría <em>rs02</em> y <em>rs03</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica$ docker-compose up -d
 Creating network &quot;replica_default&quot; with the default driver
 Creating rs01
@@ -202,9 +179,7 @@ rs02   /start.sh   Up
 rs03   /start.sh   Up            
 gerard@aldebaran:~/docker/replica$ 
 </code></pre>
-
 <p>Solo nos quedaría entrar en un <em>mongod</em> cualquiera y pedirle el estado del <em>cluster</em> con <code>rs.status()</code>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/replica$ docker exec -ti rs02 mongo
 MongoDB shell version v3.4.4
 connecting to: mongodb://127.0.0.1:27017
@@ -242,7 +217,6 @@ rs:SECONDARY&gt; rs.status()
 }
 rs:SECONDARY&gt; 
 </code></pre>
-
 <p>Y todo ha quedado como esperábamos, sin ninguna intervención manual por nuestra parte.</p>
 
 <div id="disqus_thread"></div>

@@ -53,13 +53,9 @@
 </p>
 
 <p>Quiero presentar una de esas herramientas que ya existen, pero que alguien ha reescrito con el lenguaje <strong>go</strong>. Se trata de una utilidad tipo <em>cron</em>, pero está compilada de forma estática, no necesita de otras librerías y, por lo tanto, lo podemos usar en donde no tengamos permisos de <em>root</em>.</p>
-
-<h2 id="instalación-de-go-cron">Instalación de go-cron</h2>
-
+<h2>Instalación de go-cron</h2>
 <p>El binario <strong>go-cron</strong> no depende de librerías externas, tratándose de un binario estático que podemos tener, por ejemplo, en nuestra carpeta personal.</p>
-
 <p>Su instalación se limita a descargarse el binario de <a href="https://github.com/odise/go-cron/releases">GitHub</a> y usar; el fichero descargado es un binario precompilado y comprimido.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ wget -O go-cron.gz https://github.com/odise/go-cron/releases/download/v0.0.7/go-cron-linux.gz
 ...  
 Petición HTTP enviada, esperando respuesta... 200 OK
@@ -75,13 +71,9 @@ gerard@sirius:~/workspace$ chmod 755 go-cron
 gerard@sirius:~/workspace$ strip go-cron 
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El binario viene con los símbolos de <em>debug</em>; si ejecutamos el comando <em>strip</em>, lo podemos bajar de 6mb a 4.3mb.</p>
-
-<h2 id="uso-de-go-cron">Uso de go-cron</h2>
-
+<h2>Uso de go-cron</h2>
 <p>Empezamos con una visión general de lo que podemos hacer con el binario, que no es mucho:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ ./go-cron -h
 Usage of ./go-cron (build 6f160c2 )
 ./go-cron  [ OPTIONS ] -- [ COMMAND ]
@@ -90,65 +82,46 @@ Usage of ./go-cron (build 6f160c2 )
   -s=&quot;* * * * *&quot;: schedule the task the cron style
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p><strong>AVISO</strong>: A diferencia de otras herramienta tipo <em>cron</em>, esta se encarga de gestionar <strong>una sola tarea</strong>. Junto con el hecho de que el proceso ejecuta en primer plano, lo hace ideal para su uso en contenedores <strong>docker</strong>.</p>
-
 <p>La parte más importante es que demos la especificación temporal (<em>flag</em> <code>-s</code>) y el comando a ejecutar. Podemos encontrar documentación para la especificación temporal <a href="https://godoc.org/github.com/robfig/cron">aquí</a>. Esta puede ser de 3 tipos: tipo <em>cron</em>, tiempos preconfigurados y por intervalos.</p>
-
-<h3 id="especificación-tipo-cron">Especificación tipo cron</h3>
-
+<h3>Especificación tipo cron</h3>
 <p>Se trata de dar 5 o 6 valores, que indican respectivamente el segundo, el minuto, la hora, el día del mes, el mes, y -opcionalmente- el día de la semana.</p>
-
 <p>Estos valores pueden tener intervalos, comodines e incrementos, justo como en el <em>cron</em> normal. Por ejemplo, para lanzar un comando en el segundo 0, cada 30 minutos, entre las 10 y las 20 horas, los días 1 y 15 del mes de todos los meses, usaríamos algo como esto:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ ./go-cron -s &quot;0 */30 10-20 1,15 *&quot; -- echo &quot;hola&quot;
 2018/04/25 12:19:32 Running version: 6f160c2
 2018/04/25 12:19:32 new cron: 0 */30 10-20 1,15 *
 2018/04/25 12:19:32 Opening port 18080 for health checking
 </code></pre>
-
-<h3 id="valores-preconfigurados">Valores preconfigurados</h3>
-
+<h3>Valores preconfigurados</h3>
 <p>Alternativamente, <strong>go-cron</strong> nos ofrece unos valores preconfigurados que simplifican la expresión, a costa de perder especificaciones más caprichosas. A saber:</p>
-
 <ul>
-<li><code>@yearly</code> o <code>@annually</code> &rarr; Ejecuta cada año, concretamente el 1 de enero (equivale a <code>0 0 0 1 1 *</code>)</li>
-<li><code>@monthly</code> &rarr; Ejecuta una vez al mes, en el día 1 (equivale a <code>0 0 0 1 * *</code>)</li>
-<li><code>@weekly</code> &rarr; Ejecuta cada semana, a medianoche del domingo (equivale a <code>0 0 0 * * 0</code>)</li>
-<li><code>@daily</code> o <code>@midnight</code> &rarr; Ejecuta una vez al día, a medianoche (equivale a <code>0 0 0 * * *</code></li>
-<li><code>@hourly</code> &rarr; Ejecuta cada hora, a su principio (equivale a <code>0 0 * * * *</code>)</li>
+<li><code>@yearly</code> o <code>@annually</code> → Ejecuta cada año, concretamente el 1 de enero (equivale a <code>0 0 0 1 1 *</code>)</li>
+<li><code>@monthly</code> → Ejecuta una vez al mes, en el día 1 (equivale a <code>0 0 0 1 * *</code>)</li>
+<li><code>@weekly</code> → Ejecuta cada semana, a medianoche del domingo (equivale a <code>0 0 0 * * 0</code>)</li>
+<li><code>@daily</code> o <code>@midnight</code> → Ejecuta una vez al día, a medianoche (equivale a <code>0 0 0 * * *</code></li>
+<li><code>@hourly</code> → Ejecuta cada hora, a su principio (equivale a <code>0 0 * * * *</code>)</li>
 </ul>
-
 <p>Así pues, para ejecutar un <em>backup</em> diario, podríamos hacer algo como lo siguiente:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ ./go-cron -s &quot;@daily&quot; -- ./backup_database.sh
 2018/04/25 12:27:45 Running version: 6f160c2
 2018/04/25 12:27:45 new cron: @daily
 2018/04/25 12:27:45 Opening port 18080 for health checking
 </code></pre>
-
-<h3 id="especificación-por-intervalos">Especificación por intervalos</h3>
-
+<h3>Especificación por intervalos</h3>
 <p>También podemos instruir a <strong>go-cron</strong> para que ejecute cada cierto tiempo, con el <em>keyword</em> <code>@every</code>. Esto nos dejaría una línea de comandos como esta:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ ./go-cron -s &quot;@every 1m30s&quot; -- ./send_keepalive.sh
 2018/04/25 12:30:25 Running version: 6f160c2
 2018/04/25 12:30:25 new cron: @every 1m30s
 2018/04/25 12:30:25 Opening port 18080 for health checking
 </code></pre>
-
 <p><strong>AVISO</strong>: La primera ejecución se hace cuando ha pasado el tiempo especificado tras levantar <strong>go-cron</strong>. Las siguientes lo hacen sin tener en cuenta el tiempo de ejecución del comando dado. En caso de ejecutar cada hora, y tardar el <em>script</em> 40 minutos, saltaría el siguiente en unos 20 minutos tras la finalización del actual; en casos extremos, podríamos tener solapamiento de ejecuciones.</p>
-
-<h3 id="el-servicio-de-healthcheck">El servicio de healthcheck</h3>
-
+<h3>El servicio de healthcheck</h3>
 <p>El <em>flag</em> <code>-p</code> sirve para indicar el puerto en el que vamos a contar con un <em>webservice</em> con información de lo que pasa en <strong>go-cron</strong>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ ./go-cron -s &quot;@every 10s&quot; -- ./do_something.sh 
 2018/04/25 12:38:32 Running version: 6f160c2
 2018/04/25 12:38:32 new cron: @every 10s
 2018/04/25 12:38:32 Opening port 18080 for health checking
 </code></pre>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace$ curl http://localhost:18080/
 {
   &quot;Running&quot;: {
@@ -173,7 +146,6 @@ gerard@sirius:~/workspace$
 }
 gerard@sirius:~/workspace$ 
 </code></pre>
-
 <p>Se puede desactivar indicando puerto 0, pero igual le podéis encontrar una utilidad&hellip;</p>
 
 <div id="disqus_thread"></div>

@@ -53,35 +53,23 @@
 </p>
 
 <p>Tras ver como las actualizaciones de mis máquinas virtuales <em>VirtualBox</em> expandían mis discos <em>.vdi</em> sin control, quise pasar la herramienta <em>zerofree</em> y un compactado con la herramienta oficial <em>VBoxManage</em>. No quería instalar <em>zerofree</em> de forma permanente y no pude encontrar un <em>livecd</em> que lo tuviera, así que decidí crear uno.</p>
-
 <p>Para conseguirlo, se va a usar un sistema de ficheros creado con <em>debootstrap</em> y compactado mediante <em>SquashFS</em>; este sistema de ficheros se va a empaquetar en un <em>.iso</em> junto con un <em>kernel</em>, un <em>initrd</em> y el bootloader <em>isolinux</em>. La herramienta que hace eso es <em>genisoimage</em>.</p>
-
 <p>Este tutorial se ejecutó en una distribución <em>Debian</em>, pero no hay ningún problema en hacerlo en una <em>Ubuntu</em> u otra distribución, siempre que sepamos como crear la imagen base para empaquetar.</p>
-
-<h2 id="preparación-del-entorno">Preparación del entorno</h2>
-
+<h2>Preparación del entorno</h2>
 <p>Todo el proceso va a ser ejecutado con el usuario <em>root</em> por comodidad.</p>
-
 <p>Empezaremos por instalar todas las tecnologías que hemos mencionado:</p>
-
 <pre><code class="language-bash">root@desktop:~# apt-get install debootstrap isolinux squashfs-tools genisoimage
 ...
 root@desktop:~# 
 </code></pre>
-
 <p>Creamos una carpeta de trabajo para contener todos los ficheros temporales y el producto final, por limpieza:</p>
-
 <pre><code class="language-bash">root@desktop:~# mkdir live_boot
 root@desktop:~# cd live_boot
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Todos los comandos que se detallan a continuación se hacen desde dentro de esta carpeta.</p>
-
-<h2 id="preparación-del-sistema-de-ficheros-el-kernel-y-el-initrd">Preparación del sistema de ficheros, el kernel y el initrd</h2>
-
+<h2>Preparación del sistema de ficheros, el kernel y el initrd</h2>
 <p>El sistema de ficheros se hace a partir de una jaula estándar de una distribución normal. En este paso, las distribuciones que usan <em>debootstrap</em> nos facilitan mucho las cosas (aunque esta es la operación mas larga de este tutorial):</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# debootstrap --variant=minbase jessie chroot
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -95,41 +83,30 @@ I: Resolving dependencies of base packages...
 I: Base system installed successfully.
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Ahora se trata de preparar esta jaula con los paquetes que necesitemos y las configuraciones adecuadas. Vamos a montar los pseudo sistemas de ficheros <em>/proc</em>, <em>/sys</em>, <em>/dev</em> y <em>/dev/pts</em>, que posiblemente nos van a hacer falta cuando estemos dentro de la jaula.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# mount -o bind /proc/ chroot/proc/
 root@desktop:~/live_boot# mount -o bind /sys/ chroot/sys/
 root@desktop:~/live_boot# mount -o bind /dev/ chroot/dev/
 root@desktop:~/live_boot# mount -o bind /dev/pts/ chroot/dev/pts/
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Entramos en la jaula:</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# chroot chroot
 root@desktop:/# 
 </code></pre>
-
 <p><strong>CUIDADO</strong>: A partir de ahora, y hasta nuevo aviso, todos los comandos se hacen <strong>dentro</strong> de la jaula.</p>
-
 <p>Antes de nada, vamos a asignar una password al usuario <em>root</em>, porque sino, no vamos a poder entrar en el <em>livecd</em>.</p>
-
 <pre><code class="language-bash">root@desktop:/# passwd    
 Enter new UNIX password: 
 Retype new UNIX password: 
 passwd: password updated successfully
 root@desktop:/# 
 </code></pre>
-
 <p>Asignamos el nombre de máquina que mostrará el <em>livecd</em> una vez haya hecho el <em>boot</em>:</p>
-
 <pre><code class="language-bash">root@desktop:/# echo &quot;zerofree&quot; &gt; /etc/hostname
 root@desktop:/# 
 </code></pre>
-
 <p>Para que el <em>livecd</em> pueda hacer <em>boot</em>, vamos a necesitar el paquete <strong>live-boot</strong> y un <em>kernel</em> adecuado a la máquina que va a usar el <em>livecd</em>. El paquete del <em>kernel</em> ya nos va a dotar de un <em>initrd</em> que también vamos a necesitar para el <em>livecd</em>. Este paso también tarda un poco.</p>
-
 <pre><code class="language-bash">root@desktop:/# apt-get install linux-image-486 live-boot
 Reading package lists... Done
 Building dependency tree... Done
@@ -141,61 +118,45 @@ update-initramfs: Generating /boot/initrd.img-3.16.0-4-586
 ...
 root@desktop:/# 
 </code></pre>
-
 <p>Ahora vamos a instalar los paquetes que queramos en el <em>livecd</em>; yo voy a poner <em>zerofree</em> que es la herramienta que motivó este <em>livecd</em>.</p>
-
 <pre><code class="language-bash">root@desktop:/# apt-get install zerofree
 ...
 Unpacking zerofree (1.0.3-1) ...
 Setting up zerofree (1.0.3-1) ...
 root@desktop:/# 
 </code></pre>
-
 <p><strong>OPCIONAL</strong>: Para reducir el tamaño final, voy a limpiar todos los archivos temporales que usa <em>apt</em>, tanto los archivos <em>.deb</em> en <em>/var/cache/apt</em>, como las listas de paquetes disponibles en <em>/var/lib/apt</em>.</p>
-
 <pre><code class="language-bash">root@desktop:/# cat /dev/null &gt; /etc/apt/sources.list
 root@desktop:/# apt-get update
 Reading package lists... Done
 root@desktop:/# apt-get clean 
 root@desktop:/# 
 </code></pre>
-
 <p>Y finalmente salimos de la jaula:</p>
-
 <pre><code class="language-bash">root@desktop:/# exit
 exit
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p><strong>CUIDADO</strong>: A partir de ahora, todos los comandos se hacen <strong>fuera</strong> de la jaula.</p>
-
 <p>Vamos a desmontar los pseudo sistemas de ficheros que ya no son necesarios, y que van a molestar cuando compactemos la jaula. Como apunte, la jaula había levantado un proceso <em>/usr/sbin/uuidd</em> que evitaba desmontar <em>chroot/dev</em>, por lo que tuve que finalizar el proceso con un <em>kill</em>.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# umount chroot/dev/pts/
 root@desktop:~/live_boot# umount chroot/dev/
 root@desktop:~/live_boot# umount chroot/sys/
 root@desktop:~/live_boot# umount chroot/proc/
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p><strong>OPCIONAL</strong>: Sabiendo que mis máquinas virtuales son clones y el comando que va a correr siempre el comando <em>zerofree</em> contra el disco <em>/dev/sda1</em>, se puede poner los comandos en el <em>.bash_history</em> de <em>root</em> para poderlos recuperar mediante el uso de flechas.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# cat chroot/root/.bash_history 
 zerofree /dev/sda1
 poweroff
 root@desktop:~/live_boot# 
 </code></pre>
-
-<h2 id="empaquetando-la-imagen">Empaquetando la imagen</h2>
-
+<h2>Empaquetando la imagen</h2>
 <p>Vamos a crear una carpeta contenedora, que va a servir como raíz del <em>livecd</em>. Dentro le vamos a poner una carpeta <em>live</em> (para el sistema de ficheros, el <em>kernel</em> y el <em>initrd</em>) y una carpeta <em>isolinux</em> (para todo lo referente al <em>bootloader</em>).</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# mkdir -p image/{live,isolinux}
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Vamos a poner el sistema de ficheros en formato <em>SquashFS</em>. Como apunte, el <em>kernel</em> y el <em>initrd</em> (ambos en la carpeta <em>/boot</em>) se excluyen porque el <em>bootloader</em> es incapaz de leerlos de allí; así que los copiamos a la misma carpeta.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# mksquashfs chroot image/live/filesystem.squashfs -e boot
 Parallel mksquashfs: Using 1 processor
 Creating 4.0 filesystem on image/live/filesystem.squashfs, block size 131072.
@@ -204,9 +165,7 @@ root@desktop:~/live_boot# cp chroot/boot/vmlinuz-3.16.0-4-586 image/live/vmlinuz
 root@desktop:~/live_boot# cp chroot/boot/initrd.img-3.16.0-4-586 image/live/initrd
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Ahora vamos con el <em>bootloader</em>. Lo primero es poner una configuración para saber qué menú nos va a mostrar:</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# cat image/isolinux/isolinux.cfg 
 UI menu.c32
 
@@ -222,18 +181,14 @@ kernel /live/vmlinuz
 append initrd=/live/initrd boot=live
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Copiamos la imagen del <em>bootloader</em> <strong>isolinux</strong> y los módulos que se necesitan, tanto porque nuestra configuración los usa o porque se usan desde otros módulos.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# cp /usr/lib/ISOLINUX/isolinux.bin image/isolinux/
 root@desktop:~/live_boot# cp /usr/lib/syslinux/modules/bios/ldlinux.c32 image/isolinux/
 root@desktop:~/live_boot# cp /usr/lib/syslinux/modules/bios/menu.c32 image/isolinux/
 root@desktop:~/live_boot# cp /usr/lib/syslinux/modules/bios/libutil.c32 image/isolinux/
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Finalmente empaquetamos la imagen <em>.iso</em>. Para ello usaremos la herramienta <em>genisoimage</em> en la carpeta raíz de lo que sería el <em>livecd</em>.</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# cd image/
 root@desktop:~/live_boot/image# genisoimage -rational-rock -volid &quot;Debian Zerofree&quot; -cache-inodes -joliet -full-iso9660-filenames -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -output ../debian-zerofree.iso .
 I: -input-charset not specified, using utf-8 (detected in locale settings)
@@ -257,9 +212,7 @@ Max brk space used 1a000
 root@desktop:~/live_boot/image# cd ..
 root@desktop:~/live_boot# 
 </code></pre>
-
 <p>Y nuestra imagen <em>.iso</em> queda en la carpeta de trabajo, junto a la jaula y a la estructura del <em>livecd</em>. Solo necesitamos la imagen <em>.iso</em>, pero podemos dejar los ficheros intermedios hasta que estemos satisfechos con la imagen; es mas fácil modificar la jaula, el empaquetado <em>filesystem.squashfs</em> y la imagen <em>.iso</em> que volver a hacer un <em>debootstrap</em> entero&hellip;</p>
-
 <pre><code class="language-bash">root@desktop:~/live_boot# ls -lh
 total 106M
 drwxr-xr-x 20 root root 4,0K dic  2 11:30 chroot
@@ -267,16 +220,12 @@ drwxr-xr-x 20 root root 4,0K dic  2 11:30 chroot
 drwxr-xr-x  4 root root 4,0K dic  2 11:53 image
 root@desktop:~/live_boot# 
 </code></pre>
-
-<h2 id="conclusión">Conclusión</h2>
-
+<h2>Conclusión</h2>
 <p>Copiando esta imagen <em>.iso</em> a mi máquina con <em>VirtualBox</em> y montándola antes de hacer el <em>boot</em> de cada máquina, puedo usar la herramienta <em>zerofree</em> libremente, sin instalarla en las máquinas virtuales. Tras ello, el compactado de los ficheros <em>.vdi</em> libera los megabytes a cientos.</p>
-
 <pre><code class="language-bash">gerard@virtualbox:~/VirtualBox VMs$ VBoxManage modifyvdi Debian/Debian.vdi --compact
 ...
 gerard@virtualbox:~/VirtualBox VMs$ 
 </code></pre>
-
 <p>En este caso concreto, la máquina <strong>Debian</strong> (<em>netinstall</em>) volvió a ocupar 700 mb, que es mucho mas interesante teniendo en cuenta que es la imagen que suelo clonar para hacer otras máquinas virtuales.</p>
 
 <div id="disqus_thread"></div>

@@ -53,15 +53,10 @@
 </p>
 
 <p>Algunas veces tenemos que montar servidores web que responden con distinto contenido dependiendo del dominio. En estas ocasiones, es posible usar un servidor DNS local o incluso resolviendo los dominios mediante el fichero <em>/etc/hosts</em>. Sin embargo, hay una forma fácil, elegante y que no requiere modificar configuraciones del sistema.</p>
-
 <p>La idea es muy fácil: se trata de suministrar la cabecera <em>Host</em> con el dominio que queramos consultar, y el servidor web se va a comportar como si hubiéramos pedido ese <em>virtualhost</em>.</p>
-
-<h2 id="el-escenario-de-ejemplo">El escenario de ejemplo</h2>
-
+<h2>El escenario de ejemplo</h2>
 <p>Supongamos que tenemos un servidor web <strong>nginx</strong> (por poner algún ejemplo). Este servidor está configurado con dos <em>server</em> (lo que en <strong>apache</strong> se llama <em>virtualhost</em>).</p>
-
 <p>Ambos se limitan a servir contenido estático, de diferentes carpetas, con la configuración siguiente:</p>
-
 <pre><code class="language-bash">/etc/nginx/conf.d # cat server1
 server {
 	listen 80;
@@ -71,9 +66,7 @@ server {
 }
 /etc/nginx/conf.d # 
 </code></pre>
-
 <p>Y una configuración análoga para el otro <em>virtualhost</em>:</p>
-
 <pre><code class="language-bash">/etc/nginx/conf.d # cat server2
 server {
 	listen 80;
@@ -83,52 +76,36 @@ server {
 }
 /etc/nginx/conf.d # 
 </code></pre>
-
 <p>Por supuesto, vamos a poner contenido en las carpetas raíz de cada <em>virtualhost</em>, para que podamos ver fácilmente lo que estamos sirviendo.</p>
-
 <pre><code class="language-bash">/srv/www # cat server1/index.html 
 &lt;h1&gt;Hello from server1&lt;/h1&gt;
 /srv/www # 
 </code></pre>
-
 <p>Y algo similar para el segundo dominio:</p>
-
 <pre><code class="language-bash">/srv/www # cat server2/index.html 
 &lt;p&gt;This comes from server2&lt;/p&gt;
 /srv/www # 
 </code></pre>
-
 <p>A partir de aquí, se asume que el servidor está recargado y corriendo.</p>
-
-<h2 id="como-se-hace">Como se hace</h2>
-
+<h2>Como se hace</h2>
 <p>Podemos hacer una petición directa con las herramientas que nos parezcan adecuadas, por ejemplo, <strong>wget</strong>, <strong>curl</strong> o un navegador normal; el único requisito es que podamos añadir cabeceras, de forma nativa o mediante un <em>plugin</em>.</p>
-
 <p>La dirección IP usada es la que corresponda; incluso se puede usar <em>localhost</em> si hacemos las pruebas desde la misma máquina.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl -s http://192.168.1.48/
 &lt;h1&gt;Hello from server1&lt;/h1&gt;
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Como vemos, obtenemos un resultado&hellip; ¿Pero cuál?</p>
-
 <p>No podemos saber <em>a priori</em> de que dominio vamos a obtener las páginas. En este caso obtuvimos <em>server1</em> porque <strong>nginx</strong> suministra el primero que lee en las configuraciones. Pero eso no nos sirve.</p>
-
 <p>Nosotros queremos probar todos los dominios, uno por uno, y posiblemente de forma automatizada. Así, por ejemplo, si queremos el dominio <em>server1</em>, basta con indicarlo en la cabecera <em>Host</em> de la petición. Se añade el ejemplo con <strong>curl</strong>, pero debería poder hacerse con cualquier cliente HTTP, de acuerdo a la documentación.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl -s -H &quot;Host: server1&quot; http://192.168.1.48/
 &lt;h1&gt;Hello from server1&lt;/h1&gt;
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Solo nos queda pedir el otro dominio, y verificar que se nos está sirviendo <em>server2</em>, demostrando que este truco funciona:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl -s -H &quot;Host: server2&quot; http://192.168.1.48/
 &lt;p&gt;This comes from server2&lt;/p&gt;
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y con esto vemos que nuestros <em>virtualhosts</em> funcionan como deben. A partir de aquí, podemos enriquecer las configuraciones de acuerdo a nuestras necesidades.</p>
 
 <div id="disqus_thread"></div>

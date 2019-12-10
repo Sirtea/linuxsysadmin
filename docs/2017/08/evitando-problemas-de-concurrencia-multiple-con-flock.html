@@ -53,9 +53,7 @@
 </p>
 
 <p>Cuando trabajas con procesos en <em>background</em>, es fácil que algunos de los procesos hagan algo que necesite exclusividad, no siendo seguro ejecutar varios de estos procesos a la vez. Por ejemplo, archivos que se descomprimen, se procesan y luego se borran; si usan la misma carpeta suele ser un problema.</p>
-
 <p>No vamos a entrar en como se lanzan estos procesos, pero vamos a dar énfasis en que no deben ejecutarse a la vez. Para ello, vamos a suponer que tenemos un proceso que nos interesa ejecutar en exclusividad. Voy a sustituir este proceso por un <em>script</em>, para que no nos distraigamos del punto importante.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/flock_test$ cat process.sh 
 #!/bin/bash
 
@@ -64,55 +62,38 @@ sleep 5
 echo &quot;$(date +%H:%M:%S) - Process ended in terminal $1&quot;
 gerard@aldebaran:~/flock_test$ 
 </code></pre>
-
 <p>Muchos de los desarrolladores os propondrían miles de soluciones para evitar este caso, pero si buscamos en la <em>toolbox</em> de Linux, podemos encontrar herramientas útiles. En mi caso concreto encontré el comando <strong>flock</strong>, que actúa bloqueando un comando, en base a la existencia de un fichero de <em>lock</em>.</p>
-
-<h2 id="ejecutando-casi-concurrentemente">Ejecutando casi concurrentemente</h2>
-
+<h2>Ejecutando casi concurrentemente</h2>
 <p>Para conseguirlo, voy a abrir dos terminales, uno para cada proceso. El <em>script</em> va a recibir el numero de terminal por un parámetro, que voy a poner manualmente.</p>
-
 <p>Vamos al primer terminal, y ejecutamos nuestro <em>script</em>:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/flock_test$ ./process.sh 1
 12:43:38 - Starting process in terminal 1
 12:43:43 - Process ended in terminal 1
 gerard@aldebaran:~/flock_test$ 
 </code></pre>
-
 <p>Antes de que acabe, cambio al otro terminal y ejecuto lo mismo:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/flock_test$ ./process.sh 2
 12:43:40 - Starting process in terminal 2
 12:43:45 - Process ended in terminal 2
 gerard@aldebaran:~/flock_test$ 
 </code></pre>
-
 <p>Si juntamos las líneas de <em>log</em> y las ordenamos, vemos claramente que los procesos estuvieron en algún momento ejecutándose a la vez.</p>
-
 <pre><code class="language-bash">12:43:38 - Starting process in terminal 1
 12:43:40 - Starting process in terminal 2
 12:43:43 - Process ended in terminal 1
 12:43:45 - Process ended in terminal 2
 </code></pre>
-
 <p>En este caso, no parece peligroso que se ejecuten a la vez, pero hay que usar la imaginación y creernos que podrían dar problemas ejecutados a la vez.</p>
-
-<h2 id="ejecución-exclusiva-con-flock">Ejecución exclusiva con flock</h2>
-
+<h2>Ejecución exclusiva con flock</h2>
 <p>Como puede interesarnos que no se ejecuten a la vez, podemos utilizar el comando <strong>flock</strong> para conseguir que ambos procesos esperen ordenadamente la posibilidad de ejecutarse.</p>
-
 <p>El comando <strong>flock</strong> esperaría la inexistencia de un <em>lock</em> en el fichero indicado, momento en el que pondría dicho <em>lock</em> para asegurar que ningún otro proceso pudiera ejecutarse. Lo siguiente sería ejecutar nuestro <em>script</em>, y finalmente, eliminar el <em>lock</em> puesto. Otro proceso concurrente quedaría a la espera de la liberación de <em>lock</em> antes de poder proceder, de manera similar al anterior.</p>
-
 <p>El proceso va a ser el mismo: ejecutamos el <em>script</em> en ambos terminales, prefijado esta vez por el comando <strong>flock</strong> y el fichero sobre el que se va a poner el <em>lock</em>. Pasamos a juntar las líneas de ambos terminales por brevedad:</p>
-
 <pre><code class="language-bash">12:44:59 - Starting process in terminal 1
 12:45:04 - Process ended in terminal 1
 12:45:04 - Starting process in terminal 2
 12:45:09 - Process ended in terminal 2
 </code></pre>
-
 <p>Y con esto podemos ver que el proceso del terminal 2 ha tenido que esperar a que el comando <strong>flock</strong> en el primer terminal acabara, antes de poder proceder a ejecutar su <em>script</em>. Con eso se garantiza la exclusividad de ejecución y los problemas que podría haber derivados de esta situación.</p>
-
 <p>En un caso de <em>boom</em> de procesos, podríamos ver un grupo de procesos esperando sin lanzar sus respectivos <em>scripts</em>, mientras que uno solo de ello estaría ejecutando en exclusividad.</p>
 
 <div id="disqus_thread"></div>

@@ -53,15 +53,10 @@
 </p>
 
 <p>Tengo un usuario que es muy cómodo; él solo consiguió una excepción de seguridad para poder abrir el puerto TCP de <strong>docker</strong> de un servidor concreto, para chafardear cómodamente desde su máquina. A pesar de mis reticencias, cumplí con lo que se me pedía, y no tardamos mucho en lamentarlo.</p>
-
 <p>Normalmente, el servicio <strong>docker</strong> abre un <em>unix socket</em> en <code>/var/run/docker.sock</code>; se utiliza por defecto desde el cliente para lanzar las diferentes operaciones, por ejemplo, un <code>docker ps</code>. Otra opción es ejecutar el comando <code>docker</code> bajo la influencia de la variable de entorno <code>DOCKER_HOST</code>, que permitiría lanzar el comando contra un <em>host</em> remoto, <strong>suponiendo que este <em>host</em> remoto esté escuchando mediante TCP</strong>.</p>
-
-<h2 id="la-opción-fácil">La opción fácil</h2>
-
+<h2>La opción fácil</h2>
 <p>Abrir el flujo TCP no es complicado; basta con iniciar el servicio <strong>docker</strong> con el <em>flag</em> <code>-H tcp://0.0.0.0(:&lt;puerto&gt;)</code> (el puerto por defecto es 2375), usando el <em>init</em> del sistema. Por ejemplo, en <strong>Debian</strong> hablaríamos de <strong>systemd</strong> y podríamos utilizar un fichero <em>override</em>.</p>
-
 <p>Para ello observamos el comando que se está ejecutando en el fichero <code>docker.service</code>:</p>
-
 <pre><code class="language-bash">gerard@procyon:~$ cat /lib/systemd/system/docker.service 
 ...
 [Service]
@@ -70,9 +65,7 @@ ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
 ...
 gerard@procyon:~$ 
 </code></pre>
-
 <p>Y lo copiamos en el fichero de <em>override</em>, con el parámetro añadido; posteriormente indicamos a <strong>systemd</strong> que recargue configuraciones y reinicie <strong>docker</strong>:</p>
-
 <pre><code class="language-bash">gerard@procyon:~$ cat /etc/systemd/system/docker.service.d/override.conf 
 [Service]
 ExecStart=
@@ -81,9 +74,7 @@ gerard@procyon:~$ sudo systemctl daemon-reload
 gerard@procyon:~$ sudo systemctl restart docker
 gerard@procyon:~$ 
 </code></pre>
-
 <p>Podemos comprobar como el puerto por defecto 2375 queda abierto en el servidor:</p>
-
 <pre><code class="language-bash">gerard@procyon:~$ sudo ss -lntp
 State      Recv-Q Send-Q                                                  Local Address:Port                                                                 Peer Address:Port              
 LISTEN     0      128                                                                 *:22                                                                              *:*                   users:((&quot;sshd&quot;,pid=350,fd=3))
@@ -91,9 +82,7 @@ LISTEN     0      128                                                           
 LISTEN     0      128                                                                :::22                                                                             :::*                   users:((&quot;sshd&quot;,pid=350,fd=4))
 gerard@procyon:~$ 
 </code></pre>
-
 <p>Y con esto podríamos gestionar el servicio remoto cómodamente desde nuestro terminal en otra máquina:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ DOCKER_HOST=procyon docker info | grep ^Name
 Name: procyon
 WARNING: API is accessible on http://0.0.0.0:2375 without encryption.
@@ -103,17 +92,11 @@ WARNING: API is accessible on http://0.0.0.0:2375 without encryption.
 WARNING: No swap limit support
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Creo que el mensaje de <em>warning</em> es bastante claro; con un <em>unix socket</em> contábamos con permisos del sistema de ficheros limitados al grupo <code>docker</code>, pero ahora cualquiera que llegue a <strong>procyon</strong> por TCP puede hacer lo que le dé la gana&hellip;</p>
-
 <p><strong>RESULTADO</strong>: A la semana teníamos redes, imágenes y contenedores de usuarios que no deberían haber utilizado el sistema o que solo necesitaban acceso de lectura, lo que nos llevó a volver al <em>status quo</em> inicial cerrando el puerto de <strong>docker</strong> en <strong>procyon</strong>.</p>
-
-<h2 id="abriendo-el-puerto-con-un-proxy-reverso">Abriendo el puerto con un proxy reverso</h2>
-
+<h2>Abriendo el puerto con un proxy reverso</h2>
 <p>Desde entonces ha habido un nuevo intento para proteger quien accede al servidor y qué acciones puede efectuar. Utilizando un servidor <strong>nginx</strong>, podemos hacer un <code>proxy_pass</code> al <em>unix socket</em>. La ventaja es que podemos utilizar las directivas de los diferentes módulos para limitar el acceso o los métodos que se utilizan; hay que recordar que el acceso al servicio <strong>docker</strong> no deja de ser <a href="https://docs.docker.com/engine/api/v1.39/">un servicio REST</a>.</p>
-
 <p>Por ejemplo, podemos limitar el acceso a todo, excepto a GETs en <code>/networks</code> u otros métodos en <code>/networks</code> si estás en cierto rango de red:</p>
-
 <pre><code class="language-bash">gerard@procyon:~/dockerproxy$ cat docker.conf 
 server {
 	server_name _;
@@ -131,18 +114,13 @@ server {
 }
 gerard@procyon:~/dockerproxy$ 
 </code></pre>
-
 <p>Basta con levantar un <strong>nginx</strong> con este <em>virtualhost</em>, siguiendo el procedimiento habitual:</p>
-
 <pre><code class="language-bash">docker run --rm -d --name dockerproxy -v /var/run/docker.sock:/var/run/docker.sock:ro -v $(pwd)/docker.conf:/etc/nginx/conf.d/docker.conf:ro -p 2375:2375 sirrtea/nginx:alpine
 360f9de7f8ddec500320363de706f4239f731692e2df55aaa9bbca6b01fa5e43
 gerard@procyon:~/dockerproxy$
 </code></pre>
-
 <p><strong>AVISO</strong>: El usuario <strong>nginx</strong> debe poder escribir a <code>/var/run/docker.sock</code> para que esto funcione.</p>
-
 <p>El resultado es evidente: el comando <code>docker ps</code> (que utiliza un GET a <code>/v1.39/containers/json</code>), vería su acceso cortado.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ DOCKER_HOST=procyon docker ps
 Error response from daemon: &lt;html&gt;
 &lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;
@@ -153,9 +131,7 @@ Error response from daemon: &lt;html&gt;
 &lt;/html&gt;
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>El comando <code>docker network ls</code> (un GET a <code>/v1.39/networks</code>) funciona según lo esperado:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ DOCKER_HOST=procyon docker network ls
 NETWORK ID          NAME                DRIVER              SCOPE
 b92cd9288207        bridge              bridge              local
@@ -163,9 +139,7 @@ c4ecadf8c3d2        host                host                local
 5d8f3437caa2        none                null                local
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Sin embargo, no se me permite hacer un <code>docker network create</code> (que es un POST a <code>/v1.39/networks/create</code>):</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ DOCKER_HOST=procyon docker network create mynet
 Error response from daemon: &lt;html&gt;
 &lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;
@@ -176,13 +150,9 @@ Error response from daemon: &lt;html&gt;
 &lt;/html&gt;
 gerard@aldebaran:~$ 
 </code></pre>
-
-<h2 id="usando-un-proxy-reverso-de-la-forma-fácil">Usando un proxy reverso, de la forma fácil</h2>
-
+<h2>Usando un proxy reverso, de la forma fácil</h2>
 <p>Configurar el <em>proxy</em> es una tarea complicada, y mantener dicha configuración cuando la API va cambiando, es casi imposible. Eso nos obliga a buscar otras opciones de gente que ha tenido el mismo problema que yo; como no puede ser de otra manera, ya existen varios proyectos que nos pueden servir.</p>
-
 <p>Especialmente interesante me parece la opción de <a href="https://github.com/Tecnativa/docker-socket-proxy">Tecnativa/docker-socket-proxy</a>, que utiliza la misma técnica que la anterior. El <em>proxy</em> en sí mismo es un <strong>haproxy</strong>, al que le añade un solo fichero de configuración. Este fichero es capaz de permitir o bloquear URLs y métodos en función de variables de entorno concretas.</p>
-
 <pre><code class="language-bash">$ docker container run \
     -d --privileged \
     --name dockerproxy \
@@ -190,7 +160,6 @@ gerard@aldebaran:~$
     -p 127.0.0.1:2375:2375 \
     tecnativa/docker-socket-proxy
 </code></pre>
-
 <p>Lo que no me gusta de esta imagen es que ejecuta como <strong>root</strong>, resolviendo la escritura al <em>unix socket</em> de una forma bastante poco elegante.</p>
 
 <div id="disqus_thread"></div>

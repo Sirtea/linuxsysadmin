@@ -53,21 +53,14 @@
 </p>
 
 <p>Ya vimos en <a href="/2016/02/restringiendo-accesos-mediante-certificados-de-cliente.html">otro artículo</a> como restringir los accesos a una web usando certificados SSL. Sin embargo, la generación de los mismos era un poco confusa. Sin embargo, existe una herramienta llamada <strong>easyrsa</strong> que nos permite generar peticiones de forma fácil, firmarlas con nuestra CA y obtener el producto final.</p>
-
 <p>Vamos a intentar seguir los pasos del citado artículo, solo en la parte de generación de los certificados. Si no se necesitara, se puede obviar la parte del certificado cliente, o porque no, generar certificados para decenas o cientos de usuarios de forma fácil.</p>
-
 <p>Vamos a partir de una distribución <a href="https://alpinelinux.org/">Alpine Linux</a>. Para los que no lo sospechen ya es un contenedor <strong>Docker</strong> por la facilidad de crearlo y de destruirlo al acabar el artículo. Además, esta distribución nos ofrece la herramienta en la versión 3, que me ha parecido más intuitiva que la versión anterior. Asumo también que se dispone del paquete <strong>easy-rsa</strong>, que se puede instalar con <code>apk add easy-rsa</code>.</p>
-
-<h2 id="preparando-la-ca">Preparando la CA</h2>
-
+<h2>Preparando la CA</h2>
 <p>lo primero para hacer una CA es copiar la estructura base a cualquier sitio. La idea es que tenemos una copia para cada CA que tengamos en el servidor, y no quiero trabajar en las carpetas de sistema para no destruir la plantilla.</p>
-
 <pre><code class="language-bash">rsa:~# cp -R /usr/share/easy-rsa/* .
 rsa:~# 
 </code></pre>
-
 <p>Otro paso necesario es inicializar las estructura de PKI, que básicamente es crear un esqueleto de carpetas para contener nuestros ficheros.</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa init-pki
 
 init-pki complete; you may now create a CA or requests.
@@ -75,9 +68,7 @@ Your newly created PKI dir is: /root/pki
 
 rsa:~# 
 </code></pre>
-
 <p>Finalmente creamos los certificados y claves necesarios para la CA con un simple comando único.</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa build-ca
 Generating a 2048 bit RSA private key
 ........................+++
@@ -101,13 +92,9 @@ Your new CA certificate file for publishing is at:
 
 rsa:~# 
 </code></pre>
-
 <p>El resultado que deberemos exportar a nuestro servidor es el certificado de la CA, cuya localización es <em>/root/pki/ca.crt</em>.</p>
-
-<h2 id="generando-el-certificado-de-nuestro-servidor">Generando el certificado de nuestro servidor</h2>
-
+<h2>Generando el certificado de nuestro servidor</h2>
 <p>Este paso se debe repetir tantas veces como servidores queramos que utilicen un certificado SSL. De momento, nos basta con uno. Además, lo vamos a crear sin contraseña porque no queremos tener que introducirla cada vez que se reinicie el servidor.</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa gen-req private nopass
 Generating a 2048 bit RSA private key
 ......................................................+++
@@ -129,11 +116,8 @@ key: /root/pki/private/private.key
 
 rsa:~# 
 </code></pre>
-
 <p><strong>IMPORTANTE</strong>: el <em>Common Name</em> es el parámetro mas importante; debe coincidir con el dominio para que se dé por bueno.</p>
-
 <p>Lo firmamos con nuestra CA y ya habremos acabado.</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa sign-req server private
 
 
@@ -165,15 +149,10 @@ Certificate created at: /root/pki/issued/private.crt
 
 rsa:~# 
 </code></pre>
-
 <p>Vamos a necesitar los ficheros <em>/root/pki/private/private.key</em> y <em>/root/pki/private/private.crt</em> para ponerlos en nuestro servidor, juntamente con el certificado de la CA.</p>
-
-<h2 id="generando-certificados-cliente-opcional">Generando certificados cliente (opcional)</h2>
-
+<h2>Generando certificados cliente (opcional)</h2>
 <p>Se trata de la misma filosofía; generamos una <em>request</em>, la firmamos y finalmente la vamos a empaquetar en un fichero <em>.p12</em> para su fácil y segura distribución.</p>
-
 <p>Repetimos la generación de la <em>request</em> de la misma manera:</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa gen-req gerard
 Generating a 2048 bit RSA private key
 ............................................+++
@@ -197,9 +176,7 @@ key: /root/pki/private/gerard.key
 
 rsa:~# 
 </code></pre>
-
 <p>Firmamos la petición. Es especialmente importante el parámetro <em>client</em>, ya que sino, no va a funcionar.</p>
-
 <pre><code class="language-bash">rsa:~# easyrsa sign-req client gerard
 
 
@@ -231,20 +208,15 @@ Certificate created at: /root/pki/issued/gerard.crt
 
 rsa:~# 
 </code></pre>
-
 <p>Finalmente tenemos los ficheros <em>gerard.key</em> y <em>gerard.crt</em>, que no son lo que solemos importar en nuestro navegador. Para ellos lo empaquetamos en un fichero <em>gerard.12</em> que está protegido por contraseña y es el que deberá importar el usuario de nuestra web.</p>
-
 <pre><code class="language-bash">rsa:~# openssl pkcs12 -export -in pki/issued/gerard.crt -inkey pki/private/gerard.key -out gerard.p12
 Enter pass phrase for pki/private/gerard.key:
 Enter Export Password:
 Verifying - Enter Export Password:
 rsa:~# 
 </code></pre>
-
-<h2 id="un-ejemplo-de-servidor-nginx-funcional">Un ejemplo de servidor nginx funcional</h2>
-
+<h2>Un ejemplo de servidor nginx funcional</h2>
 <p>Tenemos 3 ficheros para nuestro servidor, que son <em>ca.crt</em>, <em>server.crt</em> y <em>server.key</em>, con los que podemos montar un dominio estándar, como en el artículo citado.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/nginx/sites-enabled/private.linuxsysadmin.tk
 server {
     listen                      443 ssl;
@@ -258,7 +230,6 @@ server {
 }
 root@server:~#
 </code></pre>
-
 <p>Y suponiendo que el cliente ha importado su clave con éxito, ya tenemos el dominio montado.</p>
 
 <div id="disqus_thread"></div>

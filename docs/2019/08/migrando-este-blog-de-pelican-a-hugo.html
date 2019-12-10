@@ -56,11 +56,9 @@
 puede que fuera por estar escrito en <strong>python</strong>, o por tener una gran colección
 de temas y <em>plugins</em> disponibles. Con el tiempo, han aparecido <a href="https://www.staticgen.com/">muchas alternativas</a>,
 y una de ellas me llamó la atención por su sencillez y velocidad: <strong>hugo</strong>.</p>
-
 <p>Ya he utilizado este generador como ejemplo en <a href="/2017/03/generadores-de-contenido-web-estaticos.html">otro artículo</a>, pero nunca
 vi el momento de utilizarlo en algún proyecto serio, hasta ahora. Y es que este
 <em>blog</em> iba arrastrando una serie de carencias importantes:</p>
-
 <ul>
 <li>Un tiempo de <em>build</em> de unos 45 segundos, cada vez que corregía una falta de ortografía.</li>
 <li>Dependencias con <strong>python</strong>, que me obligaba a montar el entorno en cada ordenador.</li>
@@ -68,74 +66,58 @@ vi el momento de utilizarlo en algún proyecto serio, hasta ahora. Y es que este
 <li>Una sola carpeta con todos los artículos escritos en 4 años de existencia del <em>blog</em>.</li>
 <li>Una lista de <em>plugins</em> que asustaba de ver.</li>
 <li>Un tema demasiado complejo, escrito por otro.
-
 <ul>
 <li>Lo entendía vagamente, y me era difícil de mantener y modificar.</li>
 <li>Utilizaba librerías <em>javascript</em> pesadas e innecesarias.</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p><strong>RESULTADO</strong>: En algún punto me planteé la gran pregunta: ¿Y si migro a <strong>hugo</strong>?</p>
-
 <p>Por supuesto, cada vez que me hacía esta pregunta me hacía para atrás; se trataba de
 adaptar unos 200 artículos, crear un tema adecuado (o volver a pecar con un tema prefabricado),
 y probar que todo era satisfactorio sin dejar de servir alguna versión del <em>blog</em>.</p>
-
 <blockquote>
 <p>Sin embargo, esta vez fue diferente; <strong>simplemente lo empecé a hacer, a ver cuán lejos podía llegar</strong>.</p>
 </blockquote>
-
 <p>Una migración a <strong>hugo</strong> arreglaba casi todas las carencias: un <em>build</em> del orden
 de milisegundos, niguna dependencia siendo un solo binario estático, una documentación
 fija y estable, y todos los <em>plugins</em> integrados en el binario <code>hugo</code>. Solo necesitaba
 reordenar la carpeta de artículos y conseguir un nuevo tema similar al que tenía.</p>
-
-<h2 id="como-lo-hice">Como lo hice</h2>
-
+<h2>Como lo hice</h2>
 <p>Creé el esqueleto de lo que sería el nuevo tema, minimizando el número de plantillas; al
 principio era HTML básico, con el CSS estrictamente necesario, pero con enlaces a todas
 las posibles páginas, para poder probar todo el funcionamiento.</p>
-
 <p>Escribí un <em>script</em> en <strong>bash</strong> capaz de mover los diferentes artículos a carpetas
 del estilo <code>/201x/xx/</code> según su <em>metadata</em>, poniendo orden a la gran carpeta de
 artículos, separándolos según el año y el mes en que los publiqué (esto se saca
 de la cabecera <code>Date</code>).</p>
-
 <p>El siguiente escollo era adaptar los artículos a <strong>hugo</strong>, lo justo para que se
 pudiera construir el sitio; esto limitaba mi trabajo a transformar los <em>metadatos</em>
 a lo que <strong>hugo</strong> llama el <em>front matter</em>, que es lo mismo en esencia. Nuevamente
 me ayudé de un <em>script</em>, esta vez en <strong>python</strong>, que leía las cabeceras de los
 artículos, y las reescribía con el formato YAML que tienen ahora, aprovechando
 la rígida forma de los <em>metadatos</em> y el abuso de <em>copy-paste</em> que venía haciendo.</p>
-
 <p>El resto del contenido se hizo a mano: adaptar las páginas que no son artículos,
 adaptar los enlaces locales con los <em>shortcodes</em> de <strong>hugo</strong> adecuados, y revisar
 que las pocas imágenes que hay en el <em>blog</em> se siguieran viendo bien.</p>
-
 <p>Como no me llevó mucho trabajo, seguí con la maquetación; mi idea inicial era la de
 crear un tema simple, propio y desde cero. Quería hacer uso simple de CSS, quitar
 casi todo el <em>javascript</em> y, aún así, repetar ligeramente el <em>look and feel</em> del <em>blog</em>
 inicial; esto me llevó a complicar el tema un poco, pero creo que ha valido la pena.</p>
-
 <p>Ya con algo decente, decidí perder un poco más de tiempo para añadir otras
 funcionalidades, como por ejemplo el paginado, el <em>snippet</em> de <strong>Google Analytics</strong>,
 el <em>banner</em> de <em>cookies</em> y un pie de página con un enlace a mi <strong>GitHub</strong>.</p>
-
 <p>A nivel de <em>hosting</em> también quise simplificar: en vez de publicarlo como
 <strong>GitHub Pages</strong> usando una rama nueva, me he limitado a publicar la carpeta <code>docs</code>;
 esto requiere un pequeño cambio en el <code>config.toml</code> pero simplifica muchísimo el
 proceso de publicación, bastando con un <code>git commit</code> y un <code>git push</code>.</p>
-
-<h2 id="conclusión">Conclusión</h2>
-
+<h2>Conclusión</h2>
 <p>Para &ldquo;instalar&rdquo; el entorno de desarrollo, solo necesito <strong>git</strong> y el binario <code>hugo</code>,
 que es estático y puedo poner en cualquier sitio; yo lo tengo normalmente en la
 carpeta <code>~/bin/</code>, que viene en el <em>path</em>.</p>
-
 <p>Por mi parte, me limito a trabajar con un repositorio remoto en <strong>GitHub</strong>, con las
 operaciones más básicas de <strong>git</strong>, concretamente usando las operaciones de <em>clone</em>,
 <em>pull</em>, <em>commit</em> y <em>push</em>. El resto es automático por parte de <strong>GitHub Pages</strong>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/sites/linuxsysadmin$ hugo
 
                    | EN   
@@ -152,7 +134,6 @@ operaciones más básicas de <strong>git</strong>, concretamente usando las oper
 Total in 159 ms
 gerard@atlantis:~/sites/linuxsysadmin$ 
 </code></pre>
-
 <p>El nuevo <em>blog</em> se construye en unos 150 milisegundos, tiene servidor de desarrollo
 integrado, viene con todos los <em>plugins</em> necesarios integrados y no hay que instalar
 absolutamente nada. Así se agradece redactar nuevos artículos y hacer pequeñas

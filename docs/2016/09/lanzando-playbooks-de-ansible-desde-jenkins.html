@@ -53,21 +53,13 @@
 </p>
 
 <p>Somos muchos los amantes del terminal para ejecutar nuestras tareas, sea con <strong>Ansible</strong> o con otras herramientas. A veces nos puede convenir dotar la herramienta de un entorno gráfico o web para que lo hagan otras personas. Aunque ya existe como producto <strong>Ansible Tower</strong>, su precio es prohibitivo para muchos.</p>
-
 <p>Desarrollar una solución propia no suele ser una opción viable, pero afortunadamente, hay muchas soluciones que pueden satisfacer nuestras necesidades. Una de ellas es <strong>Jenkins</strong>.</p>
-
 <p>En este tutorial y, por comodidad, nos vamos a ahorrar la instalación de <strong>Jenkins</strong> usando la imagen oficial para <strong>Docker</strong>. Sobre esta imagen vamos a añadir aquello que podamos necesitar para lanzar nuestros <em>playbooks</em>.</p>
-
 <p>Vamos a adoptar un modelo de trabajo en el que nuestro inventario y nuestros <em>playbooks</em> están alojados en un servidor <strong>git</strong>. Nuestro <strong>Jenkins</strong> va a descargarse este repositorio como &ldquo;fuente&rdquo; de código y va a &ldquo;construir&rdquo; ejecutando los <em>playbooks</em> del repositorio.</p>
-
-<h2 id="preparando-nuestro-contenedor">Preparando nuestro contenedor</h2>
-
+<h2>Preparando nuestro contenedor</h2>
 <p>Vamos a empezar por un <em>Dockerfile</em> que parte de la imagen oficial de <strong>Jenkins</strong>. A esa imagen habría que añadir <strong>Ansible</strong>, el cliente de <strong>SSH</strong> necesario por <strong>Ansible</strong> y el paquete <strong>sshpass</strong> para que pueda entrar en las máquinas usando autenticación tradicional de usuario y contraseña. El cliente de <strong>git</strong> ya viene en la imagen base.</p>
-
 <p>Vamos a poner también en esta imagen una configuración de <strong>Ansible</strong> para el usuario <em>jenkins</em> que levanta la web, y el fichero con la contraseña de los <em>vaults</em>; de esta forma podemos versionar los fichero <em>vault</em> sin miedo a que se puedan descifrar si alguien obtiene una copia de nuestro repositorio.</p>
-
 <p>Así nos quedaría el <em>Dockerfile</em>:</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/jenkins_ansible$ cat Dockerfile 
 FROM jenkins
 USER root
@@ -82,9 +74,7 @@ ADD vault-passfile /var/jenkins_home/.vault-passfile
 USER jenkins
 gerard@seginus:~/docker/jenkins_ansible$ 
 </code></pre>
-
 <p>Y los ficheros auxiliares:</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/jenkins_ansible$ cat ansible.cfg 
 [defaults]
 host_key_checking = False
@@ -93,9 +83,7 @@ gerard@seginus:~/docker/jenkins_ansible$ cat vault-passfile
 5up3r53cr37
 gerard@seginus:~/docker/jenkins_ansible$ 
 </code></pre>
-
 <p>Construimos nuestra nueva imagen con las herramientas necesarias, con el comando habitual.</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/jenkins_ansible$ docker build -t jenkins_ansible .
 Sending build context to Docker daemon 4.096 kB
 Step 1 : FROM jenkins
@@ -170,16 +158,12 @@ Removing intermediate container 6c0f9cde92e5
 Successfully built 89e5cae2d376
 gerard@seginus:~/docker/jenkins_ansible$ 
 </code></pre>
-
 <p>Levantamos un contenedor para la nueva imagen creada, de la misma forma que levantaríamos la imagen de <strong>Jenkins</strong> oficial. Mas información en <a href="https://hub.docker.com/_/jenkins/">Docker Hub</a>.</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/jenkins_ansible$ docker run -p 8080:8080 -d jenkins_ansible
 f9b6a9d23fde25411cd2086d13b7a171633eb2cf0b18295fde89c4466c08ef54
 gerard@seginus:~/docker/jenkins_ansible$ 
 </code></pre>
-
 <p>Ya de paso, levantamos otras 4 máquinas como las que se indican en <a href="/2016/06/controlando-contenedores-docker-con-ansible.html">otro artículo</a> para que ejecuten nuestros <em>playbooks</em>.</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/jenkins_ansible$ docker run -d slave
 ae3f8fe7d4448566c3481069d6c85d74ea3c6df7b9506c3f86e271247f5cbc52
 gerard@seginus:~/docker/jenkins_ansible$ docker run -d slave
@@ -190,23 +174,14 @@ gerard@seginus:~/docker/jenkins_ansible$ docker run -d slave
 221ae5b4c1cfe171530d5d9e9663222292da72144fdf2f62589acc50b72f3f2e
 gerard@seginus:~/docker/jenkins_ansible$ 
 </code></pre>
-
-<h2 id="configurando-nuestro-jenkins">Configurando nuestro Jenkins</h2>
-
+<h2>Configurando nuestro Jenkins</h2>
 <p>Ya podemos abrir la página de nuestro contenedor, de forma que se puedan efectuar las configuraciones iniciales. Nos vamos a dirigir a <code>http://localhost:8080/</code>, que es desde donde se va a controlar nuestro servidor de ahora en adelante.</p>
-
 <p>La parte mas importante de nuestro despliegue de <strong>Jenkins</strong> son los <em>plugins</em>. En nuestro caso, solo queremos clonar nuestros <em>playbooks</em> desde <strong>git</strong> y lanzarlos mediante <strong>Ansible</strong>. Para ello necesitamos estos dos <em>plugins</em>: <em>git plugin</em> y <em>ansible plugin</em>. Se pueden instalar en la primera visita a nuestro contenedor o a <em>posteriori</em>. Los instalamos.</p>
-
 <p>Y finalmente tenemos un <strong>Jenkins</strong> funcional aunque si ninguna tarea configurada.</p>
-
-<p><img src="/images/ansible_jenkins_01.jpg" alt="Ansible desde Jenkins 01" /></p>
-
-<h2 id="el-repositorio-de-playbooks">El repositorio de playbooks</h2>
-
+<p><img src="/images/ansible_jenkins_01.jpg" alt="Ansible desde Jenkins 01"></p>
+<h2>El repositorio de playbooks</h2>
 <p>Necesitamos algún lugar desde donde obtener nuestros <em>playbooks</em>. De acuerdo con la decisión del flujo de trabajo van a estar alojados en un servidor <strong>git</strong>, y en este caso, voy a usar un repositorio de usar y tirar en <a href="https://github.com/">GitHub</a>.</p>
-
 <p>Por poner a nuestro repositorio alguna estructura, he usado dos carpetas: una para contener los <em>playbooks</em> y otra para el inventario. La carpeta del inventario es similar a la de <a href="/2016/08/encriptando-datos-sensibles-con-ansible.html">este otro artículo</a>.</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/ansible$ tree
 .
 ├── inventory
@@ -219,9 +194,7 @@ gerard@seginus:~/docker/jenkins_ansible$
 2 directories, 4 files
 gerard@seginus:~/docker/ansible$ 
 </code></pre>
-
 <p>En <em>inventory/vault</em> tenemos los datos de conexión a las máquinas, como indica el artículo antes citado. El resto de ficheros son los <em>playbooks</em> que vamos a usar, y los <em>hosts</em> que tenemos en sus grupos correspondientes. Hay que tirar de imaginación para imaginar un <em>playbook</em> un poco mas útil.</p>
-
 <pre><code class="language-bash">gerard@seginus:~/docker/ansible$ cat inventory/hosts 
 [group1]
 172.17.0.3
@@ -240,42 +213,24 @@ gerard@seginus:~/docker/ansible$ cat playbooks/ping_some.yml
     - ping:
 gerard@seginus:~/docker/ansible$ 
 </code></pre>
-
-<h2 id="creando-una-tarea-básica">Creando una tarea básica</h2>
-
+<h2>Creando una tarea básica</h2>
 <p>Vamos a crear una tarea que consista en lanzar el fichero <em>playbooks/ping_all.yml</em>. Para ello pinchamos en el enlace &ldquo;create new job&rdquo;, le damos un nombre (por ejemplo &ldquo;Ping All&rdquo;) y lo creamos de tipo &ldquo;Freestyle project&rdquo;.</p>
-
 <p>El primer paso consiste en obtener los <em>playbooks</em> del repositorio. Para ello rellenaremos el apartado &ldquo;Source code management&rdquo;, eligiendo &ldquo;Git&rdquo; e indicando la <em>URL</em> del repositorio.</p>
-
-<p><img src="/images/ansible_jenkins_02.jpg" alt="Ansible desde Jenkins 02" /></p>
-
+<p><img src="/images/ansible_jenkins_02.jpg" alt="Ansible desde Jenkins 02"></p>
 <p>Lo siguiente es indicar un &ldquo;Build step&rdquo; que se &ldquo;Invoke Ansible Playbook&rdquo;. Hay que indicar el <em>playbook</em> desde la carpeta pertinente, de forma relativa. Eso significa que en nuestro caso es <em>playbooks/ping_all.yml</em>. Adicionalmente vamos a indicar que el fichero de inventario es la carpeta <em>inventory</em>, que es lo que se le va a pasar a <strong>Ansible</strong>.</p>
-
-<p><img src="/images/ansible_jenkins_03.jpg" alt="Ansible desde Jenkins 03" /></p>
-
+<p><img src="/images/ansible_jenkins_03.jpg" alt="Ansible desde Jenkins 03"></p>
 <p>Le damos a guardar y ya tenemos nuestra tarea. Bastará con lanzar la tarea con &ldquo;Build now&rdquo; y esperar resultados, en &ldquo;Console Output&rdquo; de la ejecución en curso.</p>
-
-<p><img src="/images/ansible_jenkins_04.jpg" alt="Ansible desde Jenkins 04" /></p>
-
-<h2 id="creando-una-tarea-con-parámetros">Creando una tarea con parámetros</h2>
-
+<p><img src="/images/ansible_jenkins_04.jpg" alt="Ansible desde Jenkins 04"></p>
+<h2>Creando una tarea con parámetros</h2>
 <p>Muchas de las tareas que hacemos son repetitivas. Cambian las versiones de código a desplegar, los entornos, los proyectos y poco mas. ¿No sería maravilloso tener un solo <em>playbook</em> que admita parámetros? <strong>Jenkins</strong> nos ofrece la posibilidad de añadir parámetros, que luego pueden ser usados en los &ldquo;Build steps&rdquo;, por ejemplo, para pasárselas a los <em>playbooks</em>.</p>
-
 <p>Vamos a crear otra tarea, esta vez llamada &ldquo;Ping Some&rdquo;. Va a ser idéntica a la otra, pero con el <em>playbook</em> llamado <em>ping_some.yml</em>. Vamos a marcar la casilla &ldquo;This project is parameterized&rdquo; en la casilla general y le añadiremos un parámetro, al que llamaremos &ldquo;target&rdquo; y va a ser un &ldquo;Choice Parameter&rdquo; con los valores &ldquo;all&rdquo;, &ldquo;group1&rdquo; y &ldquo;group2&rdquo;.</p>
-
-<p><img src="/images/ansible_jenkins_05.jpg" alt="Ansible desde Jenkins 05" /></p>
-
+<p><img src="/images/ansible_jenkins_05.jpg" alt="Ansible desde Jenkins 05"></p>
 <p>Vamos a los &ldquo;Build steps&rdquo; a poner ese parámetro al comando <em>ansible</em>. Tras dar al botón &ldquo;Advanced&hellip;&rdquo; podemos poner mas parámetros para <strong>Ansible</strong>. Esto nos permite poner &ldquo;-e target=$target&rdquo; para que el <em>playbook</em> reciba un parámetro <em>target</em> que contenga el valor del mismo parámetro en <strong>Jenkins</strong>.</p>
-
-<p><img src="/images/ansible_jenkins_06.jpg" alt="Ansible desde Jenkins 06" /></p>
-
+<p><img src="/images/ansible_jenkins_06.jpg" alt="Ansible desde Jenkins 06"></p>
 <p>Tras salvar la tarea, vemos que la opción de &ldquo;Build&rdquo; se ha convertido en &ldquo;Build with Parameters&rdquo;, y podemos elegir entre los valores específicos.</p>
-
-<p><img src="/images/ansible_jenkins_07.jpg" alt="Ansible desde Jenkins 07" /></p>
-
+<p><img src="/images/ansible_jenkins_07.jpg" alt="Ansible desde Jenkins 07"></p>
 <p>Y con esto conseguimos pasar parámetros al <em>playbook</em>, que pueden ser texto libre, elecciones simples o valores fijos. Con un poco de imaginación, estos parámetros nos pueden ayudar mucho, en el sentido de no repetirnos.</p>
-
-<p><img src="/images/ansible_jenkins_08.jpg" alt="Ansible desde Jenkins 08" /></p>
+<p><img src="/images/ansible_jenkins_08.jpg" alt="Ansible desde Jenkins 08"></p>
 
 <div id="disqus_thread"></div>
 <script type="application/javascript">

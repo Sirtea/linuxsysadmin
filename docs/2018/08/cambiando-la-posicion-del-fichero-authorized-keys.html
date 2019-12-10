@@ -53,29 +53,20 @@
 </p>
 
 <p>Un requerimiento de seguridad estándar en mi trabajo, es que los servidores SFTP no permitan la autenticación con <em>passwords</em> normales, y estamos obligados a usar autenticación por claves. El otro día tuvimos una queja de un usuario que no podía entrar porque había eliminado su carpeta <code>.ssh</code> de forma consciente.</p>
-
 <p>En casos como este no nos queda más remedio que reirnos un rato y restablecer su fichero <code>authorized_keys</code> desde un <em>backup</em>. Sin embargo, hay varias preguntas que se nos deberían plantear en estos casos:</p>
-
 <ul>
 <li>¿Por qué este usuario tenía permisos para escribir la carpeta <code>.ssh</code>?</li>
 <li>¿Por qué estaba su fichero <code>authorized_keys</code> en su <em>home</em>?</li>
 </ul>
-
 <p>Siempre debes pensar que un usuario puede meter la pata, y como son muchos, siempre tenemos muchos manazas con problemas similares. No hay nada que se pueda hacer en este sentido, pero debemos plantearnos si podemos evitar que el problema ocurrido se pueda repetir.</p>
-
 <p>En este caso concreto, no tardamos mucho en evitar que se repitiera, ya que disponiamos de dos métodos sencillos para evitarlo:</p>
-
 <ol>
 <li>Quitarle los permisos de escritura en la carpeta <code>.ssh</code>.</li>
 <li>Quitar la carpeta <code>.ssh</code> de su línea de tiro, concretamente, fuera de su jaula.</li>
 </ol>
-
 <p>Cabe decir que nos decantamos por la 2, y aquí explico como se hace.</p>
-
-<h2 id="mover-el-fichero-authorized-keys-de-sitio">Mover el fichero authorized_keys de sitio</h2>
-
+<h2>Mover el fichero authorized_keys de sitio</h2>
 <p>Empezamos con un <em>setup</em> estándar en donde <strong>bob</strong> puede entrar usando su clave ssh:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ sftp -i id_bob bob@sftpserver
 Connected to sftpserver.
 sftp&gt; ls -la
@@ -85,13 +76,9 @@ drwxr-xr-x    2 1001     1001         4096 Jul 18 15:42 .ssh
 drwxr-xr-x    2 1001     1001         4096 Jul 18 15:38 archives
 sftp&gt;
 </code></pre>
-
 <p>Con los permisos mostrados, no le sería difícil eliminar su clave, que es la única manera permitida de entrar en su cuenta; así pues, vamos a mover la posición de dicho fichero para que no lo vea el usuario en su <em>home</em>.</p>
-
 <p>El truco consiste en modificar la directiva <code>AuthorizedKeysFile</code> en el fichero <code>/etc/ssh/sshd_config</code>. Mas información en <a href="https://linux.die.net/man/5/sshd_config">las páginas <em>man</em></a>. Especificamente nos interesa el <em>token</em> <code>%u</code>, que es el nombre del usuario que intenta logarse, en este caso, <strong>bob</strong>.</p>
-
 <p>Como decisión de diseño, vamos a poner las claves en <code>/srv/sshkeys/&lt;usuario&gt;</code>, aunque esto es arbitrario y susceptible a cambio.</p>
-
 <pre><code class="language-bash">gerard@sftpserver:~$ cat /etc/ssh/sshd_config
 ...
 AuthorizedKeysFile /srv/sshkeys/%u
@@ -103,9 +90,7 @@ Match Group sftponly
 gerard@sftpserver:~$ sudo service ssh restart
 gerard@sftpserver:~$
 </code></pre>
-
 <p>Nos cargamos la carpeta <code>.ssh</code> del usuario <strong>bob</strong> y la ponemos en <code>/srv/sshkeys/bob</code>:</p>
-
 <pre><code class="language-bash">gerard@sftpserver:~$ ls -la /home/bob/
 total 12
 drwxr-xr-x 3 root root 4096 jul 19 08:46 .
@@ -115,9 +100,7 @@ gerard@sftpserver:~$ cat /srv/sshkeys/bob
 ssh-rsa ...
 gerard@sftpserver:~$
 </code></pre>
-
 <p>Y sin sorpresas, la mecánica no cambia nada, solo que en este caso, el usuario no tiene el fichero <code>authorized_keys</code> a tiro, y por lo tanto, no puede liarla.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ sftp -i id_bob bob@sftpserver
 Connected to sftpserver.
 sftp&gt; ls -la
@@ -126,7 +109,6 @@ drwxr-xr-x    3 0        0            4096 Jul 19 06:46 ..
 drwxr-xr-x    2 1001     1001         4096 Jul 18 15:38 archives
 sftp&gt;
 </code></pre>
-
 <p>Y con esto nos ahorramos problemas futuros del tipo &ldquo;he borrado la carpeta <code>.ssh</code>&rdquo;.</p>
 
 <div id="disqus_thread"></div>

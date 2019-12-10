@@ -53,29 +53,19 @@
 </p>
 
 <p>Muchos de nosotros tenemos un servidor en casa o en algún <em>hosting</em>. Como no tenemos mucho tráfico y cada servidor tiene un coste, acabamos llenándolo con un conjunto de servicios bastante grande. Esto supone un problema para actualizar el sistema operativo, suponiendo que los servicios no se molesten entre sí.</p>
-
 <p>En estos casos podemos valernos de <strong>docker</strong> (o de cualquier otro sistema de contenedores) para aislar cada servicio en su propio contenedor y para facilitar su portabilidad hacia un nuevo servidor. Con un poco de habilidad con reglas de <em>networking</em>, podemos hacer esta transición sin cortes y poco a poco.</p>
-
 <p>El truco es utilizar el concepto <strong>fachada</strong>, es decir, nuestro servidor es solo la fachada de cada una de nuestros contenedores. Estos exponen su servicio como un puerto en la máquina <em>host</em> y así parece que el <em>host</em> es un único servidor. Este <em>host</em> también nos puede servir para albergar los <em>host volumes</em> y para hacer tareas de mantenimiento tales como <em>backups</em> o <em>logrotate</em>.</p>
-
-<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
-
+<h2>Un ejemplo práctico</h2>
 <p>Supongamos que queremos un servidor casero con 3 servicios:</p>
-
 <ul>
 <li>Un servidor <strong>mariadb</strong> y su interfaz de administración web <strong>adminer</strong></li>
 <li>Un servidor de <strong>mongodb</strong></li>
 <li>Un servidor web <strong>nginx</strong></li>
 </ul>
-
 <p>En vez de instalarlo todo en nuestro servidor, vamos a aplicar la técnica antes descrita, de mapear en los puertos oficiales los puertos de los contenedores que ejecutan los servicios. Para simplificar el artículo, vamos a utilizar las imágenes oficiales en <em>DockerHub</em>.</p>
-
 <p>Para su fácil lanzamiento, vamos a usar <strong>docker-compose</strong>, que nos simplifica bastante la línea de comandos, ocultando en el fichero <em>docker-compose.yml</em> cosas como las variables de entorno, el mapeo de puertos o los volúmenes.</p>
-
-<h3 id="mariadb-y-adminer">MariaDB y Adminer</h3>
-
+<h3>MariaDB y Adminer</h3>
 <p>Necesitaremos un <em>docker-compose.yml</em> para levantar los contenedores de <strong>mariadb</strong> y <strong>adminer</strong>. En el caso de <strong>mariadb</strong>, tiene una parte de datos persistentes, que vamos a dejar como un <em>host volume</em> local.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/homeserver$ tree mariadb/
 mariadb/
 ├── data
@@ -107,11 +97,8 @@ Creating mariadb
 Creating adminer
 gerard@aldebaran:~/docker/homeserver$ 
 </code></pre>
-
-<h3 id="mongodb">MongoDB</h3>
-
+<h3>MongoDB</h3>
 <p>De forma análoga, vamos a usar un <em>docker-compose.yml</em>, mapeando el puerto de <strong>mongodb</strong> y su carpeta de datos en el <em>host</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/homeserver$ tree mongodb/
 mongodb/
 ├── data
@@ -134,11 +121,8 @@ Creating network &quot;mongodb_default&quot; with the default driver
 Creating mongodb
 gerard@aldebaran:~/docker/homeserver$ 
 </code></pre>
-
-<h3 id="nginx">Nginx</h3>
-
+<h3>Nginx</h3>
 <p>Y volvemos a repetir el proceso; un <em>docker-compose.yml</em>, un puerto mapeado, y un <em>host volume</em> para albergar el contenido web.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/homeserver$ tree nginx/
 nginx/
 ├── www
@@ -162,11 +146,8 @@ Creating network &quot;nginx_default&quot; with the default driver
 Creating nginx
 gerard@aldebaran:~/docker/homeserver$ 
 </code></pre>
-
-<h3 id="el-resultado">El resultado</h3>
-
+<h3>El resultado</h3>
 <p>Si miramos los puertos abiertos en nuestro servidor, podemos ver fácilmente que responde los 4 puertos que suministran los servicios antes citados, y nada nos impide seguir creando servicios para ofrecer más puertos en nuestro servidor.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/homeserver$ netstat -lnt
 Active Internet connections (only servers)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State      
@@ -176,9 +157,7 @@ tcp6       0      0 :::80                   :::*                    LISTEN
 tcp6       0      0 :::8080                 :::*                    LISTEN     
 gerard@aldebaran:~/docker/homeserver$ 
 </code></pre>
-
 <p>En caso de querer actualizar el sistema operativo base, solo tenemos que crear un nuevo servidor y levantar los contenedores de servicio, uno por uno; si usamos algún elemento de red como un <em>firewall</em>, podemos desviar tráfico sin que se note, hasta que estemos preparados para reemplazar el servidor viejo con el nuevo.</p>
-
 <p>Al tratarse de contenedores individuales, lo que pase en un contendedor no va a interferir en lo que pase en otro, ganando así el concepto de aislamiento, pudiendo convivir varias versiones de un mismo <em>software</em> o diversos servicios que ofrezcan el mismo protocolo. solo hay que tener en cuenta que los puertos mapeados en el <em>host</em> deben ser únicos.</p>
 
 <div id="disqus_thread"></div>

@@ -53,25 +53,17 @@
 </p>
 
 <p>Cuando eres un usuario medio no te complicas; particionas tu disco, a menudo usando un sistema de particionado guiado e instalas tu sistema operativo favorito. El problema es cuando las particiones se te quedan cortas. Para estos casos, se inventó una tecnología llamada <em>logical volume manager</em>, usando sus siglas: <strong>LVM</strong>.</p>
-
 <p>LVM es una implementación de un administrador de volúmenes lógicos para el kernel Linux. Se escribió originalmente en 1998 por Heinz Mauelshagen, que se basó en el administrador de volúmenes de Veritas usado en sistemas HP-UX.</p>
-
 <p>Lo que hay que saber es que las &ldquo;particiones&rdquo; son ahora <em>logical volumes</em>, que son particiones de un <em>volume group</em>. A su vez, este <em>volume group</em> es una agrupación de discos físicos, <em>physical volume</em> en el argot de <strong>LVM</strong>.</p>
-
 <p>La ventaja de <strong>LVM</strong> es que podemos redimensionar nuestros <em>logical volumes</em> (siempre que el sistema de ficheros lo permita) y que podemos añadir y quitar <em>physical volumes</em> a nuestros <em>volume groups</em>, a efectos de incrementar su espacio disponible.</p>
-
 <p>Usos frecuentes para <strong>LVM</strong>:</p>
-
 <ul>
 <li>Dimensionado de discos en caliente</li>
 <li>Creación de particiones de espacio limitado</li>
 <li>Capacidad para crear <em>snapshots point-in-time</em></li>
 </ul>
-
-<h2 id="un-ejemplo">Un ejemplo</h2>
-
+<h2>Un ejemplo</h2>
 <p>Partimos de una máquina virtual con cualquier distribución <em>Linux</em>, por ejemplo <em>Debian</em>, que dispone de 2 discos adicionales dedicados para <strong>LVM</strong>. Con uno bastaría, pero ya pongo los dos para tenerlo hecho cuando el tutorial avance.</p>
-
 <pre><code class="language-bash">root@server:~# fdisk -l /dev/sdb
 
 Disco /dev/sdb: 8 GiB, 8589934592 bytes, 16777216 sectores
@@ -86,11 +78,8 @@ Tamaño de sector (lógico/físico): 512 bytes / 512 bytes
 Tamaño de E/S (mínimo/óptimo): 512 bytes / 512 bytes
 root@server:~# 
 </code></pre>
-
 <p>Los discos que forman un <em>volume group</em> no necesitan tener el mismo tamaño; así que con uno de 8 GB y otro de 4 GB tendremos bastante.</p>
-
 <p>Nos aseguramos que tenemos el paquete <strong>lvm2</strong> instalado, y si no lo estuviera, lo instalamos.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install lvm2
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias       
@@ -105,39 +94,29 @@ Se utilizarán 3.898 kB de espacio de disco adicional después de esta operació
 ...
 root@server:~# 
 </code></pre>
-
 <p>Vamos a crear un <em>volume group</em> con 1 solo disco. Así que primero vamos a preparar <em>/dev/sdb</em> como <em>physical volume</em>.</p>
-
 <pre><code class="language-bash">root@server:~# pvcreate /dev/sdb 
   Physical volume &quot;/dev/sdb&quot; successfully created
 root@server:~# 
 </code></pre>
-
 <p>Y ahora creamos un <em>volume group</em> a partir del nuevo <em>physical volume</em></p>
-
 <pre><code class="language-bash">root@server:~# vgcreate vg1 /dev/sdb 
   /proc/devices: No entry for device-mapper found
   Volume group &quot;vg1&quot; successfully created
 root@server:~# 
 </code></pre>
-
 <p>Vemos que tenemos un <em>volume group</em> llamado <strong>vg1</strong> y que dispone de 8 GB, todos ellos libres.</p>
-
 <pre><code class="language-bash">root@server:~# vgs
   VG   #PV #LV #SN Attr   VSize VFree
   vg1    1   0   0 wz--n- 8,00g 8,00g
 root@server:~# 
 </code></pre>
-
 <p>Nos gustaría que nuestros usuarios tuvieran una partición dedicada, así quedarán limitados en el espacio que pueden usar, sin molestar el resto del sistema operativo. En el argot de <strong>LVM</strong> se trata de un <em>logical volume</em>. Lo creamos, por ejemplo de 5 GB:</p>
-
 <pre><code class="language-bash">root@server:~# lvcreate vg1 -L 5G -n users
   Logical volume &quot;users&quot; created
 root@server:~# 
 </code></pre>
-
 <p>Miramos la salida de los comandos <strong>lvs</strong>, <strong>vgs</strong> y <strong>pvs</strong>: sin sorpresas. Tenemos un <em>logical volume</em> de 5 GB, al <em>volume group</em> le quedan 3 GB igual que al <em>physical volume</em> subyacente.</p>
-
 <pre><code class="language-bash">root@server:~# lvs
   LV    VG   Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
   users vg1  -wi-a----- 5,00g                                                    
@@ -149,9 +128,7 @@ root@server:~# pvs
   /dev/sdb   vg1  lvm2 a--  8,00g 3,00g
 root@server:~# 
 </code></pre>
-
 <p>Sabiendo que ahora tenemos un dispositivo nuevo de 5 GB en <em>/dev/vg1-users</em>, lo formateamos y lo montamos como cualquier otra partición.</p>
-
 <pre><code class="language-bash">root@server:~# mkfs.ext4 /dev/mapper/vg1-users 
 mke2fs 1.42.12 (29-Aug-2014)
 Se está creando El sistema de ficheros con 1310720 4k bloques y 327680 nodos-i
@@ -174,20 +151,15 @@ S.ficheros            Tamaño Usados  Disp Uso% Montado en
 /dev/mapper/vg1-users   4,8G    10M  4,8G   1% /home
 root@server:~# 
 </code></pre>
-
 <p>Tal como pasa el tiempo, vemos que los 5 GB de los usuarios se nos quedan cortos y decidimos que necesitan 10 GB. Como el <em>volume group</em> no tiene 5 GB mas, hay que ampliarlo.</p>
-
 <p>Así pues, ponemos otro disco en la máquina, lo preparamos como <em>physical volume</em> y lo asignamos al <em>volume group</em>.</p>
-
 <pre><code class="language-bash">root@server:~# pvcreate /dev/sdc
   Physical volume &quot;/dev/sdc&quot; successfully created
 root@server:~# vgextend vg1 /dev/sdc
   Volume group &quot;vg1&quot; successfully extended
 root@server:~# 
 </code></pre>
-
 <p>Así nos queda el <em>volume group</em>: tiene 12 GB y se compone de dos <em>physical volumes</em>, uno de 8 GB y el otro de 4 GB, aunque para nosotros, el <em>volume group</em> es una masa uniforme de información, sin importar en que disco cae.</p>
-
 <pre><code class="language-bash">root@server:~# vgs
   VG   #PV #LV #SN Attr   VSize  VFree
   vg1    2   1   0 wz--n- 11,99g 6,99g
@@ -197,9 +169,7 @@ root@server:~# pvs
   /dev/sdc   vg1  lvm2 a--  4,00g 4,00g
 root@server:~# 
 </code></pre>
-
 <p>Ya estamos en disposición de reclamar los 10 GB que necesitamos, así que <strong>extendemos</strong> el <em>logical volume</em>.</p>
-
 <pre><code class="language-bash">root@server:~# lvs
   LV    VG   Attr       LSize Pool Origin Data%  Meta%  Move Log Cpy%Sync Convert
   users vg1  -wi-ao---- 5,00g                                                    
@@ -211,26 +181,20 @@ root@server:~# lvs
   users vg1  -wi-ao---- 10,00g                                                    
 root@server:~# 
 </code></pre>
-
 <p>Como curiosidad, se han absorbido 2 GB adicionales de cada <em>physical volume</em>.</p>
-
 <pre><code>root@server:~# pvs
   PV         VG   Fmt  Attr PSize PFree
   /dev/sdb   vg1  lvm2 a--  8,00g    0 
   /dev/sdc   vg1  lvm2 a--  4,00g 1,99g
 root@server:~# 
 </code></pre>
-
 <p>Y un último detalle: a pesar de que la nueva &ldquo;partición&rdquo; dispone de 10 GB, el sistema de fichero subyacente no lo sabe, y solo tiene <em>inodos</em> para indexar 5 GB de datos.</p>
-
 <pre><code class="language-bash">root@server:~# df -h /home/
 S.ficheros            Tamaño Usados  Disp Uso% Montado en
 /dev/mapper/vg1-users   4,8G    10M  4,8G   1% /home
 root@server:~# 
 </code></pre>
-
 <p>Por suerte para nosotros, el sistema de ficheros usado es <em>ext4</em>, que nos permite redimensionarlo.</p>
-
 <pre><code class="language-bash">root@server:~# resize2fs /dev/mapper/vg1-users 
 resize2fs 1.42.12 (29-Aug-2014)
 El sistema de ficheros de /dev/mapper/vg1-users está montado en /home; hace falta cambiar el tamaño en línea
@@ -239,15 +203,12 @@ The filesystem on /dev/mapper/vg1-users is now 2621440 (4k) blocks long.
 
 root@server:~# 
 </code></pre>
-
 <p>Y con esto, el sistema de ficheros de <em>/home</em> ya tiene el nuevo tamaño disponible y listo para usar:</p>
-
 <pre><code class="language-bash">root@server:~# df -h /home/
 S.ficheros            Tamaño Usados  Disp Uso% Montado en
 /dev/mapper/vg1-users   9,8G    12M  9,7G   1% /home
 root@server:~# 
 </code></pre>
-
 <p>Y con esto queda listo. Para hacer el montaje permanente, basta con añadir la línea adecuada a <em>/etc/fstab</em>.</p>
 
 <div id="disqus_thread"></div>

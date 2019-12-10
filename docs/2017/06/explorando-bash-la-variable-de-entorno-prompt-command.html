@@ -53,21 +53,14 @@
 </p>
 
 <p>Los <em>gurús</em> del terminal ya conocemos muchas de las virtudes de <strong>bash</strong>. Sin embargo, es una utilidad muy grande y no es raro que cada vez que busquemos encontremos cosas nuevas. Esta vez, y casi por curiosidad, encontré una variable llamada <strong>PROMPT_COMMAND</strong>, que aunque no es conocida, es muy útil.</p>
-
 <p>El cometido de esta variable de entorno es el de ejecutar un comando de <strong>bash</strong> antes de pintar el símbolo de sistema, según <a href="http://www.tldp.org/HOWTO/Bash-Prompt-HOWTO/x264.html">la documentación</a>.</p>
-
 <blockquote>
 <p>Bash provides an environment variable called PROMPT_COMMAND. The contents of this variable are executed as a regular Bash command just before Bash displays a prompt.</p>
 </blockquote>
-
 <p>No parece muy impresionante a simple vista, pero con algunas ideas adecuadas nos puede quitar mucho trabajo, automatizando aquellas tareas que hacemos cuando entramos en la carpeta, con vistas a trabajar en ella.</p>
-
 <p><strong>NOTA</strong>: En todos los ejemplos vamos a definir la variable <strong>PROMPT_COMMAND</strong> en el fichero <em>.bashrc</em>, para que se haga automáticamente. Para que se active, hace falta hacer un <em>source</em> del fichero o abrir de nuevo el terminal; no siempre se menciona en los ejemplos.</p>
-
-<h2 id="un-comando-informativo-e-incondicional">Un comando informativo e incondicional</h2>
-
+<h2>Un comando informativo e incondicional</h2>
 <p>¿Que hay mas útil que saber la hora del día sin tener que salir del terminal? Podemos poner una función que nos informe de la hora cada vez que pintemos el símbolo del sistema. Luego enchufamos esta función en la variable de entorno, y cada vez que lo pinte, tenemos un bonito reloj.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat .bashrc 
 ...
 prompt_command() {
@@ -77,18 +70,13 @@ prompt_command() {
 export PROMPT_COMMAND=prompt_command
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Solo hace falta abrir de nuevo el terminal, o hacer un <em>source</em> del fichero <em>.bashrc</em>. La siguiente vez que pinte un <em>prompt</em>, ejecutará antes nuestra función; de hecho lo va a ejecutar tan pronto como acabe el comando <em>source</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ source .bashrc
 Current time: 2017-01-13 10:27:11
 gerard@aldebaran:~$ 
 </code></pre>
-
-<h2 id="un-conjunto-de-instrucciones-por-carpeta">Un conjunto de instrucciones por carpeta</h2>
-
+<h2>Un conjunto de instrucciones por carpeta</h2>
 <p>Supongamos que cada vez que entremos en una carpeta queremos ejecutar un conjunto distinto de comandos. Solo necesitamos que cada carpeta defina su propio <em>script</em> para ejecutar. Nuestra función va a darse cuenta de que ese <em>script</em> existe, y lo va a ejecutar automáticamente en caso afirmativo.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat .bashrc 
 ...
 prompt_command() {
@@ -97,9 +85,7 @@ prompt_command() {
 export PROMPT_COMMAND=prompt_command
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Des esta forma, cada carpeta que tenga un <em>script</em> llamado <em>.prompt_command.sh</em> conseguirá que sea ejecutado cada vez que se dibuje el <em>prompt</em>. Lo que haga el <em>script</em> ya es un tema de preferencia personal.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cd projects/
 gerard@aldebaran:~$ cat sandbox/.prompt_command.sh
 #!/bin/bash
@@ -109,25 +95,17 @@ gerard@aldebaran:~/projects$ cd sandbox/
 Hello world
 gerard@aldebaran:~/projects/sandbox$ 
 </code></pre>
-
 <p>Es importante ver que solo ha saltado el mensaje informativo en la carpeta <em>sandbox</em>. De hecho, cada comando que ejecutemos en ella va a disparar el comando. Añadid lógica extra para evitar ejecuciones inútiles.</p>
-
-<h2 id="creación-y-activado-automático-de-virtualenvs-de-python">Creación y activado automático de <em>virtualenvs</em> de python</h2>
-
+<h2>Creación y activado automático de <em>virtualenvs</em> de python</h2>
 <p>Este es el <em>script</em> que más trabajo me ahorra. Cuando trabajo con <strong>python</strong> suelo hacerlo siempre con <em>virtualenv</em>, y con la variable <strong>PYTHONDONTWRITEBYTECODE</strong>, para ahorrarme los molestos ficheros <em>.pyc</em>.</p>
-
 <p>La idea es que activar y desactivar el <em>virtualenv</em> es tedioso, y me gustaría que se activara automáticamente si la carpeta lo tiene, para desactivarlo al salir de la carpeta, aunque sin desactivarlo en las carpetas subordinadas. Como plus, cuando se active el <em>virtualenv</em>, también puedo hacer que se defina la variable de entorno y que se creen los <em>virtualenvs</em> de forma automática si no estuvieran creados.</p>
-
 <p>Para ello, me basta con una convención simple:</p>
-
 <ul>
 <li>Una carpeta con un fichero <em>requirements.txt</em> debería tener un <em>virtualenv</em> llamado <em>.venv</em> en la misma carpeta, con las dependencias instaladas.</li>
 <li>Una carpeta que tenga una carpeta llamada <em>.venv</em> asume que es un <em>virtualenv</em> y lo activa, si no estuviera ya activado.</li>
 <li>En caso de no haber una carpeta <em>.venv</em> pero hubiera un <em>virtualenv</em> activo, solo se desactivaría si la nueva carpeta no está dentro de la que contenga el <em>virtualenv</em> activado.</li>
 </ul>
-
 <p><strong>TRUCO</strong>: Un <em>virtualenv</em> define una variable de entorno <strong>VIRTUAL_ENV</strong> con el <em>path</em> que lo contiene. El resto es una simple comparación de <em>substrings</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat .bashrc 
 ...
 prompt_command() {
@@ -152,17 +130,13 @@ prompt_command() {
 export PROMPT_COMMAND=prompt_command
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Y con esto ya nos funciona el montaje. Asumamos que tenemos un fichero <em>requirements.txt</em> en la carpeta <em>sandbox</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cd projects/
 gerard@aldebaran:~/projects$ cat sandbox/requirements.txt 
 Django==1.10.5
 gerard@aldebaran:~/projects$ 
 </code></pre>
-
 <p>Solo necesitamos entrar en ella para que se ejecute nuestra función; como hay un <em>requirements.txt</em> y no hay un <em>.venv</em>, lo crea, instalando en él las dependencias contenidas en el fichero <em>requirements.txt</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects$ cd sandbox/
 New python executable in /home/gerard/projects/sandbox/.venv/bin/python
 Installing setuptools, pip, wheel...done.
@@ -172,15 +146,12 @@ Installing collected packages: Django
 Successfully installed Django-1.10.5
 (.venv) gerard@aldebaran:~/projects/sandbox$ 
 </code></pre>
-
 <p>Ahora ya tenemos en <em>virtualenv</em> activado, hasta salir de la carpeta. Si volvemos a entrar, solo lo acitva, sin reinstalarlo. Al entrar en una subcarpeta, no lo desactiva.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/sandbox$ cd ..
 gerard@aldebaran:~/projects$ cd sandbox/
 (.venv) gerard@aldebaran:~/projects/sandbox$ cd folder/
 (.venv) gerard@aldebaran:~/projects/sandbox/folder$ 
 </code></pre>
-
 <p>Y con esto me evito tener que ir preocupándome de los <em>virtualenvs</em> y de los fichero <em>.pyc</em>. Muy útil y muy productivo.</p>
 
 <div id="disqus_thread"></div>

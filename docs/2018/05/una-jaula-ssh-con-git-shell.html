@@ -53,35 +53,22 @@
 </p>
 
 <p>El otro día recibí una petición en el trabajo por parte de un cliente: poder ejecutar algunas operaciones por SSH en nuestro servidor. Solo de pensar en montar una jaula SSH con los binarios y sus librerías ya se me hizo cuesta arriba, y por eso lo hice con <strong>git-shell</strong>.</p>
-
 <p>No he encontrado por internet nadie que haya hecho algo similar, así que lo he puesto por escrito en este artículo. Se trata de utilizar el <em>shell</em> restringido <strong>git-shell</strong> para que el usuario solo pueda utilizar los <em>scripts</em> o binarios presentes en la carpeta <code>~/git-shell-commands/</code>.</p>
-
 <p>Por defecto, <strong>git-shell</strong> solo acepta las operaciones necesarias para trabajar remotamente con repositorios <em>git</em>. Esto se puede leer en <a href="https://git-scm.com/docs/git-shell">la documentación</a>:</p>
-
 <blockquote>
 <p>Call the corresponding server-side command to support the client’s git push, git fetch, or git archive &ndash;remote request.</p>
 </blockquote>
-
 <p>Sin embargo, ante la presencia de una carpeta <code>~/git-shell-commands/</code> también nos añade los <em>scripts</em> y binarios de la misma al conjunto de operaciones que podemos ejecutar.</p>
-
 <blockquote>
 <p>If a ~/git-shell-commands directory is present, git shell will also handle other, custom commands by running &ldquo;git-shell-commands/<command> <arguments>&rdquo; from the user’s home directory.</p>
 </blockquote>
-
 <p>Esto está pensado para operaciones administrativas como crear, borrar y modificar los repositorios alojados. Sin embargo, podemos utilizarlo para limitar los comandos que un usuario puede ejecutar, sean o no de <em>git</em>.</p>
-
 <p>Por supuesto, el soporte a operaciones remotas de <em>git</em> no nos molesta; al no haber repositorios, estas operaciones van a fallar de todas formas. Así pues, vamos a centrarnos en nuestras propias operaciones.</p>
-
-<h2 id="un-ejemplo-simple">Un ejemplo simple</h2>
-
+<h2>Un ejemplo simple</h2>
 <p>Supongamos que tenemos un servidor con SSH, al que vamos a llamar <em>server</em>. Para la demostración, se va a tratar de un servidor <strong>Alpine Linux</strong>, aunque esto no es relevante.</p>
-
 <p><strong>NOTA</strong>: A menos que se diga lo contrario, todos los comandos se ejecutan con <em>root</em>, aunque podéis usar <em>sudo</em> con el mismo efecto.</p>
-
 <p><strong>AVISO</strong>: Las sesiones de SSH a <em>server</em> responden con el nombre <em>localhost</em>. Esto es debido a que el servidor es un contenedor <strong>docker</strong> con el puerto 22 mapeado al puerto 22 del servidor <em>sirius</em>; al ser un ejemplo, prefiero no virtualizar máquinas nuevas.</p>
-
 <p>Para disponer del binario <strong>git-shell</strong>, necesitamos el paquete <strong>git</strong> instalado. Si no lo tenéis hecho, es el mejor momento para hacerlo.</p>
-
 <pre><code class="language-bash">server:~# apk add --no-cache git
 fetch http://dl-cdn.alpinelinux.org/alpine/v3.7/main/x86_64/APKINDEX.tar.gz
 fetch http://dl-cdn.alpinelinux.org/alpine/v3.7/community/x86_64/APKINDEX.tar.gz
@@ -96,17 +83,13 @@ Executing ca-certificates-20171114-r0.trigger
 OK: 20 MiB in 20 packages
 server:~# 
 </code></pre>
-
 <p>Vamos a crear un usuario para que nuestro cliente pueda entrar por SSH; nada nuevo por el momento, con la excepción de que vamos a indicar como su <em>shell</em> el mismo <strong>git-shell</strong>.</p>
-
 <pre><code class="language-bash">server:~# adduser -D customer -s /usr/bin/git-shell
 server:~# echo &quot;customer:s3cr3t&quot; | chpasswd
 chpasswd: password for 'customer' changed
 server:~# 
 </code></pre>
-
 <p>Si el usuario intenta entrar en este punto, solo podrá utilizar las operaciones <em>git</em> remotas, siendo imposible que lance una sesión interactiva, o comandos sueltos por SSH.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ ssh customer@server
 Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
 customer@localhost's password: 
@@ -125,24 +108,19 @@ hint: ~/git-shell-commands should exist and have read and execute access.
 Connection to localhost closed.
 gerard@sirius:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@sirius:~$ ssh customer@server hostname
 Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
 customer@localhost's password: 
 fatal: unrecognized command 'hostname'
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Para activar <strong>git-shell</strong>, hay que crear la carpeta indicada <code>~/git-shell-commands</code>; los comandos que se pueden ejecutar son los que van dentro de la misma.</p>
-
 <pre><code class="language-bash">server:~# cd /home/customer/
 server:/home/customer# mkdir git-shell-commands
 server:/home/customer# chown customer:customer git-shell-commands/
 server:/home/customer# 
 </code></pre>
-
 <p>Con esto el usuario ya va a poder entrar en una sesión interactiva, aunque no dispone de comandos para ejecutar:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ ssh customer@server
 Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
 customer@localhost's password: 
@@ -160,11 +138,8 @@ git&gt; hostname
 unrecognized command 'hostname'
 git&gt; 
 </code></pre>
-
 <p>Solo nos faltaría rellenar la carpeta con los binarios o <em>scripts</em> que este usuario pueda necesitar. Como punto interesante, si existe un <code>help</code>, este se va a ejecutar al entrar por SSH de forma automática, y nos puede servir para que el usuario sepa que hacer (o para que pida ayuda en el medio de una sesión).</p>
-
 <p>El resto de comandos son libres y podéis hacer literalmente lo que queráis, con el entendido que estos <em>scripts</em> pueden invocar todos los comandos del sistema de forma normal, pero  el usuario solo va a poder ejecutar estos <em>scripts</em>. Veamos un ejemplo:</p>
-
 <pre><code class="language-bash">server:/home/customer# cd git-shell-commands/
 server:/home/customer/git-shell-commands# cat help 
 #!/bin/sh
@@ -187,9 +162,7 @@ server:/home/customer/git-shell-commands# chown customer:customer *
 server:/home/customer/git-shell-commands# chmod 755 *
 server:/home/customer/git-shell-commands# 
 </code></pre>
-
 <p>Ahora es el momento de que el usuario se conecte y vea el resultado:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ ssh customer@server
 Warning: Permanently added 'localhost' (ECDSA) to the list of known hosts.
 customer@localhost's password: 
@@ -220,7 +193,6 @@ git&gt; exit
 Connection to localhost closed.
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y de esta forma, el usuario queda limitado, pero con estos 3 comandos posibles.</p>
 
 <div id="disqus_thread"></div>

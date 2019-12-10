@@ -53,15 +53,10 @@
 </p>
 
 <p>Hoy quiero presentar una distribución de <em>linux</em> que es una maravilla; es rápida, altamente actualizada, y lo último en innovación. Se trata de una distribución tipo <em>rolling</em>, con una filosofía de última tendencia que es especialmente útil en un entorno no tan crítico, como puede ser una máquina tipo escritorio.</p>
-
 <p>La parte menos buena, a parte del hecho de que los paquetes cambian mucho y pueden entrar algunos con algún fallo menor, es que la instalación no cuenta con un <em>wizard</em>, aunque en el proceso podemos aprender como funciona fácilmente.</p>
-
 <p>Vamos a seguir bastante el procedimiento oficial de instalación, que podemos encontrar <a href="https://wiki.archlinux.org/index.php/installation_guide">aquí</a>. Este procedimiento de instalación lo vamos a lanzar sobre una máquina virtual, con un disco de 4gb y 512mb de memoria, aunque sin entorno gráfico necesita muchos menos recursos.</p>
-
 <p>El primer paso consiste en descargar una imagen de instalación que vamos a introducir (o montar, que es el equivalente en <em>VirtualBox</em>), previo encendido de la máquina.</p>
-
 <p>Un detalle es que la imagen de instalación lleva instalado un servidor <em>SSH</em>, que nos viene muy bien para capturar la salida de los diferentes comandos. Solo hay que levantar el servicio y darle una contraseña al usuario <strong>root</strong>.</p>
-
 <pre><code class="language-bash">root@archiso ~ # passwd
 Enter new UNIX password:
 Retype new UNIX password:
@@ -69,23 +64,15 @@ passwd: password updated successfully
 root@archiso ~ # systemctl start sshd
 root@archiso ~ # 
 </code></pre>
-
 <p>A partir de aquí, sigo el procedimiento desde una sesión <em>SSH</em>.</p>
-
-<h2 id="preparaciones">Preparaciones</h2>
-
+<h2>Preparaciones</h2>
 <p>Aunque esto no es necesario, es recomendable usar nuestro teclado favorito. No hay nada mas frustrante que darle a una tecla pensando en un carácter y que te salga otro. Así que vamos a cargar la distribución de teclado que nos parezca.</p>
-
 <pre><code class="language-bash">root@archiso ~ # loadkeys es
 root@archiso ~ #
 </code></pre>
-
 <p>El siguiente paso consiste en configurar la red que se va a usar durante la instalación. Por defecto viene preparado para usar <em>DHCP</em>, que nos vale, así que la dejamos como está.</p>
-
 <p>Uno de los pasos mas importantes de toda la instalación es el particionado. Hacerlo mal en este punto es un problema futuro, y de hecho, mucha gente utiliza tecnologías como <em>LVM</em> que les dan cierta flexibilidad para cambios futuros.</p>
-
 <p>En nuestro caso concreto, se trata de una máquina virtual que no va a durar mucho, así que nos basta con hacerlo a un nivel aceptable. Como disponemos de un solo disco de 4gb, vamos a particionarlo en dos, uno para el disco local, y otro para la partición de <em>swap</em> (una pequeña, que no nos sobra el disco). Personalmente he usado <strong>cfdisk</strong>, que me parece mas intuitivo que el resto, dejando las particiones de esta manera:</p>
-
 <pre><code class="language-bash">root@archiso ~ # fdisk -l
 Disk /dev/sda: 4 GiB, 4294967296 bytes, 8388608 sectors
 Units: sectors of 1 * 512 = 512 bytes
@@ -105,9 +92,7 @@ Sector size (logical/physical): 512 bytes / 512 bytes
 I/O size (minimum/optimal): 512 bytes / 512 bytes
 root@archiso ~ #
 </code></pre>
-
 <p>Siguiendo el manual, necesitamos formatear las particiones según las funciones que van a desempeñar, montando los discos en <em>/mnt/</em> y sus subcarpetas. Como no tenemos particiones para <em>/home/</em>, <em>/var/</em> y <em>/tmp/</em>, con montar la primera nos basta.</p>
-
 <pre><code class="language-bash">root@archiso ~ # mkfs.ext4 /dev/sda1
 mke2fs 1.42.13 (17-May-2015)
 Creating filesystem with 914432 4k blocks and 228928 inodes
@@ -123,31 +108,23 @@ Writing superblocks and filesystem accounting information: done
 root@archiso ~ # mount /dev/sda1 /mnt
 root@archiso ~ #
 </code></pre>
-
 <p>Preparamos la partición de <em>swap</em> y la dejamos activada. Eso nos permitirá utilizarla durante la instalación, y que esta la detecte automáticamente para crear el fichero <em>/etc/fstab</em>.</p>
-
 <pre><code class="language-bash">root@archiso ~ # mkswap /dev/sda2
 Setting up swapspace version 1, size = 523 MiB (548380672 bytes)
 no label, UUID=85cf7f55-cd3c-4002-9729-2d89ebadf942
 root@archiso ~ # swapon /dev/sda2
 root@archiso ~ #
 </code></pre>
-
 <p>Podemos verificar que está activada con un comando <strong>free</strong>, por ejemplo.</p>
-
 <pre><code class="language-bash">root@archiso ~ # free -m
               total        used        free      shared  buff/cache   available
 Mem:            498          20         252          44         224         413
 Swap:           522           0         522
 root@archiso ~ #
 </code></pre>
-
-<h2 id="instalación-y-configuración">Instalación y configuración</h2>
-
+<h2>Instalación y configuración</h2>
 <p>El primer paso es descargar todos los paquetes de internet, mediante el comando <strong>pacstrap</strong>. Para ello se recomienda editar el fichero <em>/etc/pacman.d/mirrorlist</em> para utilizar los <em>mirrors</em> que nos convengan, y que serán también los que use el sistema instalado. Como se pueden cambiar a <em>posteriori</em> y los que hay me parecen bien, no vamos a cambiar nada.</p>
-
 <p>Así pues, lanzamos el <strong>pacstrap</strong> tal como indica el manual de instalación.</p>
-
 <pre><code class="language-bash">root@archiso ~ # pacstrap /mnt base
 ==&gt; Creating install root at /mnt
 ==&gt; Installing packages to /mnt
@@ -174,21 +151,15 @@ Total Installed Size:  572.80 MiB
 pacstrap /mnt base  51.53s user 124.01s system 39% cpu 7:25.44 total
 root@archiso ~ #
 </code></pre>
-
 <p>Y con todos los paquetes instalados, empezaremos a configurar el sistema. El primer candidato es generar el fichero <em>/etc/fstab</em>. Existe un <em>script</em> llamado <strong>genfstab</strong> que va a generar un fichero <em>fstab</em> basado en lo que tenemos ahora mismo activado.</p>
-
 <pre><code class="language-bash">root@archiso ~ # genfstab -p /mnt &gt;&gt; /mnt/etc/fstab
 root@archiso ~ #
 </code></pre>
-
 <p>El resto de configuración se hace en un entorno <strong>chroot</strong> sobre la carpeta instalada, que es donde tenemos montado el disco raíz. La imagen de instalación nos ofrece un <em>script</em> de <strong>chroot</strong> que ya se encarga de montar los sistemas de ficheros especiales como <em>/proc/</em>, <em>/dev/</em> o <em>/sys/</em>.</p>
-
 <pre><code class="language-bash">root@archiso ~ # arch-chroot /mnt
 sh-4.3#
 </code></pre>
-
 <p>Los siguientes pasos son burocráticos y los mismos que en otras distribuciones: poner un nombre a la máquina, configurar el huso horario, generar <em>locales</em> y configurar el teclado a nivel permanente.</p>
-
 <pre><code class="language-bash">sh-4.3# echo &quot;archlinux&quot; &gt; /etc/hostname
 sh-4.3# ln -s /usr/share/zoneinfo/Europe/Madrid /etc/localtime
 sh-4.3# grep -v ^# /etc/locale.gen
@@ -201,9 +172,7 @@ sh-4.3# echo &quot;LANG=es_ES.UTF-8&quot; &gt; /etc/locale.conf
 sh-4.3# echo &quot;KEYMAP=es&quot; &gt; /etc/vconsole.conf
 sh-4.3#
 </code></pre>
-
 <p>El siguiente paso no es fácil, y aunque puede hacerse a <em>posteriori</em>, merece la pena prestar atención. Para la configuración de red, necesitamos activar el servicio <em>systemd-networkd</em>, que va a leer los ficheros de configuración en <em>/etc/systemd/network/</em> para levantar las interfaces con los parámetros adecuados.</p>
-
 <pre><code class="language-bash">sh-4.3# systemctl enable systemd-networkd
 Created symlink /etc/systemd/system/multi-user.target.wants/systemd-networkd.service → /usr/lib/systemd/system/systemd-networkd.service.
 Created symlink /etc/systemd/system/sockets.target.wants/systemd-networkd.socket → /usr/lib/systemd/system/systemd-networkd.socket.
@@ -215,18 +184,14 @@ Name=enp0s3
 DHCP=ipv4
 sh-4.3#
 </code></pre>
-
 <p>En caso de querer obtener los <em>DNS</em> de forma automática necesitamos habilitar el servicio <em>systemd-resolved</em>, que nos va a dejar un <em>resolv.conf</em> en <em>/run/systemd/resolve/</em>; con un simple enlace va a ser suficiente.</p>
-
 <pre><code class="language-bash">sh-4.3# systemctl enable systemd-resolved
 Created symlink /etc/systemd/system/multi-user.target.wants/systemd-resolved.service → /usr/lib/systemd/system/systemd-resolved.service.
 sh-4.3# rm /etc/resolv.conf
 sh-4.3# ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 sh-4.3#
 </code></pre>
-
 <p>Generamos un <em>initramfs</em> para que en el siguiente arranque podamos disfrutar de todo lo nuevo que hemos configurado.</p>
-
 <pre><code class="language-bash">sh-4.3# mkinitcpio -p linux
 ==&gt; Building image from preset: /etc/mkinitcpio.d/linux.preset: 'default'
   -&gt; -k /boot/vmlinuz-linux -c /etc/mkinitcpio.conf -g /boot/initramfs-linux.img
@@ -259,22 +224,16 @@ sh-4.3#
 ==&gt; Image generation successful
 sh-4.3#
 </code></pre>
-
 <p>Y finalmente nos podemos dedicar a administrar usuarios y sus contraseñas. Como esto también se puede hacer a <em>posteriori</em>, voy solo a desbloquear al usuario <strong>root</strong>, dándole una <em>password</em> adecuada.</p>
-
 <pre><code class="language-bash">sh-4.3# passwd
 Enter new UNIX password:
 Retype new UNIX password:
 passwd: password updated successfully
 sh-4.3#
 </code></pre>
-
 <p>Y con esto tenemos el disco raíz perfectamente preparado, y un <em>kernel</em> listo para el arranque.</p>
-
-<h2 id="instalando-el-bootloader">Instalando el bootloader</h2>
-
+<h2>Instalando el bootloader</h2>
 <p>Para que el <em>kernel</em>, <em>initrd</em> y el disco puedan funcionar, es necesario que el disco tenga algún tipo de estructura que le indique como hacerlo. El nombre genérico para esta pieza de <em>software</em> es <em>bootloader</em>. De todos los que hay (que no son pocos), vamos a usar un viejo amigo: <strong>GRUB</strong>.</p>
-
 <pre><code class="language-bash">sh-4.3# pacman -S grub
 resolving dependencies...
 looking for conflicting packages...
@@ -288,9 +247,7 @@ Total Installed Size:  25.27 MiB
 ...
 sh-4.3#
 </code></pre>
-
 <p>Instalamos el código de <em>boot</em> en el <em>MBR</em> con la herramienta que <strong>GRUB</strong> nos ofrece, siguiendo el manual.</p>
-
 <pre><code class="language-bash">sh-4.3# grub-install --target=i386-pc /dev/sda
 Installing for i386-pc platform.
 grub-install: warning: this GPT partition label contains no BIOS Boot Partition; embedding won't be possible.
@@ -298,9 +255,7 @@ grub-install: warning: Embedding is not possible.  GRUB can only be installed in
 grub-install: error: will not proceed with blocklists.
 sh-4.3#
 </code></pre>
-
 <p>En este caso ha fallado, pero siguiendo el manual de instalación, eso se corrige mediante el uso del <em>flag</em> <strong>&ndash;force</strong>.</p>
-
 <pre><code class="language-bash">sh-4.3# grub-install --target=i386-pc /dev/sda --force
 Installing for i386-pc platform.
 grub-install: warning: this GPT partition label contains no BIOS Boot Partition; embedding won't be possible.
@@ -308,9 +263,7 @@ grub-install: warning: Embedding is not possible.  GRUB can only be installed in
 Installation finished. No error reported.
 sh-4.3#
 </code></pre>
-
 <p>Como ya hemos conseguido instalar <strong>GRUB</strong> de forma exitosa, nos queda generar un fichero de configuración del <em>bootloader</em>, tal como dice el manual de instalación.</p>
-
 <pre><code class="language-bash">sh-4.3# grub-mkconfig -o /boot/grub/grub.cfg
 Generating grub configuration file ...
 Found linux image: /boot/vmlinuz-linux
@@ -319,20 +272,15 @@ Found fallback initramfs image: /boot/initramfs-linux-fallback.img
 done
 sh-4.3#
 </code></pre>
-
 <p>Y con esto queda una instalación básica. Solo nos queda salir del entorno enjaulado, apagar la máquina, quitar el disco de instalación y encender.</p>
-
 <pre><code class="language-bash">sh-4.3# exit
 exit
 arch-chroot /mnt  10.17s user 19.71s system 3% cpu 14:10.46 total
 root has logged on pts/1 from 10.0.2.2.
 root@archiso ~ # reboot
 </code></pre>
-
-<h2 id="resultado-final">Resultado final</h2>
-
+<h2>Resultado final</h2>
 <p>Tras actualizar y limpiar caché de paquetes, vemos que tenemos una distribución minimalista con 743mb de disco ocupados y 10mb de memoria.</p>
-
 <pre><code class="language-bash">[root@archlinux ~]# df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
 dev              247M      0  247M   0% /dev
@@ -348,7 +296,6 @@ Mem:            498          10         441           0          46         470
 Swap:           522           0         522
 [root@archlinux ~]#
 </code></pre>
-
 <p>A partir de aquí podemos construir a base de instalar aquellos paquetes que necesitemos (escritorio, servicios, &hellip;); sin embargo, esto queda para futuros artículos.</p>
 
 <div id="disqus_thread"></div>

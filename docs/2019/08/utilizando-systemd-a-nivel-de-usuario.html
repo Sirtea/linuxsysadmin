@@ -53,19 +53,12 @@
 </p>
 
 <p>Es bastante habitual que en mi tiempo de ocio me dedique a trabajar con HTML y CSS por interés personal. A veces puedo hacer pruebas de concepto estáticas y otras puedo utilizar un generador estático; en todos los casos necesito de un servidor web levantado solo para mi sesión personal.</p>
-
 <p>Es fácil abrir una pestaña en tu emulador de terminal y ejecutar uno de esos servidores estáticos hechos en <strong>go</strong>, pero me gustaría que se levantaran solos por comodidad, y por lo tanto, debo delegar la tarea a <strong>systemd</strong>, que me ofrece exactamente eso: servicios que se ejecutan durante la sesión de un usuario y acaban tan pronto como este la cierra.</p>
-
 <p>El punto interesante de utilizar <strong>systemd</strong> a nivel de usuario es que se puede configurar todo en la carpeta personal de un usuario sin permisos especiales, siempre respetando las otras restricciones que ello supone (no acceso a carpetas de sistema, límite de rango de puertos, etc). Lo más alucinante es que no se necesita ser un gran experto para hacerlo y cada usuario puede encargarse de ello&hellip;</p>
-
 <p><strong>TRUCO</strong>: Otros usos posibles para &ldquo;servicios de usuario&rdquo; podrían ser levantar bases de datos, túneles SSH o contenedores <strong>docker</strong>; las posibilidades son infinitas.</p>
-
-<h2 id="un-servidor-web-de-ejemplo">Un servidor web de ejemplo</h2>
-
+<h2>Un servidor web de ejemplo</h2>
 <p>El servidor web que vamos a utilizar en este ejemplo es <a href="https://github.com/m3ng9i/ran">Ran</a>. Como buen servicio escrito en <strong>go</strong> es un binario estático que puedo dejar &ldquo;tirado por ahí&rdquo;. Como ejecuto con un usuario normal, tengo la limitación de no poder abrir puertos por debajo de 1024, así que lo suelo levantar en el puerto de HTTP alternativo (es el puerto TCP 8080).</p>
-
 <p>Ponemos el binario en la carpeta <code>~/bin/</code> y creamos una carpeta con nuestro contenido web, por ejemplo, en <code>~/www/</code>. Para la demostración nos basta un fichero <code>index.html</code> y una página de error <code>404.html</code>.</p>
-
 <pre><code class="language-bash">gerard@eden:~$ tree
 .
 ├── bin
@@ -77,25 +70,19 @@
 2 directories, 3 files
 gerard@eden:~$ 
 </code></pre>
-
 <p>Considerando la estructura de carpetas de mi carpeta personal, el comando a ejecutar es trivial:</p>
-
 <pre><code class="language-bash">gerard@eden:~$ ran -r www/ -404=/404.html
 2019-07-04 10:58:52.983882 INFO: System: Ran is running on HTTP port 8080
 ...
 </code></pre>
-
 <p>Vamos a delegar este servicio a <strong>systemd</strong>, para liberar el terminal, simplificar el comando para levantar el servicio (pensad en un servicio de muchos parámetros) y posiblemente activar el inicio automático.</p>
-
 <p>Para ello necesitamos una <em>unit</em> de <strong>systemd</strong>, como ya explicamos en <a href="/2015/11/escribiendo-units-en-systemd.html">otro artículo</a>. La novedad es que se va a alojar en la carpeta personal de usuario, concretamente en <code>~/.config/systemd/user/</code>; la otra novedad es que se va a manejar con el <em>flag</em> <code>--user</code>.</p>
-
 <pre><code class="language-bash">gerard@eden:~$ mkdir -vp ~/.config/systemd/user
 mkdir: se ha creado el directorio '/home/gerard/.config'
 mkdir: se ha creado el directorio '/home/gerard/.config/systemd'
 mkdir: se ha creado el directorio '/home/gerard/.config/systemd/user'
 gerard@eden:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@eden:~$ cat .config/systemd/user/ran.service 
 [Unit]
 Description=Ran: a simple static web server written in Go
@@ -107,9 +94,7 @@ ExecStart=/home/gerard/bin/ran -r /home/gerard/www/ -404=/404.html
 WantedBy=default.target
 gerard@eden:~$ 
 </code></pre>
-
 <p>Ahora ya podemos comprobar que <strong>systemd</strong> &ldquo;conoce&rdquo; nuestro nuevo servicio y podemos cargarlo:</p>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user list-unit-files
 UNIT FILE                    STATE   
 ...
@@ -117,19 +102,14 @@ ran.service                  disabled
 ...
 gerard@eden:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user daemon-reload
 gerard@eden:~$ 
 </code></pre>
-
 <p>El servicio se levanta y se para con <strong>systemd</strong>, con el <em>flag</em> <code>--user</code>, y podemos ver que está levantado con un simple <code>ps</code> o accediendo en el navegador a <code>http://localhost:8080/</code>.</p>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user start ran
 gerard@eden:~$ 
 </code></pre>
-
 <p>Y si quisiéramos su estado o pararlo:</p>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user status ran
 ● ran.service - Ran: a simple static web server written in Go
    Loaded: loaded (/home/gerard/.config/systemd/user/ran.service; disabled; vendor preset: enabled)
@@ -139,23 +119,18 @@ gerard@eden:~$
            └─545 /home/gerard/bin/ran -r /home/gerard/www/ -404=/404.html
 gerard@eden:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user stop ran
 gerard@eden:~$ 
 </code></pre>
-
 <p>Para que el servicio se levante automáticamente cuando hagamos <em>login</em> en el sistema, basta con activarlo; lo contrario se haría desactivándolo:</p>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user enable ran
 Created symlink /home/gerard/.config/systemd/user/default.target.wants/ran.service → /home/gerard/.config/systemd/user/ran.service.
 gerard@eden:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@eden:~$ systemctl --user disable ran
 Removed /home/gerard/.config/systemd/user/default.target.wants/ran.service.
 gerard@eden:~$ 
 </code></pre>
-
 <p><strong>WARNING</strong>: La sesión <strong>systemd</strong> de usuario se acaba cuando este cierra la sesión. Todos los servicios de usuario que estuvieran ejecutándose se paran en ese momento.</p>
 
 <div id="disqus_thread"></div>

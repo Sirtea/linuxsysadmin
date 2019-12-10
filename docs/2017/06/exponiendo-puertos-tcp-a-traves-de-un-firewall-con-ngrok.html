@@ -53,24 +53,16 @@
 </p>
 
 <p>A veces tenemos la necesidad de exponer en internet algún puerto TCP de forma temporal, para hacer <em>testing</em> o alguna <em>demo</em>. Ya vimos como podemos hacer esto mediante <a href="/2016/10/creando-tuneles-con-ssh.html">túneles SSH reversos</a>, aunque no siempre disponemos de un dominio público. En estos casos podemos usar un sistema de túneles llamado <strong>ngrok</strong>.</p>
-
 <p>El concepto es muy simple, tal como nos indican en su <a href="https://ngrok.com/">página web</a>:</p>
-
 <blockquote>
-<p><strong>Secure tunnels to localhost</strong><br />
+<p><strong>Secure tunnels to localhost</strong><br>
 I want to expose a local server behind a NAT or firewall to the internet.</p>
 </blockquote>
-
 <p>Se trata de un binario que abre un túnel reverso SSH contra una de sus servidores, exponiendo dicho puerto mediante un dominio de la forma <code>&lt;dominio.ngrok.io&gt;</code>. Algunas de las funcionalidades requieren una versión de pago, pero la versión gratuita nos puede sacar de algún apuro.</p>
-
-<h2 id="el-escenario-de-partida">El escenario de partida</h2>
-
+<h2>El escenario de partida</h2>
 <p>Vamos a suponer que estamos desarrollando una página web y nos interesa que un cliente nos valide que es lo que quiere, o puede ser que pidamos opiniones de terceros.</p>
-
 <p>Vamos a suponer que es una página HTML simple, aunque podría ser un puerto levantado por nuestro <em>framework</em> favorito. Para servirlo vamos a utilizar un servidor web simple, por ejemplo, el <em>SimpleHTTPServer</em> de <strong>python</strong>.</p>
-
 <p>No vamos a desarrollar una página muy completa, solo lo justo para que se vea el ejemplo. Este es nuestro código HTML:</p>
-
 <pre><code class="language-bash">gerard@sodium:~/web$ cat index.html 
 &lt;!doctype html&gt;
 
@@ -92,9 +84,7 @@ I want to expose a local server behind a NAT or firewall to the internet.</p>
 &lt;/html&gt;
 gerard@sodium:~/web$ 
 </code></pre>
-
 <p>Por poner algo con un poco de color, utilizaremos una hoja de estilo CSS:</p>
-
 <pre><code class="language-bash">gerard@sodium:~/web$ cat style.css 
 body {
   width: 800px;
@@ -106,21 +96,14 @@ h1 { text-align: center; }
 p { text-align: justify; }
 gerard@sodium:~/web$ 
 </code></pre>
-
 <p>Y como necesitamos servirla, ponemos un servidor cualquiera para servirlo, por ejemplo, el de <strong>python</strong>.</p>
-
 <pre><code class="language-bash">gerard@sodium:~/web$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 </code></pre>
-
 <p>En este punto podemos ver la página web localmente en <code>http://localhost:8000/</code>, aunque por estar detrás de un <em>firewall</em>, nadie más allá del <em>firewall</em> puede verlo.</p>
-
-<h2 id="instalando-ngrok">Instalando ngrok</h2>
-
+<h2>Instalando ngrok</h2>
 <p>En este caso, el título no es muy acertado, ya que <strong>no se instala</strong>. Se trata de un solo binario compilado estáticamente, que solo tiene que ser descargado y descomprimido.</p>
-
 <p>Siguiendo la página de descarga, he elegido el binario que funciona para mi sistema operativo y arquitectura, que para variar es un sistema <em>Linux</em> de 64 bits. Podemos descargar el enlace directamente en el navegador o con una comando adecuado.</p>
-
 <pre><code class="language-bash">gerard@sodium:~$ wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
 converted 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip' (ANSI_X3.4-1968) -&gt; 'https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip' (UTF-8)
 --2016-12-27 17:18:09--  https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
@@ -136,21 +119,15 @@ ngrok-stable-linux-amd64 100%[====================================&gt;]   4.90M 
 
 gerard@sodium:~$ 
 </code></pre>
-
 <p>Se trata de un fichero <em>.zip</em> que tenemos que descomprimir para obtener el binario.</p>
-
 <pre><code class="language-bash">gerard@sodium:~$ unzip ngrok-stable-linux-amd64.zip 
 Archive:  ngrok-stable-linux-amd64.zip
   inflating: ngrok                   
 gerard@sodium:~$ 
 </code></pre>
-
 <p>En este punto podemos dejar el nuevo binario en alguna carpeta que esté en el <em>PATH</em> del sistema, aunque no es necesario. En este caso no voy a hacerlo por brevedad.</p>
-
-<h2 id="levantando-el-túnel">Levantando el túnel</h2>
-
+<h2>Levantando el túnel</h2>
 <p>El binario tiene muchas opciones, algunas funcionan en la versión gratuita, pero otras no. Podemos ver lo que tenemos disponible invocando el binario sin más parámetros.</p>
-
 <pre><code class="language-bash">gerard@sodium:~$ ./ngrok 
 NAME:
    ngrok - tunnel local ports to public URLs and inspect traffic
@@ -188,14 +165,10 @@ COMMANDS:
    help		Shows a list of commands or help for one command
 gerard@sodium:~$ 
 </code></pre>
-
 <p>Es muy interesante la opción del puerto TCP, pero esta es de pago. Sin embargo, la opción de un túnel HTTP es gratuita. Es la que vamos a usar.</p>
-
 <pre><code class="language-bash">gerard@sodium:~$ ./ngrok http 8000
 </code></pre>
-
 <p>El comando nos va a pintar una página de estado, con alguna información útil para saber a donde tenemos que apuntar el navegador remoto.</p>
-
 <pre><code class="language-bash">ngrok by @inconshreveable                                                           (Ctrl+C to quit)
                                                                                                     
 Session Status                online                                                                
@@ -208,14 +181,11 @@ Forwarding                    https://54b3ca80.ngrok.io -&gt; localhost:8000
 Connections                   ttl     opn     rt1     rt5     p50     p90                           
                               0       0       0.00    0.00    0.00    0.00                          
 </code></pre>
-
 <p>De esta salida podemos sacar dos datos importantes:</p>
-
 <ul>
 <li>La página pública referente a nuestro túnel, <code>http://54b3ca80.ngrok.io/</code></li>
 <li>Una página local de estadísticas local en <code>http://localhost:4040/</code></li>
 </ul>
-
 <p>La página de estado es una gran utilidad; es en donde podemos ver información de estado y un análisis exhaustivo de las peticiones recibidas. Vale la pena darle un vistazo.</p>
 
 <div id="disqus_thread"></div>

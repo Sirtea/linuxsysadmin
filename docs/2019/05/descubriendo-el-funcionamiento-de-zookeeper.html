@@ -53,17 +53,11 @@
 </p>
 
 <p>Tras probar algunos servicios pensados para la nube o para contenedores, veo que algunos de ellos dependen de una pieza central llamada <strong>zookeeper</strong>. Como soy una persona curiosa, he decidido dedicar un artículo a entender como funciona este servicio, que se limita a guardar cosas de forma distribuida y redundante.</p>
-
 <p>Se puede ver como un servicio en donde se guardan cadenas de <em>bytes</em> en nodos, que a su vez se organizan jerárquicamente como si de una estructura de ficheros <em>Unix</em> se tratara. De esta manera, podríamos tener en el <em>path</em> <code>/myservice/config</code> una cadena de carácteres, que podría ser la representación de dicha configuración, por ejemplo codificada en JSON.</p>
-
 <p>La principal gracia de esta aproximación es la de tener una configuración centralizada para un conjunto de servicios que la recuperan de <strong>zookeeper</strong>. Otra de las ventajas de este servicio es que está pensado para funcionar de forma distribuida y altamente redundante, con lo que la alta disponibilidad está garantizada.</p>
-
-<h2 id="levantando-una-instancia-de-zookeeper">Levantando una instancia de zookeeper</h2>
-
+<h2>Levantando una instancia de zookeeper</h2>
 <p>Levantar <strong>zookeeper</strong> es tan fácil como descargar la distribución, enchufar una configuración y ejecutar un <em>script</em>; más información para este método en <a href="https://zookeeper.apache.org/doc/r3.4.14/zookeeperStarted.html">la documentación</a>. Entre los requisitos se encuentra <strong>java</strong> pero no estaba dispuesto a ensuciar mi máquina con instalaciones de <em>software</em> que no voy a utilizar casi nunca.</p>
-
 <p>Por ello, voy a echar mano de <strong>docker</strong>, que lo tiene todo listo en una imagen oficial y me permite levantar un entorno de &ldquo;usar y tirar&rdquo;, que bien me vale para la demostración. La imagen la podéis encontrar en <a href="https://hub.docker.com/_/zookeeper/">DockerHub</a>. Para el caso de una instancia sola, no hay mucha complicación; he usado <strong>docker-compose</strong> por comodidad.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ cat docker-compose.yml 
 version: '3'
 services:
@@ -75,27 +69,20 @@ services:
       - &quot;2181:2181&quot;
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>Levantamos con el comando habitual y, como hemos publicado el puerto, ya podremos trabajar como si lo tuviéramos localmente.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ docker-compose up -d
 Creating network &quot;zktest_default&quot; with the default driver
 Creating zookeeper ... done
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
-<h2 id="trasteando-con-zookeeper">Trasteando con zookeeper</h2>
-
+<h2>Trasteando con zookeeper</h2>
 <p>Como tantos otros <em>datastores</em>, <strong>zookeeper</strong> viene con un cliente de terminal, que nos permite probar, administrar y ver lo que va pasando en nuestros datos; solo hay que ejecutar <code>zkCli.sh</code>. Tened en cuenta este cliente está instalado dentro del contenedor.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ docker exec -ti zookeeper zkCli.sh
 Connecting to localhost:2181
 ...
 [zk: localhost:2181(CONNECTED) 0] 
 </code></pre>
-
 <p>El sistema de <em>namespaces</em> de <strong>zookeeper</strong> funciona como un sistema de ficheros tipo <em>unix</em> o <em>linux</em>, con el carácter <code>/</code> para separar nodos (equivalente de ficheros y carpetas). Cada uno de estos nodos, tiene un contenido (puede que vacío) y una lista de hijos (posiblemente también vacía). En este aspecto se comporta más como una estructura arborescente.</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 1] ls /
 [zookeeper]
 [zk: localhost:2181(CONNECTED) 2] ls /zookeeper
@@ -104,16 +91,12 @@ Connecting to localhost:2181
 []
 [zk: localhost:2181(CONNECTED) 4] 
 </code></pre>
-
 <p>Los contenidos en <strong>zookeeper</strong> están pensados para ser leídos muchas veces, pero es algo más lento para escribir o modificar el contenido. Esto no nos evita que debamos crear antes algo de contenido.</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 12] create /hello &quot;world&quot;
 Created /hello
 [zk: localhost:2181(CONNECTED) 13] 
 </code></pre>
-
 <p>Podemos ver el resultado listando los hijos del nodo raíz, y podemos consultar el contenido que acabámos de crear:</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 13] ls /
 [hello, zookeeper]
 [zk: localhost:2181(CONNECTED) 14] get /hello
@@ -131,39 +114,30 @@ dataLength = 5
 numChildren = 0
 [zk: localhost:2181(CONNECTED) 15] 
 </code></pre>
-
 <p>De la misma forma, podemos borrar el nodo de forma fácil:</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 15] delete /hello
 [zk: localhost:2181(CONNECTED) 16] ls /
 [zookeeper]
 [zk: localhost:2181(CONNECTED) 17] 
 </code></pre>
-
 <p>Nada nos impide crear nodos dentro de otros nodos, así que vamos a crear una configuración para un servicio hipotético. El valor de la configuración es solamente una cadena de texto, y podemos poner lo que queramos; tanto su modificación como su interpretación dependen de la aplicación que los use. Para hacer el ejemplo legible y pequeño, voy a poner un objeto JSON.</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 20] create /myapp &quot;&quot;
 Created /myapp
 [zk: localhost:2181(CONNECTED) 21] ls /
 [zookeeper, myapp]
 [zk: localhost:2181(CONNECTED) 22] 
 </code></pre>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 23] create /myapp/config '{&quot;DB_URL&quot;: &quot;mongodb://mongoserver:27017/myapp&quot;}'
 Created /myapp/config
 [zk: localhost:2181(CONNECTED) 24] 
 </code></pre>
-
 <p>Podemos verificar que dicha configuración se ha guardado:</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 25] get /myapp/config
 {&quot;DB_URL&quot;: &quot;mongodb://mongoserver:27017/myapp&quot;}
 ...  
 [zk: localhost:2181(CONNECTED) 26] 
 </code></pre>
-
 <p>De hecho, nada nos impide crear más nodos colgando de <code>/myapp</code>, demostrando así que esto es un árbol de datos.</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 26] create /myapp/loglevel &quot;WARN&quot;
 Created /myapp/loglevel
 [zk: localhost:2181(CONNECTED) 27] get /myapp/loglevel
@@ -171,27 +145,20 @@ WARN
 ...  
 [zk: localhost:2181(CONNECTED) 28] 
 </code></pre>
-
 <p>También podemos ver que el nodo <code>/myapp</code> tiene subnodos, pero estos ya no tienen nada más colgando, como evidencia la lista vacía de hijos:</p>
-
 <pre><code class="language-bash">[zk: localhost:2181(CONNECTED) 29] ls /myapp
 [config, loglevel]
 [zk: localhost:2181(CONNECTED) 30] ls /myapp/loglevel
 []
 [zk: localhost:2181(CONNECTED) 31] 
 </code></pre>
-
-<h1 id="utilizando-zookeeper-en-nuestras-aplicaciones">Utilizando zookeeper en nuestras aplicaciones</h1>
-
+<h1>Utilizando zookeeper en nuestras aplicaciones</h1>
 <p>Hay conectores de <strong>zookeeper</strong> para una gran mayoría de lenguajes de programación, y todos ellos se basan en las mismas primitivas que hemos visto antes. Por ejemplo, en <strong>python</strong> podemos usar <strong>kazoo</strong>.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/zktest$ cat requirements.txt 
 kazoo==2.6.1
 (env) gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>En cuanto a las operaciones, son las mismas, y solo cambia la sintaxis para adaptarse al lenguaje usado. Adicionalmente, podemos conectar a un servicio remoto, que con el cliente terminal no vimos porque lo hace por defecto al servidor local.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/zktest$ cat test.py 
 from kazoo.client import KazooClient
 
@@ -225,9 +192,7 @@ for path in ('/myapi/database/host', '/myapi/database/port', '/myapi/database', 
 zk.stop()
 (env) gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>Estas operaciones han quedado englobadas en el objeto cliente, que se ha inicializado al principio del <em>script</em> y se ha cerrado antes de acabar. Podemos ver el resultado de la ejecución, aunque en este caso ha optado por trocear la configuración en más subnodos, para no tener que serializarla.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/zktest$ python3 test.py 
 ['zookeeper']
 ['zookeeper', 'myapi']
@@ -236,13 +201,9 @@ zk.stop()
 b'mongoserver' b'27017'
 (env) gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
-<h2 id="clusterización-de-zookeeper">Clusterización de zookeeper</h2>
-
+<h2>Clusterización de zookeeper</h2>
 <p>Como se ha comentado al principio del artículo, una de las virtudes de este servicio es su redundancia, que nos ofrece una alta disponibilidad casi total. Para ello, <strong>zookeeper</strong> implementa un modelo de replicación distribuida de las operaciones, en donde la modificación real se autoriza mediante el <em>quorum</em> de <strong>más de la mitad</strong> de las instancias.</p>
-
 <p>Si hacéis las cuentas, lo ideal es poner un número impar de instancias y a la vez, más de una para garantizar algún punto de fallo. Para no alargar el artículo innecesáriamente, voy a poner 3 instancias; nuevamente la imagen oficial nos ofrece una forma fácil de sobreescribir la configuración de cada intancia, usando variables de entorno.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ cat docker-compose.cluster.yml 
 version: '3'
 services:
@@ -269,9 +230,7 @@ services:
       ZOO_SERVERS: server.1=zookeeper1:2888:3888 server.2=zookeeper2:2888:3888 server.3=zookeeper3:2888:3888
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>Solo hay que levantar el <em>cluster</em> usando <strong>docker-compose</strong>, de acuerdo al procedimiento habitual:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ docker-compose -f docker-compose.cluster.yml up -d
 Creating network &quot;zktest_default&quot; with the default driver
 Creating zookeeper2 ... done
@@ -279,9 +238,7 @@ Creating zookeeper3 ... done
 Creating zookeeper1 ... done
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>En la parte de verificación del funcionamiento del <em>cluster</em> se nota algo más de dejadez por parte de los desarrolladores; la información ofrecida es mínima e insuficiente. En este caso nos conformaremos en saber que hay un <em>leader</em> y que los otros dos son <em>followers</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ docker exec -ti zookeeper1 zkServer.sh status
 ZooKeeper JMX enabled by default
 Using config: /conf/zoo.cfg
@@ -296,16 +253,13 @@ Using config: /conf/zoo.cfg
 Mode: leader
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>Para los que necesitan una prueba más del funcionamiento del <em>cluster</em>, podemos mirar los logs, viendo lo que ha pasado con el proceso de elección de <em>leader</em>. Con <strong>docker-compose</strong>, esta operación es trivial:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/zktest$ docker-compose -f docker-compose.cluster.yml logs | grep ELECTION
 zookeeper3    | 2019-04-10 12:05:20,713 [myid:3] - INFO  [QuorumPeer[myid=3]/0.0.0.0:2181:Leader@380] - LEADING - LEADER ELECTION TOOK - 255
 zookeeper2    | 2019-04-10 12:05:20,709 [myid:2] - INFO  [QuorumPeer[myid=2]/0.0.0.0:2181:Follower@65] - FOLLOWING - LEADER ELECTION TOOK - 988
 zookeeper1    | 2019-04-10 12:05:20,712 [myid:1] - INFO  [QuorumPeer[myid=1]/0.0.0.0:2181:Follower@65] - FOLLOWING - LEADER ELECTION TOOK - 310
 gerard@atlantis:~/workspace/zktest$ 
 </code></pre>
-
 <p>Y con esto hemos montado nuestro <em>cluster</em>. Lo único que hay que tener en cuenta es la modificación de las cadenas de conexión al <strong>zookeeper</strong> para que conozca a todos los posibles <em>leaders</em>, tal como sea necesario volverlos a elegir. Esto solo debería pasar por caídas, paradas controladas o problemas <em>hardware</em> de los nodos del <em>cluster</em>.</p>
 
 <div id="disqus_thread"></div>

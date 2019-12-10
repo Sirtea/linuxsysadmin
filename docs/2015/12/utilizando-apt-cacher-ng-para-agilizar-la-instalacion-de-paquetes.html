@@ -53,15 +53,10 @@
 </p>
 
 <p>Hace tiempo veo que tras usar muchas maquinas virtuales <em>Debian</em> para el uso diario y para las demostraciones de este blog, el ancho de banda usado para bajar los paquetes se dispara. La mayoría de veces se trata de los mismos paquetes, para instalar las mismas aplicaciones, servicios o actualizaciones.</p>
-
 <p>En el artículo de hoy, voy a enseñar como usar un <em>proxy</em> con una <em>caché</em> para <em>apt-get</em>, llamado <strong>apt-cacher-ng</strong>, de forma que los paquetes son descargados por la primera máquina que los pida, guardados en un servidor local y aprovechados por el resto de máquinas.</p>
-
-<h2 id="preparación-de-las-máquinas">Preparación de las máquinas</h2>
-
+<h2>Preparación de las máquinas</h2>
 <p>Partimos de la máquina habitual, llamada <strong>aptcacher</strong>, siendo esta un contenedor LXC con una <em>Debian Jessie</em> básica, aunque esto se podría haber puesto en una <em>Ubuntu</em> o cualquier otra distribución que funcione con paquetes <em>.deb</em>.</p>
-
 <p>Otras máquinas que vamos a usar son unas máquinas cliente en donde vamos a instalar paquetes cualesquiera para demostrar el funcionamiento, llamadas <strong>client1</strong> y <strong>client2</strong>; estos clientes están en la misma red que la máquina <strong>aptcacher</strong> y tienen conectividad con ella por el puerto <em>TCP</em> 3142.</p>
-
 <pre><code class="language-bash">root@lxc:~# lxc-ls -f
 NAME       STATE    IPV4      IPV6  AUTOSTART  
 ---------------------------------------------
@@ -70,9 +65,7 @@ client1    RUNNING  10.0.0.3  -     YES
 client2    RUNNING  10.0.0.4  -     YES        
 root@lxc:~# 
 </code></pre>
-
 <p>Empezamos instalando el servicio <strong>apt-cacher-ng</strong> en la máquina servidor <strong>aptcacher</strong>:</p>
-
 <pre><code class="language-bash">root@aptcacher:~# apt-get install apt-cacher-ng
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias... Hecho
@@ -86,11 +79,8 @@ Se utilizarán 1.168 kB de espacio de disco adicional después de esta operació
 ...
 root@aptcacher:~# 
 </code></pre>
-
 <p>Las configuraciones que vienen por defecto son bastante adecuadas y no tuve que efectuar ningún cambio.</p>
-
 <p>Por otra parte, hay que configurar las máquinas que se quieran beneficiar de este servidor, añadiendo una línea de configuración en su <strong>apt-get</strong>, por ejemplo, poniendo un fichero adicional en <em>/etc/apt/apt.conf.d/</em></p>
-
 <pre><code class="language-bash">root@aptcacher:~# cat /etc/apt/apt.conf.d/02proxy 
 Acquire::http { Proxy &quot;http://10.0.0.2:3142&quot;; };
 root@aptcacher:~# 
@@ -103,13 +93,9 @@ root@client2:~# cat /etc/apt/apt.conf.d/02proxy
 Acquire::http { Proxy &quot;http://10.0.0.2:3142&quot;; };
 root@client2:~# 
 </code></pre>
-
 <p>Y con esto queda montado todo el sistema.</p>
-
-<h2 id="funcionamiento-de-la-caché">Funcionamiento de la caché</h2>
-
+<h2>Funcionamiento de la caché</h2>
 <p>El funcionamiento es muy simple: basta con instalar en un cliente un paquete, por ejemplo, <em>python</em>.</p>
-
 <pre><code class="language-bash">root@client1:~# apt-get install python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias... Hecho
@@ -127,15 +113,10 @@ Descargados 5.010 kB en 15s (327 kB/s)
 ...
 root@client1:~# 
 </code></pre>
-
 <p>Como estos paquetes no están en la <em>caché</em> del servidor, se han descargado de internet en 15 segundos, de acuerdo a la velocidad de mi conexión de internet y de la velocidad de respuesta de los repositorios elegidos.</p>
-
 <p>Si revisamos la página de estadísticas de <strong>apt-cacher-ng</strong>, disponible en <code>http://aptcacher:3142/acng-report.html</code> podemos ver que se han descargado 4,78mb en 13 paquetes; todos son <strong>miss</strong> de la cache, es decir, se han ido a buscar al repositorio oficial.</p>
-
-<p><img src="/images/apt-cacher-ng-1.jpg" alt="Estadísticas web de apt-cacher" /></p>
-
+<p><img src="/images/apt-cacher-ng-1.jpg" alt="Estadísticas web de apt-cacher"></p>
 <p>Ahora vamos a instalar <em>python</em> en otro de los clientes:</p>
-
 <pre><code class="language-bash">root@client2:~# apt-get install python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias... Hecho
@@ -152,13 +133,9 @@ Se utilizarán 21,3 MB de espacio de disco adicional después de esta operación
 Descargados 5.010 kB en 1s (3.902 kB/s)
 root@client2:~# 
 </code></pre>
-
 <p>Hemos elegido el paquete <em>python</em> para asegurar que ambas máquinas instalan lo mismo; como se puede ver, se ha descargado la misma cantidad de datos, pero en vez de los 15 segundos anteriores, ahora se ha tardado 1 segundo. Eso es porque los paquetes solicitados estaban en el <em>proxy</em>, es decir, en el servidor <strong>aptcacher</strong>.</p>
-
 <p>Podemos ver en la misma página de administración el resultado: ahora hay 13 <strong>hits</strong> adicionales, ya que los paquetes solicitados estaban en local.</p>
-
-<p><img src="/images/apt-cacher-ng-2.jpg" alt="Estadísticas web de apt-cacher" /></p>
-
+<p><img src="/images/apt-cacher-ng-2.jpg" alt="Estadísticas web de apt-cacher"></p>
 <p>De esta forma, si tenemos un elevado número de máquinas del mismo tipo, solo consumiremos el ancho de banda necesario para traerlos de internet <strong>una sola vez</strong>.</p>
 
 <div id="disqus_thread"></div>

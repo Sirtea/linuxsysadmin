@@ -53,7 +53,6 @@
 </p>
 
 <p>A veces nos encontramos que nuestro sistema linux parece tener la memoria <em>virtual</em> ocupada, cuando no tenemos nada de memoria <em>RSS</em>; esto no es un problema, ya que por la forma de funcionar del <em>memory manager</em> de linux, se conserva &ldquo;por si acaso&rdquo; y se libera cuando realmente se necesita.</p>
-
 <pre><code class="language-bash">gerard@desktop:~$ free -m
              total       used       free     shared    buffers     cached
 Mem:          3858       3226        632          0        114       2545
@@ -61,11 +60,8 @@ Mem:          3858       3226        632          0        114       2545
 Swap:         2381          0       2381
 gerard@desktop:~$ 
 </code></pre>
-
 <p>Sin embargo este detalle nos puede resultar molesto y puede que queramos <strong>liberar</strong> esa memoria de verdad, por ejemplo, para comparar memoria real ocupada por el sistema o sencillamente porque así lo queremos.</p>
-
 <p>En este caso no tenemos mas remedio que solicitar el <em>memory manager</em> que la libere, escribiendo en el fichero de control habilitado para ello, de acuerdo a la <a href="https://www.kernel.org/doc/Documentation/sysctl/vm.txt">documentación del <em>kernel</em> de linux</a>.</p>
-
 <pre><code class="language-bash">drop_caches
 
 Writing to this will cause the kernel to drop clean caches, as well as
@@ -85,22 +81,16 @@ To increase the number of objects freed by this operation, the user may run
 number of dirty objects on the system and create more candidates to be
 dropped.
 </code></pre>
-
 <p>Este fichero viene por defecto con permisos de escritura solamente para el usuario <strong>root</strong> y no se puede escribir sin el mismo. Como no queremos trabajar con el usuario <strong>root</strong>, vamos a usar el comando <em>sudo</em> con un usuario normal:</p>
-
 <pre><code class="language-bash">gerard@desktop:~$ sudo bash -c &quot;echo 3 &gt; /proc/sys/vm/drop_caches&quot;
 gerard@desktop:~$ 
 </code></pre>
-
 <p>Alternativamente, podemos utilizar el comando <em>tee</em> para realizar la misma operación, sin el envoltorio de <em>bash</em>:</p>
-
 <pre><code class="language-bash">gerard@desktop:~$ echo 3 | sudo tee /proc/sys/vm/drop_caches
 3
 gerard@desktop:~$ 
 </code></pre>
-
 <p>Y finalmente nuestra memoria queda vacía de todo aquello que no era indispensable para la ejecución del sistema.</p>
-
 <pre><code class="language-bash">gerard@desktop:~$ free -m
              total       used       free     shared    buffers     cached
 Mem:          3858        752       3105          0          2        207
@@ -108,9 +98,7 @@ Mem:          3858        752       3105          0          2        207
 Swap:         2381          0       2381
 gerard@desktop:~$ 
 </code></pre>
-
 <p>¡Acabamos de liberar 2 gigabytes de memoria!</p>
-
 <p><strong>CUIDADO</strong>: Esta operación puede afectar el rendimiento puntual del sistema, ya que en caso de volver a necesitar la información <em>cacheada</em>, deberá volver a recargar la memoria, probablemente desde disco.</p>
 
 <div id="disqus_thread"></div>

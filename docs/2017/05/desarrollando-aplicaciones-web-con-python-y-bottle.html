@@ -53,13 +53,9 @@
 </p>
 
 <p>Ya sabéis que me gusta mucho el lenguaje <strong>python</strong>. Muchos de mis ejemplos y algunas aplicaciones simples no merecen el uso de un <em>framework</em> tan grande como pueda ser <strong>django</strong>. Para estos casos me encantan los <em>microframeworks</em>, y aunque hay varias alternativas disponibles, me gusta especialmente un <em>microframework</em> llamado <strong>bottle</strong>.</p>
-
 <p>Una de las mejores características de este <em>framework</em> es que no es complejo. Ponerse a hacer algo cuesta un tiempo de aprendizaje tendiendo a cero, y <a href="https://bottlepy.org/docs/dev/">la documentación</a> es excelente. Solamente nos oculta la complejidad del protocolo <strong>WSGI</strong>.</p>
-
 <p>Otro punto a favor es la sencillez y simplicidad. No tiene dependencias con ninguna base de datos, motor de plantillas (aunque lleva un motor de plantillas mínimo) o <em>middleware</em> externo. No añade nada que no tenga una especificación formal, y evita protocolos propios (por ejemplo, sesiones), en favor de especificaciones aceptadas (por ejemplo, <em>cookies</em>).</p>
-
-<h2 id="objetos-y-métodos-básicos">Objetos y métodos básicos</h2>
-
+<h2>Objetos y métodos básicos</h2>
 <ul>
 <li><strong>Bottle</strong>: Objeto principal del <em>framework</em>, es una forma de aglutinar el <em>callable wsgi</em> con un conjunto de rutas. Nuestra aplicación va a ser una instancia de este objeto.</li>
 <li><strong>request</strong>: Objeto nos permite acceder a los datos referentes a la petición que nos han hecho. Incluye los parámetros GET, las <em>cookies</em> y cabeceras, entre otras cosas.</li>
@@ -69,18 +65,13 @@
 <li><strong>redirect</strong>: <em>Helper</em> que nos permite devolver una redirección a otra URL en nuestro código.</li>
 <li><strong>abort</strong>: <em>Helper</em> que nos permite devolver estado de error desde nuestro controlador.</li>
 </ul>
-
-<h2 id="una-aplicación-vacía">Una aplicación vacía</h2>
-
+<h2>Una aplicación vacía</h2>
 <p>Vamos a crear una carpeta para contener nuestro proyecto:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects$ mkdir myapp
 gerard@aldebaran:~/projects$ cd myapp/
 gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>Siguiendo las buenas prácticas, vamos a trabajar con <strong>virtualenv</strong>, que nos servirá para poner nuestras librerías, que de momento se limitan al <em>framework</em>. En adelante, es posible poner librerías para acceder a una base de datos, nuevos motores de plantillas y librerías más específicas.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects/myapp$ virtualenv .venv
 New python executable in /home/gerard/projects/myapp/.venv/bin/python
 Installing setuptools, pip, wheel...done.
@@ -91,32 +82,24 @@ Installing collected packages: bottle
 Successfully installed bottle-0.12.13
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>Como queremos poder reproducir nuestro entorno usaremos <em>pip freeze</em> para guardar las dependencias, en vista a poderlas instalar en un futuro entorno real.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ pip freeze &gt; requirements.txt
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>Lo mínimo para ejecutar una aplicación <em>WSGI compilant</em> es un servidor <em>WSGI</em> y la aplicación misma. Una aplicación construida con <strong>bottle</strong> es básicamente una instancia del objeto <em>Bottle</em>, a la que iremos registrando rutas. De momento la dejamos vacía, lo que nos va a responder siempre un error 404.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ cat app.py 
 from bottle import Bottle
 
 app = Bottle()
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>En un entorno real, el servidor a usar sería otro, por ejemplo <strong>apache</strong>, <strong>uwsgi</strong> o <strong>gunicorn</strong>, pero para desarrollar, podemos aprovecharnos del servidor integrado.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ python -m bottle --debug --reload app:app
 Bottle v0.12.13 server starting up (using WSGIRefServer())...
 Listening on http://localhost:8080/
 Hit Ctrl-C to quit.
 </code></pre>
-
 <p>Para nuestra comodidad futura, vamos a poner el comando en un <em>script</em>, en el que podemos definir nuestras propias variables de entorno o aquellas que queramos aplicar estando en nuestro entorno de desarrollo.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ cat server.sh 
 #!/bin/bash
 
@@ -128,13 +111,9 @@ Bottle v0.12.13 server starting up (using WSGIRefServer())...
 Listening on http://localhost:8080/
 Hit Ctrl-C to quit.
 </code></pre>
-
 <p>Y ya podemos dirigirnos a <code>http://localhost:8080/</code> para comprobar un bonito error 404.</p>
-
-<h2 id="registrando-rutas-a-controladores">Registrando rutas a controladores</h2>
-
+<h2>Registrando rutas a controladores</h2>
 <p>La idea es muy simple: se registran rutas a funciones que devuelven la respuesta resultado. Hay varias formas de añadir rutas a nuestra aplicación, pero la que más me gusta es el decorador.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ cat app.py 
 from bottle import Bottle
 
@@ -145,13 +124,9 @@ def home():
     return '&lt;h1&gt;Home page&lt;/h1&gt;'
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>De esta forma, todas las peticiones GET a / van a devolver una página HTML con el contenido retornado. El código de retorno es un 200 y el <em>content-type</em> es <em>text/html</em> por defecto, aunque se puede cambiar con el objeto <em>response</em>.</p>
-
-<h2 id="usando-plantillas-y-segmentos-de-url">Usando plantillas y segmentos de URL</h2>
-
+<h2>Usando plantillas y segmentos de URL</h2>
 <p>No es una buena práctica poner en el controlador la respuesta HTML. Para eso, <strong>bottle</strong> nos ofrece un motor de plantillas propio, y la facilidad de trabajar con otros. También nos permite capturar parte de la URL como parámetros; veamos un ejemplo:</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ cat app.py 
 from bottle import Bottle, view
 
@@ -171,21 +146,13 @@ def hello(name):
 &lt;p&gt;Hola {{ nombre }}&lt;/p&gt;
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>En este caso, todo lo que siga a <em>/hello/</em> en la URL se pasará a la función controlador, como una variable local <em>name</em>. Nuestra función devuelve un contexto, para que el decorador <em>view</em> pueda pintar la plantilla <em>hello</em>, que se encuentra en <em>views/hello.tpl</em>. Las variables disponibles para la plantilla son las claves del diccionario, que van a valer lo que pongamos como valores en el mismo diccionario.</p>
-
 <p>En el caso de hacer una petición a <em>/hello/gerard</em>, la variable local <em>name</em> va a valer &ldquo;gerard&rdquo; y la plantilla va a disponer de una variable <em>nombre</em> que vale también &ldquo;gerard&rdquo;.</p>
-
 <p>Algunas aplicaciones no necesitan plantillas HTML. Por ejemplo una API solo necesitaría convertir una expresión <em>python</em> en su equivalente JSON, mediante una función adecuada, que podemos ver como un motor de plantillas.</p>
-
-<h2 id="modelos-y-respuestas-distintas">Modelos y respuestas distintas</h2>
-
+<h2>Modelos y respuestas distintas</h2>
 <p>No hay ninguna capa de acceso a datos en <strong>bottle</strong>. Si se necesita acceder a datos, se debe usar alguna librería auxiliar; personalmente me encanta <a href="http://mongoengine.org/">mongoengine</a> y <a href="http://docs.peewee-orm.com/en/latest/">peewee</a>. Otra opción es implementar un patrón <a href="https://es.wikipedia.org/wiki/Data_Access_Object">Data Access Object</a>.</p>
-
 <p>Aún así, las buenas prácticas incitan a separar el modelo de los controladores, y eso lo podéis hacer fácilmente relegando las funciones u objetos de datos en un módulo aparte.</p>
-
 <p>Vamos a hacer una ruta para devolver objetos en forma de API con JSON (REST, por supuesto). Así también podemos ver como indicar un <em>content-type</em> distinto.</p>
-
 <pre><code class="language-bash">(.venv) gerard@aldebaran:~/projects/myapp$ cat app.py 
 from bottle import Bottle, view, abort, response
 from json import dumps
@@ -234,9 +201,7 @@ def get_product(id):
 	return None
 (.venv) gerard@aldebaran:~/projects/myapp$ 
 </code></pre>
-
 <p>Y con esto solo nos queda probar las respuestas:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl -i http://localhost:8080/products/1
 HTTP/1.0 200 OK
 ...  
@@ -256,11 +221,8 @@ Content-Type: application/json
 
 gerard@aldebaran:~$ 
 </code></pre>
-
-<h2 id="conclusión">Conclusión</h2>
-
+<h2>Conclusión</h2>
 <p>Siguiendo la documentación y usando librerías varias, se puede tener algo simple en muy poco tiempo. Dada la naturaleza del desarrollo web, los controladores se pueden ir añadiendo a medida que se necesiten. Eso nos da tiempo a descubrir las infinitas posibilidades de este <em>microframework</em>.</p>
-
 <p>Algunas de las operaciones habituales (sesiones, capa de acceso a datos, autenticaciones varias, conectores a terceros, &hellip;) no vienen. Aquellos con más vista de futuro probablemente vais a hacer código para evitar estos pequeños inconvenientes, pero si no lo queréis, <em>python</em> os ofrece muchas más soluciones para vuestro uso y disfrute. Los que disfrutáis con la belleza de lo simple, sed bienvenidos.</p>
 
 <div id="disqus_thread"></div>

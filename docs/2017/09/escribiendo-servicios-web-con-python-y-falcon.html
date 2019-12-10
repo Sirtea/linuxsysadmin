@@ -53,21 +53,13 @@
 </p>
 
 <p>El otro día me vi leyendo artículos sobre arquitecturas basadas en servicios web, especialmente centrados en patrones REST y codificados en JSON. No es la primera vez que hago algo con <em>frameworks</em> no específicos, pero tras buscar un poco por internet, descubrí un <em>framework</em> específico para servicios REST llamado <strong>falcon</strong>.</p>
-
 <p>Se trata de u <em>microframework</em> de diseño simplista, ligero, rápido y sin ninguna magia. Eso nos lleva al punto que me enamoró: no toma ninguna decisión y no obliga a usar ninguna capa de persistencia ni ningún motor de plantillas o serializado.</p>
-
 <p>Desde el punto de vista de rendimiento, está pensado para volar; no incluye nada que no sea específico de servicios web y sabe sacar provecho del <em>hardware</em> moderno, permitiendo miles de peticiones por segundo en un <em>hardware</em> modesto.</p>
-
-<h2 id="una-aplicación-básica">Una aplicación básica</h2>
-
+<h2>Una aplicación básica</h2>
 <p>De forma similar a otros <em>frameworks</em> <strong>python</strong>, nuestra API es una instancia de un objeto que se dedica a despachar rutas a controladores (aunque aquí los llaman <em>resources</em>).</p>
-
 <p>A diferencia de otros <em>frameworks</em>, sin embargo, el registro de <em>resources</em> a rutas es explícita, invocando el método <code>add_route</code> en el objeto API, que es la aplicación que debemos servir.</p>
-
 <p>Los <em>resources</em> registrados en las rutas son simplemente objetos que definen los métodos <code>on_get</code>, <code>on_post</code> y hermanos, que se van a invocar dependiendo de verbo HTTP que nos sea solicitado, con un objeto tipo <em>request</em> y uno tipo <em>response</em>.</p>
-
 <p>Veamos un ejemplo:</p>
-
 <pre><code class="language-bash">(.venv) gerard@sirius:~/projects/webservice$ cat requirements.txt 
 falcon==1.2.0
 (.venv) gerard@sirius:~/projects/webservice$ cat app.py 
@@ -101,15 +93,11 @@ except KeyboardInterrupt:
     print '\nBye!'
 (.venv) gerard@sirius:~/projects/webservice$ 
 </code></pre>
-
 <p>Ejecutamos el servidor de pruebas arriba expuesto para que sirva nuestra API simple:</p>
-
 <pre><code class="language-bash">(.venv) gerard@sirius:~/projects/webservice$ ./server.py 
 Serving on 127.0.0.1:8000...
 </code></pre>
-
 <p>Y solo nos falta hacer alguna petición para ver como funciona:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl -i http://localhost:8000/
 HTTP/1.0 200 OK
 ...  
@@ -120,11 +108,8 @@ gerard@sirius:~$ curl -siX POST http://localhost:8000/ | head -1
 HTTP/1.0 405 Method Not Allowed
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y con esto tenemos una API simple. Lo normal es que los datos salgan de algún tipo de base de datos, pero <strong>falcon</strong> no ofrece soporte para ninguna, con lo que deberíamos usar lo que más nos convenga, por ejemplo <strong>mongodb</strong> con <strong>mongoengine</strong>.</p>
-
 <p>En caso de querer extraer parámetros de la url, podemos registrar la ruta con una URL de la forma <code>/hello/{name}</code>. De esta forma, nuestra función recibiría un parámetro <code>name</code> con el contenido de ese segmento de URL, además de los objetos <em>request</em> y <em>response</em>. Un  ejemplo a continuación:</p>
-
 <pre><code class="language-bash">(.venv) gerard@sirius:~/projects/webservice$ cat app.py 
 import falcon
 import json
@@ -142,15 +127,10 @@ api = falcon.API()
 api.add_route('/hello/{name}', HelloResource())
 (.venv) gerard@sirius:~/projects/webservice$ 
 </code></pre>
-
-<h2 id="hooks">Hooks</h2>
-
+<h2>Hooks</h2>
 <p>Otra funcionalidad muy interesante son los <em>hooks</em>, que son métodos con la forma <code>func(req, resp, resource, params)</code> que se llaman antes o después de atender la función del <em>resource</em> y nos permiten hacer varias cosas; desde añadir código hasta condicionar un método concreto.</p>
-
 <p><strong>AVISO</strong>: Los <em>hooks</em> registrados con <code>falcon.after</code> no disponen del parámetro <code>params</code>.</p>
-
 <p>Veamos un ejemplo, para evitar el código de serialización en cada método:</p>
-
 <pre><code class="language-bash">(.venv) gerard@sirius:~/projects/webservice$ cat app.py 
 import falcon
 import json
@@ -172,7 +152,6 @@ api = falcon.API()
 api.add_route('/hello/{name}', HelloResource())
 (.venv) gerard@sirius:~/projects/webservice$ 
 </code></pre>
-
 <p>Solo nos queda decir que estos <em>hooks</em> se pueden registrar a nivel de método o de <em>resource</em> (aplicaría a todos los métodos del <em>resource</em>). En caso de querer que aplique a toda la aplicación habría que escribir un <em>middleware</em> apropiado.</p>
 
 <div id="disqus_thread"></div>

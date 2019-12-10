@@ -53,37 +53,26 @@
 </p>
 
 <p>Una de las mas importantes funcionalidades de <strong>Docker</strong> son los volúmenes. Estos no son mas que carpetas en nuestro sistema de ficheros y son capaces de sobrevivir al ciclo de vida normal del contenedor. Eso nos permite, entre otras cosas, compartir varios ficheros con otros contenedores o con el <em>host</em>.</p>
-
 <p>Los volúmenes son bastante útiles porque permiten compartirse entre contenedores, o el propio <em>host</em>. Eso nos permite consultar todos los <em>logs</em> cómodamente desde un contenedor dedicado, hacer <em>backups</em> de un contenedor desde otro dedicado, o recuperar esos mismo <em>backups</em> hacia nuestro <em>host</em>.</p>
-
 <p>De hecho, he visto contenedores con la única función de producir ficheros (<em>.tar.gz</em>, <em>.deb</em>, &hellip;) en volúmenes que luego son consumidos por servicios de <em>runtime</em>, por ejemplo un servidor web, un repositorio o simplemente un NFS.</p>
-
 <p>Los volúmenes pueden ser de 3 tipos distintos, y se categorizan según esta lista:</p>
-
 <ul>
 <li>Data volumes
-
 <ul>
 <li>Anonymous data volumes</li>
 <li>Named data volumes</li>
-</ul></li>
+</ul>
+</li>
 <li>Mounted volumes</li>
 </ul>
-
-<h2 id="data-volumes">Data volumes</h2>
-
+<h2>Data volumes</h2>
 <p>Se trata de carpetas que se crean en <em>/var/lib/docker/</em> y que pueden compartirse entre diferentes contenedores.</p>
-
-<h3 id="anonymous-data-volumes">Anonymous data volumes</h3>
-
+<h3>Anonymous data volumes</h3>
 <p>Se crean cuando se levanta un contenedor, mediante el comando <em>docker run</em>, por ejemplo:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ docker run -ti --rm -v /data alpine:3.4 sh
 / # 
 </code></pre>
-
 <p>Esto nos crea un volumen asociado al contenedor creado.</p>
-
 <pre><code class="language-bash">root@sirius:~# docker volume ls
 DRIVER              VOLUME NAME
 local               1b39e6601cd3711c27f3a1a4eb50d82e182151fd14b82048f47b0d50ad22b97a
@@ -96,21 +85,14 @@ root@sirius:~# tree /var/lib/docker/volumes/
 2 directories, 1 file
 root@sirius:~# 
 </code></pre>
-
 <p>A su vez, otro contenedor puede montar los volúmenes de otro contenedor, ya sea porque los creó o porque los ha montado de un tercero.</p>
-
 <pre><code class="language-bash">root@sirius:~# docker run -ti --rm --volumes-from adoring_lovelace alpine:3.4 sh
 / # 
 </code></pre>
-
 <p>Ahora mismo, la carpeta <em>/data/</em> pertenece al primer contendor, pero es la misma para ambos contenedores.</p>
-
 <p><strong>Docker</strong> mantiene una cuenta de los contenedores que están usando un volumen, y estos solo se eliminan cuando el último contenedor que lo usa sale con el parámetro <em>&ndash;rm</em> o si se hace un <em>docker rm -v</em>. En cualquier otro caso, el volumen se queda parasitando, hasta que lo eliminamos manualmente usado <em>docker volume rm</em>.</p>
-
-<h3 id="named-data-volumes">Named data volumes</h3>
-
+<h3>Named data volumes</h3>
 <p>Estos volúmenes no dependen de ningún contenedor concreto, y se pueden montar en cualquier contenedor. Se crean específicamente usando el comando <em>docker volume create</em>, o al ejecutar un contenedor si le damos un nombre en la línea de comandos.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ docker volume create --name vol1
 vol1
 gerard@sirius:~$ docker run -ti --rm -v vol2:/data alpine:3.4 true
@@ -120,9 +102,7 @@ local               vol1
 local               vol2
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Estos volúmenes no se eliminan por si solos nunca y persisten cuando su contenedor desaparece. Para eliminarlos se necesita una intervención manual mediante el comando <em>docker volume rm</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ docker volume ls
 DRIVER              VOLUME NAME
 local               vol1
@@ -134,18 +114,14 @@ gerard@sirius:~$ docker volume ls
 DRIVER              VOLUME NAME
 gerard@sirius:~$ 
 </code></pre>
-
-<h2 id="mounted-volumes">Mounted volumes</h2>
-
+<h2>Mounted volumes</h2>
 <p>Otras veces nos interesa montar ficheros o carpetas desde la máquina <em>host</em>. En este caso, podemos montar la carpeta o el fichero especificando la ruta completa desde la máquina <em>host</em>, y la ruta completa en el contenedor. Es posible también especificar si el volumen es de lectura y escritura (por defecto) o de solo lectura.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker$ docker run -ti --rm -v /etc/hostname:/root/parent_name:ro -v /opt/:/data alpine:3.4 sh
 / # cat /root/parent_name 
 sirius
 / # ls /data/
 / # 
 </code></pre>
-
 <p>Este último caso es ideal para recuperar <em>backups</em> o ficheros generados en un contenedor, en vistas a su utilización futura por parte de otros contenedores o del mismo <em>host</em>.</p>
 
 <div id="disqus_thread"></div>

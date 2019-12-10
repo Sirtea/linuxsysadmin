@@ -53,51 +53,39 @@
 </p>
 
 <p>He sido fan de <strong>python</strong> desde hace muchos años. Inicialmente lo empecé a utilizar porque, junto a <strong>bash</strong>, era la herramienta que venía por defecto en todos los servidores que administraba. Pero con el tiempo salió la versión 3, incompatible con la 2; al final me ha tocado migrar forzadamente.</p>
-
 <p>La primera versión de <strong>python</strong> salió en 1991, y la segunda versión se publicó en el año 2000. Cuando salió la versión 3 en el año 2008 se decidieron cambios en el lenguaje que lo hicieron incompatible con al versión 2, mucho más extendida. Como en el 2010 salió la versión 2.7, todos creimos que seguiríamos usando la segunda versión.</p>
-
 <p>Las librerías existentes en la versión 2 tuvieron que adaptarse para soportar la nueva versión y la antigua, y habiendo cientos de ellas, el proceso encontró una severa resistencia, aunque con el tiempo casi todas las librerías han pasado por el aro.</p>
-
 <p>Los desarrolladores tardaron todavía más en migrar de versión, puesto que les faltaban las librerías habituales en la nueva versión; en el mundo de sistemas la resistencia fue todavía mayor: casi todas las distribuciones usaban por defecto la versión 2, y los lentos ciclos de lanzamiento de sus versiones no ayudaron a mejorar la situación.</p>
-
 <p>Yo fuí uno de esos usuarios de <strong>python</strong> que creían que <strong>python 3</strong> estaba condenado al fracaso, y me dije a mí mismo que nunca iba a migrar de versión. Los motivos fueron varios:</p>
-
 <ul>
 <li>Los sistemas operativos usaban <strong>python 2</strong> por defecto, con la notable excepción de <strong>ArchLinux</strong></li>
 <li>Algunas de las herramientas de sistemas, como <strong>fabric</strong> o <strong>ansible</strong> carecían de soporte para <strong>python 3</strong></li>
 <li>El código <em>legacy</em> de mi sitio de trabajo seguía en <strong>python 2</strong></li>
 <li>Algunos proyectos necesitaban de librerías o <em>frameworks</em> que no estaban portados, como <strong>django</strong></li>
 </ul>
-
 <p><strong>Me equivocaba</strong></p>
-
 <p>La fecha de jubilación de <strong>python 2</strong> ha llegado; la versión 2.7 era solamente un intento de acercar gramáticas hacia la versión 3. El final de la segunda versión es inapelable, con incluso <a href="https://pythonclock.org/">un contador de marcha atrás</a>.</p>
-
 <p>Si hay que elegir una versión, en <a href="https://wiki.python.org/moin/Python2orPython3">el sitio web</a> son claros:</p>
-
 <blockquote>
 <p>Python 2.x is legacy, Python 3.x is the present and future of the language</p>
 </blockquote>
-
 <p>Todos los puntos que me aferraban a la segunda versión se están diluyendo:</p>
-
 <ul>
 <li>Aunque los sistemas operativos siguen teniendo la versión 2 por defecto, pero:
-
 <ul>
 <li>El modelo de trabajo con contenedores nos desacopla de las necesidades del sistema principal</li>
 <li>Siempre hay un servicio que necesita la 3; esto nos proporciona ambas versiones</li>
-</ul></li>
+</ul>
+</li>
 <li>Todas las herramientas necesarias para un DevOps soportan <strong>python 3</strong></li>
 <li>En mi nuevo trabajo no se desarrolla en <strong>python</strong>, y en las compañías que lo hacen, se migra controladamente utilizando contenedores</li>
 <li>Las librerías y <em>frameworks</em> principales ya funcionan en <strong>python 3</strong>
-
 <ul>
 <li><strong>Django</strong> lo soporta desde la versión 1.5</li>
 <li>Solamente un puñado de librerías <a href="https://python3wos.appspot.com/">no han sido portadas</a></li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>Las grandes compañías (<strong>Google</strong>, <strong>Facebook</strong>, <strong>Instagram</strong>&hellip;) han apostado fuerte por la nueva versión, que no para de recibir mejoras de rendimiento y funcionalidad. Visto el panorama, he decidido migrar yo también todas mis imágenes y proyectos a <strong>python 3</strong> antes de que sea tarde para hacerlo. <strong>Es el momento</strong>.</p>
 
 <div id="disqus_thread"></div>

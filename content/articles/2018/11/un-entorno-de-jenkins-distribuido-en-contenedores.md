@@ -132,6 +132,6 @@ Aquí solo hay que dar un nombre para identificarlo, el tipo "Permanent Agent" y
 
 **TRUCO**: Cuidado con la "Host Key Verification Strategy", que suele dar problemas de acceso por SSH. Yo suelo poner "Non verifying Verification Strategy".
 
-Al configurar cada proyecto, podremos elegir ejecutar en nodos concretos, con la opción "Restringir dónde se puede ejecutar este proyecto.". Esto nos permite elegir los nodos que puedan cumplir con nuestro *build*; por ejemplo elegir un nodo con **docker** para hacer un `docker build` y un `docker push`.
+Al configurar cada proyecto, podremos elegir ejecutar en nodos concretos, con la opción "Restringir dónde se puede ejecutar este proyecto". Esto nos permite elegir los nodos que puedan cumplir con nuestro *build*; por ejemplo elegir un nodo con **docker** para hacer un `docker build` y un `docker push`.
 
 Con la imagen de *slave* que hemos utilizado tenemos **Java JRE** y los binarios propios de un **Alpine Linux** básico, así que no esperéis mucho más...

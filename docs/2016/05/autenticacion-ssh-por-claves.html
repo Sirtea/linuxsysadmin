@@ -53,13 +53,9 @@
 </p>
 
 <p>A pesar de que el protocolo <strong>SSH</strong> es lo que mas seguridad ofrece hoy en día, un servidor rápido puede probar gran cantidad de contraseñas generadas mediante un generador por fuerza bruta. Para añadir mas seguridad podemos autenticar mediante claves en vez de usar contraseña, opcionalmente protegidos con una <em>passphrase</em>.</p>
-
 <p>La idea es que un cliente del servidor <strong>SSH</strong> se autentique reemplazando la contraseña habitual por una clave, previamente generada y con su parte pública compartida con anterioridad.</p>
-
-<h2 id="disposición-inicial">Disposición inicial</h2>
-
+<h2>Disposición inicial</h2>
 <p>Para la demostración tenemos dos servidores, con los roles claramente especificados en el nombre:</p>
-
 <pre><code class="language-bash">root@lxc:~# lxc-ls -f
 NAME       STATE    IPV4      IPV6  AUTOSTART
 ---------------------------------------------
@@ -67,9 +63,7 @@ client     RUNNING  10.0.0.3  -     NO
 sshserver  RUNNING  10.0.0.2  -     NO
 root@lxc:~#
 </code></pre>
-
 <p>En el caso del servidor, necesitamos un servidor <strong>SSH</strong> levantado y listo para recibir nuevas sesiones.</p>
-
 <pre><code class="language-bash">root@sshserver:~# netstat -lntp
 Active Internet connections (only servers)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
@@ -77,16 +71,12 @@ tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      
 tcp6       0      0 :::22                   :::*                    LISTEN      76/sshd
 root@sshserver:~#
 </code></pre>
-
 <p>Vamos a crear un usuario con el que podamos entrar en el servidor.</p>
-
 <pre><code class="language-bash">root@sshserver:~# grep gerard /etc/passwd
 gerard:x:1000:1000:,,,:/home/gerard:/bin/bash
 root@sshserver:~#
 </code></pre>
-
 <p>Si intentamos entrar en el servidor desde la máquina cliente, vemos que se nos pide la contraseña, tras lo cual iniciamos la sesión.</p>
-
 <pre><code class="language-bash">root@client:~# ssh gerard@10.0.0.2
 gerard@10.0.0.2's password:
 
@@ -98,15 +88,10 @@ Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
 permitted by applicable law.
 gerard@sshserver:~$
 </code></pre>
-
 <p>De hecho, si lo volvemos a intentar, se nos pedirá la <em>password</em> una y otra vez.</p>
-
-<h2 id="montando-el-par-de-claves">Montando el par de claves</h2>
-
+<h2>Montando el par de claves</h2>
 <p>Desde la máquina cliente, generamos el par de claves mediante el comando <strong>ssh-keygen</strong>. Sin parámetros va a generar un clave tipo <strong>RSA</strong>, que ya nos vale.</p>
-
 <p>Es importante indicar que la <em>passphrase</em> es más segura que la <em>password</em>, y que la necesidad de la clave convierte el combo en lo mas seguro de lo que disponemos. Vamos a dejarla en blanco para asegurar la autenticación con claves sin <em>passphrase</em>, por comodidad nuestra.</p>
-
 <pre><code class="language-bash">root@client:~# ssh-keygen
 Generating public/private rsa key pair.
 Enter file in which to save the key (/root/.ssh/id_rsa):
@@ -130,38 +115,28 @@ The key's randomart image is:
 +-----------------+
 root@client:~#
 </code></pre>
-
 <p>Esto nos ha generado el par de claves en la carpeta que nos preguntó el comando de generación. En este caso dejamos los valores por defecto.</p>
-
 <pre><code class="language-bash">root@client:~# ls -1 .ssh/
 id_rsa
 id_rsa.pub
 known_hosts
 root@client:~#
 </code></pre>
-
 <p>Vemos que tenemos dos ficheros nuevos. El fichero <em>id_rsa</em> es la clave privada, y es una parte que nunca debe compartirse. El fichero <em>id_rsa.pub</em> es la parte pública de la clave y es la que debemos repartir a los servidores a los que pretendamos tener acceso con la clave.</p>
-
 <pre><code class="language-bash">root@client:~# cat .ssh/id_rsa.pub
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHR7HSGhP8afT1pz/no+qVT1uKsEhh4CZXIbDebibbKiyPYVaKl/FLovYnCwk0IWXAsiJB1eXkQhX0he0gSK66UIZFnKVr8+G1J1kg9zuqxFTxpJTrM2WbdTZ+nk3bNgKTFKiQNsZ/IMvb/vjgU365LNtDclnajto0scgSCZQBvDfxrNVH8NIyv4IBTKheD6oSNgQsmzpvbWRyKBZf3dRRdVH00tsIC20fdAONtNfcWNToakRMX0/svW7RxUDlJEU/icsm3lf6xRf927CdB0ziu90i9mpzCxTMP3xbsrOJ0/mtdqROjql+OHNvxJa8FOtvX/ZdkNRAPOvuo4AieLZp root@client
 root@client:~#
 </code></pre>
-
 <p>Para garantizar el acceso a nuestro servidor, debemos poner una nueva línea en el fichero <em>authorized_keys</em> del usuario remoto, que es la parte pública de la clave. Es especialmente importante que la carpeta <em>.ssh</em> exista y no tenga permisos para nada ni nadie aparte del usuario propietario.</p>
-
 <pre><code class="language-bash">gerard@sshserver:~$ mkdir .ssh
 gerard@sshserver:~$ chmod 700 .ssh/
 gerard@sshserver:~$ cat .ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHR7HSGhP8afT1pz/no+qVT1uKsEhh4CZXIbDebibbKiyPYVaKl/FLovYnCwk0IWXAsiJB1eXkQhX0he0gSK66UIZFnKVr8+G1J1kg9zuqxFTxpJTrM2WbdTZ+nk3bNgKTFKiQNsZ/IMvb/vjgU365LNtDclnajto0scgSCZQBvDfxrNVH8NIyv4IBTKheD6oSNgQsmzpvbWRyKBZf3dRRdVH00tsIC20fdAONtNfcWNToakRMX0/svW7RxUDlJEU/icsm3lf6xRf927CdB0ziu90i9mpzCxTMP3xbsrOJ0/mtdqROjql+OHNvxJa8FOtvX/ZdkNRAPOvuo4AieLZp root@client
 gerard@sshserver:~$
 </code></pre>
-
 <p>Pueden haber varias claves públicas en el fichero <em>authorized_keys</em>, para garantizar la autenticación desde diferentes lugares sin compartir las claves entre los servidores de  origen.</p>
-
-<h2 id="comprobando-su-funcionamiento">Comprobando su funcionamiento</h2>
-
+<h2>Comprobando su funcionamiento</h2>
 <p>Para ver que todo funciona, basta con intentar entrar en la sesión; si todo va bien, no nos va a pedir <em>password</em> sino <em>passphrase</em>, suponiendo que no la dejáramos en blanco.</p>
-
 <pre><code class="language-bash">root@client:~# ssh gerard@10.0.0.2
 
 The programs included with the Debian GNU/Linux system are free software;
@@ -173,9 +148,7 @@ permitted by applicable law.
 Last login: Thu May 19 10:11:51 2016 from 10.0.0.3
 gerard@sshserver:~$
 </code></pre>
-
 <p>De hecho, si ponemos el <em>flag</em> de <em>verbose</em>, vemos que el servidor origen <strong>ofrece</strong> automáticamente la clave generada. Si la clave no estuviera en los sitios normales, habría que indicarlo en el comando <strong>ssh</strong>.</p>
-
 <pre><code class="language-bash">root@client:~# ssh -v gerard@10.0.0.2
 ...
 debug1: Connecting to 10.0.0.2 [10.0.0.2] port 22.
@@ -189,7 +162,6 @@ debug1: Authentication succeeded (publickey).
 ...
 gerard@sshserver:~$
 </code></pre>
-
 <p>Es importante recalcar que la parte privada que se ofrece es la que hay en la carpeta del usuario del servidor origen, pero la validación se hace con el fichero <em>authorized_keys</em> del usuario en el servidor remoto.</p>
 
 <div id="disqus_thread"></div>

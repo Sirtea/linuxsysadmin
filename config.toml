@@ -55,3 +55,14 @@ disqusShortname = "linuxsysadmin-gmb"
     anonymizeIP = true
     respectDoNotTrack = true
     useSessionStorage = false
+
+[markup]
+  [markup.highlight]
+    codeFences = false
+  [markup.goldmark]
+    [markup.goldmark.parser]
+      autoHeadingID = false
+    [markup.goldmark.extensions]
+      linkify = false
+    [markup.goldmark.renderer]
+      unsafe = true

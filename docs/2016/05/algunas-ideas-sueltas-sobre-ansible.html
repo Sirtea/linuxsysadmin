@@ -53,20 +53,15 @@
 </p>
 
 <p>En un <a href="/2016/04/instalando-ansible-para-gestionar-servidores.html">artículo anterior</a> vimos qué era <strong>Ansible</strong> y como instalarlo, dejando su funcionamiento para el lector; Hay miles de tutoriales por internet, y muchos son mejores de los que pueda poner aquí. Sin embargo, hay algunas ideas que no son fáciles de ver juntas, así que aquí las dejo.</p>
-
-<h2 id="playbooks-plantilla">Playbooks plantilla</h2>
-
+<h2>Playbooks plantilla</h2>
 <p>Si solo queremos los <em>playbooks</em> como una manera fácil de aprovisionar una máquina, nos conviene que no tenga un <em>host</em> asignado en el mismo, para poder pasar el objetivo por parámetro. Por ejemplo:</p>
-
 <pre><code class="language-bash">root@ansible:~# cat ping.yml
 - hosts: '{{ target }}'
   tasks:
     - ping:
 root@ansible:~#
 </code></pre>
-
 <p>En este caso hay que pasar un argumento extra como <em>target</em>, y en caso de no ponerlo, el <em>playbook</em> no haría nada. Con este truco, podemos ir variando el objetivo, siempre que esté en el fichero <em>hosts</em>.</p>
-
 <pre><code class="language-bash">root@ansible:~# ansible-playbook ping.yml
 
 PLAY [{{ target }}] ***********************************************************
@@ -105,13 +100,9 @@ PLAY RECAP ********************************************************************
 
 root@ansible:~#
 </code></pre>
-
-<h2 id="variar-el-entorno-sin-cambiar-los-playbooks">Variar el entorno sin cambiar los playbooks</h2>
-
+<h2>Variar el entorno sin cambiar los playbooks</h2>
 <p>Aunque las máquinas y las redes asignadas a cada entorno sean variables, los grupos y funcionalidades son las mismas. Suponiendo que los <em>playbooks</em> actúen contra los grupos, variando el fichero de <em>hosts</em> podemos conseguir todos los entornos necesarios.</p>
-
 <p>De hecho, podemos tener varios ficheros de <em>hosts</em> y especificarlos por parámetro en el momento de lanzar <strong>ansible-playbook</strong>. Por ejemplo, para el entorno de <em>preproducción</em>:</p>
-
 <pre><code class="language-bash">root@ansible:~# cat hosts-pre
 [loadbalancer]
 172.20.0.2
@@ -143,9 +134,7 @@ playbook: setup.yml
       172.20.0.5
 root@ansible:~#
 </code></pre>
-
 <p>Y casi lo mismo para el entono de <em>producción</em>:</p>
-
 <pre><code class="language-bash">root@ansible:~# cat hosts-pro
 [loadbalancer]
 10.0.0.2
@@ -187,13 +176,9 @@ playbook: setup.yml
       10.0.0.10
 root@ansible:~#
 </code></pre>
-
-<h2 id="inventario-autogenerado">Inventario autogenerado</h2>
-
+<h2>Inventario autogenerado</h2>
 <p>A veces nos conviene sacar la lista de <em>hosts</em> y de <em>grupos</em> de otro lugar, por ejemplo, de una base de datos corporativa. En estos casos, basta con saber que el fichero <em>hosts</em> puede ser ejecutable y se espera que devuelva un diccionario JSON de <em>grupos</em>, cada uno con una lista de los <em>hosts</em> que lo componen. <strong>Ansible</strong> va a ejecutar el <em>script</em> para sacar esa información.</p>
-
 <p>Vamos a hacer un ejercicio de imaginación: supongamos este <em>script</em> saca los datos de algún sitio (LDAP, BBDD, una API de nuestra CMDB, &hellip;), y los saca en formato JSON:</p>
-
 <pre><code class="language-bash">root@ansible:~# cat hosts.py
 #!/usr/bin/env python
 
@@ -211,9 +196,7 @@ root@ansible:~# ./hosts.py
 {&quot;appservers&quot;: [&quot;10.0.0.3&quot;, &quot;10.0.0.4&quot;], &quot;loadbalancer&quot;: [&quot;10.0.0.2&quot;], &quot;dbservers&quot;: [&quot;10.0.0.5&quot;]}
 root@ansible:~#
 </code></pre>
-
 <p>Veamos que es capaz de sacar los grupos que le pidamos de forma fácil:</p>
-
 <pre><code class="language-bash">root@ansible:~# ansible -i hosts.py --list-hosts loadbalancer
   hosts (1):
     10.0.0.2
@@ -232,13 +215,9 @@ root@ansible:~# ansible -i hosts.py --list-hosts all
     10.0.0.5
 root@ansible:~#
 </code></pre>
-
-<h2 id="desplegar-ficheros-según-el-host">Desplegar ficheros según el host</h2>
-
+<h2>Desplegar ficheros según el host</h2>
 <p>En los <em>playbooks</em> podemos usar variables, bien sean de ejecución, o las que indiquemos nosotros. Esto puede jugar a nuestro favor en caso, por ejemplo, de querer desplegar ficheros distintos en cada servidor. Un ejemplo:</p>
-
 <p>Supongamos que tenemos esta estructura de ficheros, con su fichero de <em>hosts</em> y su <em>playbook</em>:</p>
-
 <pre><code class="language-bash">root@ansible:~/multiple_webservers# tree
 .
 ├── hosts
@@ -263,9 +242,7 @@ root@ansible:~/multiple_webservers# cat playbook.yml
     - copy: src=webs/{{ inventory_hostname }}/ dest=/var/www/
 root@ansible:~/multiple_webservers#
 </code></pre>
-
 <p>Lanzamos el <em>playbook</em> para aprovisionar los ficheros <em>web</em> a los servidores:</p>
-
 <pre><code class="language-bash">root@ansible:~/multiple_webservers# ansible-playbook -i hosts playbook.yml
 
 PLAY ***************************************************************************
@@ -280,9 +257,7 @@ server2                    : ok=1    changed=1    unreachable=0    failed=0
 
 root@ansible:~/multiple_webservers#
 </code></pre>
-
 <p>Y fácilmente comprobamos que cada servidor tiene los suyos:</p>
-
 <pre><code class="language-bash">root@ansible:~/multiple_webservers# ssh root@server1 ls /var/www/
 index.html
 sitemap.xml
@@ -291,11 +266,8 @@ adminer.php
 index.php
 root@ansible:~/multiple_webservers#
 </code></pre>
-
-<h2 id="variables-en-el-inventario">Variables en el inventario</h2>
-
+<h2>Variables en el inventario</h2>
 <p>Hay algunas variables que dependen de la máquina en la que se ejecutan. Aunque es posible definir estructuras condicionales en los <em>playbooks</em>, no escala. Para no ensuciar los <em>playbooks</em>, las podemos definir en el fichero de <em>hosts</em>. Así pues, cada <em>grupo</em> puede tener sus propias variables; pueden ser variables &ldquo;nuestras&rdquo; o variables que entienda <strong>ansible</strong>. Como ejemplo, un <em>inventario</em> con variables de acceso:</p>
-
 <pre><code>root@ansible:~# cat hosts
 [slaves]
 10.0.0.2
@@ -310,9 +282,7 @@ ansible_become_user = root
 ansible_become_pass = s3cr3t
 root@ansible:~#
 </code></pre>
-
 <p>De esta forma, y de acuerdo con la <a href="http://docs.ansible.com/ansible/intro_inventory.html#list-of-behavioral-inventory-parameters">documentación oficial</a> de <strong>ansible</strong>, entraríamos con el usuario <em>ansible</em> para hacer seguidamente <strong>sudo</strong> para actuar con el usuario <em>root</em>.</p>
-
 <pre><code class="language-host">root@ansible:~# ansible -i hosts -m command -a id slaves
 10.0.0.3 | SUCCESS | rc=0 &gt;&gt;
 uid=0(root) gid=0(root) grupos=0(root)

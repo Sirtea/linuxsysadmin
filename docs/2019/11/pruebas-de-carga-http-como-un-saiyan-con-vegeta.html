@@ -56,39 +56,30 @@
 ser de otra forma, me cayó una petición de este tipo el otro día. Reconociendo
 que el venerable <code>ab</code> se quedaba corto, decidí buscar una alternativa viable;
 encontré una que me sacó una sonrisa: <strong>vegeta</strong>.</p>
-
 <blockquote>
-<p><strong>HTTP load testing tool and library. It&rsquo;s over 9000!</strong><br />
+<p><strong>HTTP load testing tool and library. It's over 9000!</strong><br>
 Vegeta is a versatile HTTP load testing tool built out of a need to drill HTTP services
 with a constant request rate. It can be used both as a command line utility and a library.</p>
 </blockquote>
-
 <p>Para los que no la conozcáis, la podéis encontrar <a href="https://github.com/tsenart/vegeta">aquí</a>. Siguiendo la moda
 actual, está escrita en <strong>go</strong> y no hay que instalar nada; ya de paso, en la
 sección de <em>releases</em>, podéis encontrar binarios precompilados.</p>
-
 <p>Como es un binario estático, no necesita librerías ni paquetería extra, y lo podemos
 &ldquo;dejar tirado&rdquo; en alguna carpeta personal. En mi caso, lo he dejado en <code>~/bin/</code>
 porque la tengo en el <em>path</em> y así no necesito indicar la ruta en cada invocación.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ wget https://github.com/tsenart/vegeta/releases/download/v12.7.0/vegeta-12.7.0-linux-amd64.tar.gz
 ...
 gerard@atlantis:~$ tar xf vegeta-12.7.0-linux-amd64.tar.gz -C bin/ vegeta
 gerard@atlantis:~$ 
 </code></pre>
-
 <p>El protocolo de uso se basa en dos grandes pilares:</p>
-
 <ul>
-<li><code>vegeta attack</code> &rarr; Ejecuta el test de carga y genera un fichero binario de resultados</li>
-<li><code>vegeta report</code> &rarr; Analiza el fichero binario para agrupar resultados y convertirlo en legible</li>
+<li><code>vegeta attack</code> → Ejecuta el test de carga y genera un fichero binario de resultados</li>
+<li><code>vegeta report</code> → Analiza el fichero binario para agrupar resultados y convertirlo en legible</li>
 </ul>
-
 <p><strong>TRUCO</strong>: De hecho, ambos se pueden concatenar para no necesitar el fichero intermedio.</p>
-
 <p>El objetivo del ataque se especifica por entrada estándar o por parámetro; el formato
 es similar a la cabecera <em>HTTP request</em>: método y URL.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ echo &quot;GET http://localhost:8000&quot; | vegeta attack -duration 5s | vegeta report
 Requests      [total, rate, throughput]  250, 50.20, 50.17
 Duration      [total, attack, wait]      4.982561765s, 4.979865973s, 2.695792ms
@@ -100,12 +91,10 @@ Status Codes  [code:count]               200:250
 Error Set:
 gerard@atlantis:~$ 
 </code></pre>
-
 <p>En principio, el ataque tiene un número de peticiones por segundo predeterminado
 (parámetro <code>-rate</code>, por defecto 50/1s), pero es interesante recalcar que indicar &ldquo;0&rdquo;
 hace un ataque al máximo, para testear el límite de nuestro servidor, aunque entonces
 se nos solicitan más parámetros&hellip;</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ echo &quot;GET http://localhost:8000&quot; | vegeta attack -duration 5s -rate 0 -max-workers 10 | vegeta report
 Requests      [total, rate, throughput]  7749, 1549.75, 906.78
 Duration      [total, attack, wait]      8.54561648s, 5.00014542s, 3.54547106s
@@ -117,7 +106,6 @@ Status Codes  [code:count]               200:7749
 Error Set:
 gerard@atlantis:~$ 
 </code></pre>
-
 <p>Considerando que se trata de un <code>python3 -m http.server</code> levantado temporalmente
 para escribir el artículo, y que no es un servidor pensado para ser estresado, no
 parecen unos números tan malos: 1549 peticiones por segundo. Ahora solo falta

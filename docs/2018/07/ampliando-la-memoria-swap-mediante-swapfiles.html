@@ -53,15 +53,10 @@
 </p>
 
 <p>Como ya sabéis, para escribir artículos, utilizo <strong>VirtualBox</strong>. Últimamente no paro de clonar la misma imagen base una y otra vez, lo que me da un particionado idéntico. Sin embargo, cuando se trata de memoria <em>swap</em>, no todas las instáncias clonadas necesitan la misma <em>swap</em> y cambiarlo no es fácil.</p>
-
 <p>Si nos fijamos en la última versión de <strong>Ubuntu</strong> podremos ver que una instalación básica <strong>no lleva partición <em>swap</em></strong>. Lo que lleva es un fichero predimensionado que es utilizado como memoria <em>swap</em>.</p>
-
 <p>Hay detractores de este método, pero lo que no podemos negar es que es una forma muy cómoda de añadir más <em>swap</em> o redimensionarla (casi) en caliente. Muchos proveedores de máquinas virtuales cloud ni siquiera nos dan una partición <em>swap</em>, así que conocer este método nos puede ser muy útil.</p>
-
-<h2 id="creando-un-swapfile">Creando un swapfile</h2>
-
+<h2>Creando un swapfile</h2>
 <p>Supongamos que tenemos un servidor sin memoria <em>swap</em>:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ free -m
               total        used        free      shared  buff/cache   available
 Mem:            492          32         409           0          50         446
@@ -70,13 +65,9 @@ gerard@cloudserver:~$ cat /proc/swaps
 Filename                                Type            Size    Used    Priority
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Para ir bien, un servidor no debería utilizarla, ya que impacta en el rendimiento, al ser más lento el disco que la memoria. Hay ocasiones en las que es legítimo usarla de forma temporal, o es preferible tenerla para evitar que nos tiren procesos por falta de memoria.</p>
-
 <p>Así pues, decidimos poner <em>swap</em>, pero no tenemos un particionado que nos lo permita; vamos a recurrir a un <em>swapfile</em>, que no es otra cosa que un fichero normal que es utilizado como dispositivo de bloques para ejercer de memoria <em>swap</em>.</p>
-
 <p>Para ello necesitamos un fichero del tamaño de la <em>swap</em> que necesitemos, con las únicas restricciones de pertenecer a <em>root</em> y con permisos de lectura y escritura para el propio <em>root</em>. Vamos a crearlo:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ sudo dd if=/dev/zero of=/swapfile bs=1M count=512
 512+0 registros leídos
 512+0 registros escritos
@@ -85,17 +76,13 @@ gerard@cloudserver:~$ sudo chown root:root /swapfile
 gerard@cloudserver:~$ sudo chmod 600 /swapfile
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Con esto tenemos nuestro dispositivo de bloques. Lo siguiente es &ldquo;formatearlo&rdquo; como <em>swap</em>. Esto se hace con el comando <code>mkswap</code>.</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ sudo mkswap /swapfile
 Configurando espacio de intercambio versión 1, tamaño = 512 MiB (536866816 bytes)
 sin etiqueta, UUID=612fd4be-2ea4-4561-ab7d-81b33df5b7e5
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Solo queda activarlo, con el comando <code>swapon</code>.</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ sudo swapon /swapfile
 gerard@cloudserver:~$ free -m
               total        used        free      shared  buff/cache   available
@@ -106,18 +93,13 @@ Filename                                Type            Size    Used    Priority
 /swapfile                               file            524284  0       -1
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Como nos gusta el resultado, configuramos el fichero <code>/etc/fstab</code> para que se active automáticamente tras cada reinicio:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ grep swapfile /etc/fstab
 /swapfile none swap defaults 0 0
 gerard@cloudserver:~$
 </code></pre>
-
-<h2 id="ampliando-el-swapfile">Ampliando el swapfile</h2>
-
+<h2>Ampliando el swapfile</h2>
 <p>Nos quedamos cortos de <em>swap</em> y decidimos que necesitamos agrandar nuestra <em>swap</em>. Solamente tenemos que desactivar el fichero, redimensionarlo, formatearlo y volver a activarlo; sin complicaciones:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ sudo swapoff /swapfile
 gerard@cloudserver:~$ sudo dd if=/dev/zero of=/swapfile bs=1M count=1024
 1024+0 registros leídos
@@ -129,9 +111,7 @@ sin etiqueta, UUID=fb036b45-6fca-4ff2-acb6-9ae585f08c74
 gerard@cloudserver:~$ sudo swapon /swapfile
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Y ya tenemos 1Gb de <em>swap</em>, sin sorpresas:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ free -m
               total        used        free      shared  buff/cache   available
 Mem:            492          32           6           0         453         446
@@ -141,11 +121,8 @@ Filename                                Type            Size    Used    Priority
 /swapfile                               file            1048572 0       -1
 gerard@cloudserver:~$
 </code></pre>
-
 <p>En un futuro cercano, decidimos que hay que poner más <em>swap</em>. Ahora tenemos un nuevo problema: la <em>swap</em> existente no se puede desactivar porque no hay memoria en donde mover lo que hay en <em>swap</em>.</p>
-
 <p>Eso no supone más problema, porque la memoria <em>swap</em> es una masa que se forma a partir de varios dispositivos, así que podemos añadir otro, de la misma manera:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ sudo dd if=/dev/zero of=/swapfile2 bs=1M count=3072
 3072+0 registros leídos
 3072+0 registros escritos
@@ -155,9 +132,7 @@ gerard@cloudserver:~$ sudo chmod 600 /swapfile2
 gerard@cloudserver:~$ sudo swapon /swapfile2
 gerard@cloudserver:~$
 </code></pre>
-
 <p>Y como esperamos, ahora tenemos un total de 4Gb de <em>swap</em>:</p>
-
 <pre><code class="language-bash">gerard@cloudserver:~$ free -m
               total        used        free      shared  buff/cache   available
 Mem:            492          32           6           0         452         446
@@ -168,7 +143,6 @@ Filename                                Type            Size    Used    Priority
 /swapfile2                              file            3145724 0       -2
 gerard@cloudserver:~$
 </code></pre>
-
 <p>En este punto ya podríamos desactivar la primera <em>swap</em>, ya sea para ampliarla, o para eliminarla. El contenido que tenía pasaría ahora a la segunda <em>swap</em> en donde hemos creado espacio. Nada nos impide ampliar el primer fichero para eliminar el segundo, haciendo que la segunda <em>swap</em> fuera solo un apaño temporal.</p>
 
 <div id="disqus_thread"></div>

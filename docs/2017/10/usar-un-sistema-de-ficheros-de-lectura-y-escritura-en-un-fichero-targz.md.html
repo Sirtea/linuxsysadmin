@@ -53,21 +53,14 @@
 </p>
 
 <p>¿Alguna vez habéis querido mirar en fichero <em>.tar.gz</em>, pero sin tener que descomprimirlo? Tal vez te gustaría extraer solo unos pocos ficheros; puede que lo que te interese es trabajar con una carpeta a la que le modificamos los archivos, sin tener que archivar esta carpeta cada cierto tiempo.</p>
-
 <p>En este caso, tenemos un sistema de ficheros bastante interesante que se llama <strong>archivemount</strong>, y que nos permite ver un fichero <em>.tar.gz</em> como si de una carpeta local más se tratara. Al desmontar este sistema de fichero, se crea el mismo fichero de nuevo, de forma automática, y con previa copia del anterior.</p>
-
 <p>Según la <a href="https://en.wikipedia.org/wiki/Archivemount">wikipedia</a>:</p>
-
 <blockquote>
 <p>archivemount is a FUSE-based file system for Unix variants, including Linux. Its purpose is to mount archives (i.e. tar, tar.gz, etc.) to a mount point where it can be read from or written to as with any other file system. This makes accessing the contents of the archive, which may be compressed, transparent to other programs, without decompressing them.</p>
 </blockquote>
-
 <p>Para demostrar como funciona, necesitaremos una máquina normal. Como pienso desecharla tal como haya escrito estas palabras, voy a usar un contenedor <strong>docker</strong> con una <strong>Debian Jessie</strong>; la distribución no debería ser importante.</p>
-
 <p><strong>TRUCO</strong>: No se puede usar el comando <strong>archivemount</strong> en un contenedor <strong>docker</strong>, a menos que se levante con la opción <em>&ndash;privileged</em>, que es lo que yo he usado.</p>
-
 <p>Vamos a empezar instalando el paquete <strong>archivemount</strong>, que nos va a dar las herramientas para montar nuestros ficheros comprimidos. Cada distribución lo hace a su manera; revisa la documentación de la tuya.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# apt-get install archivemount
 Reading package lists... Done
 Building dependency tree       
@@ -94,16 +87,12 @@ Do you want to continue? [Y/n] y
 ...
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Para montar un fichero comprimido en una carpeta, necesitamos ambos, así que los creamos. El fichero comprimido va a ser un fichero <em>.tar.gz</em> vacío.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# mkdir data
 root@cfed45d103a2:~# tar czvf data.tar.gz --files-from /dev/null
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Vemos como nos queda la carpeta local, con ambas cosas:</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# tree
 .
 |-- data
@@ -112,22 +101,16 @@ root@cfed45d103a2:~#
 1 directory, 1 file
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Solo queda montar el sistema de ficheros para empezar a utilizarlo. Aunque se podría delegar el montaje del sistema de ficheros al sistema escribiendo en <em>/etc/fstab</em>, vamos a hacerlo manualmente en este ejemplo.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# archivemount data.tar.gz data/
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Vamos a crear algunos ficheros en la carpeta. Es especialmente interesante fijarnos en que trabajamos con una carpeta normal, como lo haríamos habitualmente. De esta forma, hasta un <em>software</em> existente podría modificar este sistema de ficheros.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# echo &quot;no content&quot; &gt; data/README
 root@cfed45d103a2:~# echo &quot;1.0&quot; &gt; data/VERSION
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Comprobamos lo que tenemos, solo para asegurar el éxito:</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# tree
 .
 |-- data
@@ -138,15 +121,11 @@ root@cfed45d103a2:~#
 1 directory, 3 files
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Cuando acabemos de trabajar con el sistema de ficheros y se desmonte, pasará la magia; se va a comprimir el sistema de ficheros en el fichero <em>.tar.gz</em> con el nombre inicial, previa copia del antiguo.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# umount data
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Podemos ver que el sistema de ficheros ya no está disponible, como esperaríamos de un <em>umount</em>; el fichero que montamos en su momento ha quedado como <em>data.tar.gz.orig</em>, y el fichero <em>data.tar.gz</em> tiene el contenido actualizado de nuestra sesión de trabajo.</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# tree
 .
 |-- data
@@ -156,9 +135,7 @@ root@cfed45d103a2:~#
 1 directory, 2 files
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Podemos comprobar el contenido simplemente verificando lo que hay en los ficheros:</p>
-
 <pre><code class="language-bash">root@cfed45d103a2:~# tar tzf data.tar.gz
 tar: Removing leading `/' from member names
 /README
@@ -166,7 +143,6 @@ tar: Removing leading `/' from member names
 root@cfed45d103a2:~# tar tzf data.tar.gz.orig 
 root@cfed45d103a2:~# 
 </code></pre>
-
 <p>Y como podíamos esperar, el fichero <em>data.gz.orig</em> está vacío y el fichero <em>data.tar.gz</em> contiene los nuevos ficheros. Es importante recalcar que si se volviera a montar y desmontar el sistema de ficheros -y hubieran cambios en el mismo-, se volvería a crear el fichero <em>data.tar.gz</em>, y el <em>data.tar.gz.orig</em> quedaría sobrescrito de nuevo.</p>
 
 <div id="disqus_thread"></div>

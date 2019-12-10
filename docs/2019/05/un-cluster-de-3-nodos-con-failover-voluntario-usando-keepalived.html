@@ -53,48 +53,33 @@
 </p>
 
 <p>Trabajando con <strong>Docker Swarm</strong> me doy cuenta de que hay muchos servicios tipo &ldquo;ventanilla única&rdquo; que suelo poner en los mismos <em>managers</em>. El asunto es que un despliegue con <strong>Docker Swarm</strong> funciona mejor con un número impar de <em>managers</em>, siendo 3 o 5 lo recomendable para un entorno de producción.</p>
-
 <p>Además, me he dado cuenta de que el orquestador es capaz de manejar el funcionamiento del servicio mejor que el resto de herramientas; lo que no se lleva tan bien es el cambio de IP compartida en caso de un reinicio voluntario y controlado del servidor.</p>
-
 <p>Esto me llevó a pensar en un método para indicar a <strong>keepalived</strong> que un nodo no era un buen candidato para mantener la IP flotante, cosa que solo pude conseguir jugando con las prioridades. Lo malo es que en el peor caso, nuestro nodo puede no librarse de dicha IP, aunque nos ayuda en la mayoría de casos.</p>
-
 <p>El truco es simple: se trata de declarar un <em>check</em> que aporte mucha prioridad habitualmente, pero que se permita fallar ante una acción concreta del operador, como por ejemplo, <strong>la presencia de un fichero concreto</strong> (que es la aproximación que voy a usar). Así el resto de servidores se vuelven mejores candidatos para obtener la dirección IP flotante y se la llevarían.</p>
-
-<h2 id="entorno">Entorno</h2>
-
+<h2>Entorno</h2>
 <p>Tenemos 3 servidores, todos ellos con <strong>Debian Stretch</strong> y 256mb de memoria; para el ejemplo basta, pero habrá que darles más si el servidor va a servir para algo en el futuro. Solo tienen un servidor de SSH instalado.</p>
-
 <ul>
-<li><strong>Server01</strong> &rarr; IP 10.10.0.3</li>
-<li><strong>Server02</strong> &rarr; IP 10.10.0.4</li>
-<li><strong>Server03</strong> &rarr; IP 10.10.0.5</li>
+<li><strong>Server01</strong> → IP 10.10.0.3</li>
+<li><strong>Server02</strong> → IP 10.10.0.4</li>
+<li><strong>Server03</strong> → IP 10.10.0.5</li>
 </ul>
-
 <p>La idea es que la dirección IP compartida es la 10.10.0.2, que es la que se administrará <strong>keepalived</strong>. Instalamos <strong>keepalived</strong> en todos los servidores:</p>
-
 <pre><code class="language-bash">gerard@server01:~$ sudo apt install keepalived
 ...
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ sudo apt install keepalived
 ...
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server03:~$ sudo apt install keepalived
 ...
 gerard@server03:~$ 
 </code></pre>
-
-<h2 id="implementación">Implementación</h2>
-
+<h2>Implementación</h2>
 <p>Para que un fichero pueda ser la diferencia entre tener la IP compartida o no, necesitamos un <em>check</em>, que reduzca la prioridad por debajo del resto de servidores en caso de tener dicho fichero presente.</p>
-
 <p>Le vamos a dar a cada servidor 100 puntos como &ldquo;premio&rdquo; por no tener el fichero, más de 1 a 3 puntos por servidor que nos van a servir para desempatar entre ellos y asegurar el servidor que recoge el testigo.</p>
-
 <p>De esta forma, las configuraciones nos quedarían de esta forma:</p>
-
 <pre><code class="language-bash">gerard@server01:~$ cat /etc/keepalived/keepalived.conf 
 vrrp_script chk_releasevip {
     script &quot;/usr/bin/test ! -e /tmp/releasevip&quot;
@@ -115,7 +100,6 @@ vrrp_instance VI_1 {
 }
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ cat /etc/keepalived/keepalived.conf 
 vrrp_script chk_releasevip {
     script &quot;/usr/bin/test ! -e /tmp/releasevip&quot;
@@ -136,7 +120,6 @@ vrrp_instance VI_1 {
 }
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server03:~$ cat /etc/keepalived/keepalived.conf
 vrrp_script chk_releasevip {
     script &quot;/usr/bin/test ! -e /tmp/releasevip&quot;
@@ -157,110 +140,82 @@ vrrp_instance VI_1 {
 }
 gerard@server03:~$ 
 </code></pre>
-
 <p>Solo nos quedaría reiniciar el demonio de <strong>keepalived</strong> para que apliquen los cambios.</p>
-
 <pre><code class="language-bash">gerard@server01:~$ sudo systemctl restart keepalived
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ sudo systemctl restart keepalived
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server03:~$ sudo systemctl restart keepalived
 gerard@server03:~$ 
 </code></pre>
-
-<h2 id="pruebas">Pruebas</h2>
-
+<h2>Pruebas</h2>
 <p>En estado habitual, con todos los servidores levantados y sin el fichero de control, la IP flotante debería estar en <strong>server01</strong>, ya que tiene prioridad 103 (3+100) contra las prioridades 102 y 101 de sus vecinos (<strong>server02</strong> y <strong>server03</strong> respectivamente).</p>
-
 <pre><code class="language-bash">gerard@server01:~$ ip a | grep 10.10
     inet 10.10.0.3/24 brd 10.10.0.255 scope global enp0s3
     inet 10.10.0.2/32 scope global enp0s3
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ ip a | grep 10.10
     inet 10.10.0.4/24 brd 10.10.0.255 scope global enp0s3
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server03:~$ ip a | grep 10.10
     inet 10.10.0.5/24 brd 10.10.0.255 scope global enp0s3
 gerard@server03:~$ 
 </code></pre>
-
 <p>Supongamos que queremos liberar la IP flotante de <strong>server01</strong>; esto se hace haciendo fallar el <em>check</em>, que mira que no exista el fichero <code>/tmp/releasevip</code>. Esto lo podemos hacer creando el fichero.</p>
-
 <pre><code class="language-bash">gerard@server01:~$ touch /tmp/releasevip
 gerard@server01:~$ 
 </code></pre>
-
 <p>Solo hay que esperar un máximo de 5 segundos a que se ejecute el <em>check</em>, que es lo que declaramos en el <em>interval</em> del mismo. Sin sorpresas, <strong>server01</strong> pierde la IP compartida y <strong>server02</strong> la asume (prioridad 3 contra 102 y 101).</p>
-
 <pre><code class="language-bash">gerard@server01:~$ ip a | grep 10.10
     inet 10.10.0.3/24 brd 10.10.0.255 scope global enp0s3
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ ip a | grep 10.10
     inet 10.10.0.4/24 brd 10.10.0.255 scope global enp0s3
     inet 10.10.0.2/32 scope global enp0s3
 gerard@server02:~$ 
 </code></pre>
-
 <p>Ahora vamos a quitar la IP de <strong>server02</strong> también, de la misma manera:</p>
-
 <pre><code class="language-bash">gerard@server02:~$ touch /tmp/releasevip
 gerard@server02:~$ 
 </code></pre>
-
 <p>La IP compartida cae en <strong>server03</strong>, ya que tiene prioridad 101 contra las prioridades 3 y 2 del resto de servidores.</p>
-
 <pre><code class="language-bash">gerard@server01:~$ ip a | grep 10.10
     inet 10.10.0.3/24 brd 10.10.0.255 scope global enp0s3
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ ip a | grep 10.10
     inet 10.10.0.4/24 brd 10.10.0.255 scope global enp0s3
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server03:~$ ip a | grep 10.10
     inet 10.10.0.5/24 brd 10.10.0.255 scope global enp0s3
     inet 10.10.0.2/32 scope global enp0s3
 gerard@server03:~$ 
 </code></pre>
-
 <p><strong>AVISO</strong>: Si el servidor <strong>server03</strong> fallara o le pusiéramos el fichero de control, <strong>server01</strong> asumiría la IP flotante <strong>a pesar de tener el fichero de control</strong> (prioridad 3 contra 2 y 1).</p>
-
 <p>Si quitamos el fichero de control del servidor <strong>server02</strong>, este pasaría a tener prioridad (102 contra 3 y 101) y robaría la IP flotante:</p>
-
 <pre><code class="language-bash">gerard@server02:~$ rm /tmp/releasevip 
 gerard@server02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server02:~$ ip a | grep 10.10
     inet 10.10.0.4/24 brd 10.10.0.255 scope global enp0s3
     inet 10.10.0.2/32 scope global enp0s3
 gerard@server02:~$ 
 </code></pre>
-
 <p>En el caso de quitar el fichero de <strong>server01</strong>, este pasaría a tener más prioridad, y por lo tanto se asigna la IP compartida.</p>
-
 <pre><code class="language-bash">gerard@server01:~$ rm /tmp/releasevip 
 gerard@server01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@server01:~$ ip a | grep 10.10
     inet 10.10.0.3/24 brd 10.10.0.255 scope global enp0s3
     inet 10.10.0.2/32 scope global enp0s3
 gerard@server01:~$ 
 </code></pre>
-
 <p>Y con esto hemos conseguido nuestro objetivo.</p>
 
 <div id="disqus_thread"></div>

@@ -105,7 +105,7 @@ flask run --host 0.0.0.0 --port 8080
  * Debugger PIN: 579-205-006
 ```
 
-Y ya podemos dirigirnos a http://localhost:8080/ para comprobar un bonito error 404.
+Y ya podemos dirigirnos a `http://localhost:8080/` para comprobar un bonito error 404.
 
 ## Registrando rutas a controladores
 

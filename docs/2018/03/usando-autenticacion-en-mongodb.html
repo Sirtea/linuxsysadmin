@@ -53,21 +53,13 @@
 </p>
 
 <p>Usar autenticación en las bases de datos de nuestros entornos, por muy privados que sean, suele ser una buena idea. Nos sirve para separar los accesos a un servicio compartido y evitar sobreescrituras cuando accidentalmente dos servicios usan la misma base de datos por un error de algún usuario despistado.</p>
-
 <p>No es la primera vez que un <em>cluster</em> compartido entre varios proyectos acaba con la destrucción de datos accidental; el uso habitual de <em>copy-paste</em> en nuestros <em>docker-compose.yml</em> o en otros ficheros de configuración, nos plantea un posible riesgo cuando alguien se olvida de cambiar el nombre de la base de datos.</p>
-
 <p>Estos casos son fácilmente evitables si las plantillas contienen unos parámetros de <strong>usuario</strong> y <strong>password</strong> no usables, y solamente la correcta combinación de ambos con la base de datos dan acceso a los datos. De esta forma, las diferentes bases de datos serian accesibles por diferentes usuarios y haría falta conocer todos los datos de acceso para usar la base de datos de otra aplicación.</p>
-
-<h2 id="preparación">Preparación</h2>
-
+<h2>Preparación</h2>
 <p>En <strong>MongoDB</strong>, los usuarios pertenecen a una base de datos, y no son globales. Esto significa que tenemos que crearlos en una base de datos concreta y que cualquiera que quiera autenticarse debe hacerlo contra la base de datos que contenga su usuario. La autorización en sí garantiza mediante la aplicación de diferentes <em>roles</em>, a nivel de base de datos o a nivel global.</p>
-
 <p>Como decisión de diseño, vamos a poner todos los usuarios en la misma base de datos, que va a ser <em>admin</em>. Para ello necesitamos abrir un cliente a la base de datos, que por simplicidad va a ser el <em>shell</em> básico, binario <code>mongo</code>.</p>
-
-<h3 id="crear-un-usuario-de-administración">Crear un usuario de administración</h3>
-
+<h3>Crear un usuario de administración</h3>
 <p>Se trata simplemente de crear un usuario, con el <em>role</em> suficiente para hacer las tareas necesarias. Como se trata de un usuario muy exclusivo, le voy a dar el <em>role root</em>, que básicamente me lo permite hacer todo. Podéis adaptar vuestro comando eligiendo el <em>role</em> que más os convenga, según <a href="https://docs.mongodb.com/manual/reference/built-in-roles/#built-in-roles">la documentación</a>.</p>
-
 <pre><code>&gt; use admin
 switched to db admin
 &gt; db.createUser(
@@ -88,35 +80,23 @@ Successfully added user: {
 }
 &gt;
 </code></pre>
-
 <p><strong>TRUCO</strong>: Aunque el <em>role root</em> permite actuar en todas las bases de datos, hay que indicarle una cualquiera para que la especificación JSON sea correcta.</p>
-
-<h3 id="activar-la-autenticación">Activar la autenticación</h3>
-
+<h3>Activar la autenticación</h3>
 <p>Lo único necesario para que <strong>MongoDB</strong> requiera autenticación es un parámetro de configuración, sea:</p>
-
 <ul>
 <li>El <em>flag</em> <code>--auth</code> cuando levantamos el servidor</li>
 <li>El parámetro de configuración <code>security.authorization: enabled</code> en el fichero de configuración</li>
 </ul>
-
 <p>Hay que reiniciar el proceso para que use este nuevo parámetro, tanto para activarlo como para desactivarlo. A partir de este punto, todas las operaciones a la base de datos, van a necesitar que la sesión esté autenticada, y que dicho usuario tenga el <em>role</em> necesario para hacer lo que pide.</p>
-
 <p><strong>TRUCO</strong>: Hay una <a href="https://docs.mongodb.com/manual/core/security-users/#localhost-exception">excepción de localhost</a>; si no hay ningún usuario en la base de datos y nos conectamos a ella desde <em>localhost</em>, no va a ser necesaria ninguna autenticación. Usando esta excepción podemos levantar el servicio siempre con <code>--auth</code> o <code>security.authorization</code> y crear el superusuario <em>a posteriori</em>, sin reiniciar nada.</p>
-
-<h2 id="uso">Uso</h2>
-
+<h2>Uso</h2>
 <p>Ha llegado el momento de poner una aplicación nueva que use nuestro servicio de <strong>MongoDB</strong>. Esa aplicación necesita su propio espacio de datos, lo que significa que necesita:</p>
-
 <ul>
 <li>Una base de datos propia, que <strong>MongoDB</strong> creará automáticamente cuando haga falta</li>
 <li>Un usuario con acceso a esa base de datos (y a ninguna más)</li>
 </ul>
-
-<h3 id="añadir-un-usuario-nuevo">Añadir un usuario nuevo</h3>
-
+<h3>Añadir un usuario nuevo</h3>
 <p>Otra vez nos limitamos a crear un usuario, pero esta vez le vamos a dar el <em>role readWrite</em> sobre su base de datos. Abrimos una sesión en el <em>mongo shell</em>, autenticándonos en la base de datos <em>admin</em> con un usuario con capacidad de crear usuarios, por ejemplo el que creamos antes: <strong>admin</strong>.</p>
-
 <pre><code>&gt; use admin
 switched to db admin
 &gt; db.auth(&quot;admin&quot;, &quot;s3cr3t&quot;)
@@ -139,17 +119,11 @@ Successfully added user: {
 }
 &gt;
 </code></pre>
-
 <p>Y con esto es suficiente, puesto que la base de datos se crea automáticamente cuando tenga alguna colección. En este caso, el usuario y la base de datos coinciden; esto es otra decisión de diseño.</p>
-
-<h3 id="configuración-de-la-aplicación">Configuración de la aplicación</h3>
-
+<h3>Configuración de la aplicación</h3>
 <p>Cada cliente de <strong>MongoDB</strong> tiene sus propias formas para autenticarse; podemos ver el uso de la función <code>db.auth()</code> por parte del <em>mongo shell</em>, en el ejemplo anterior. La documentación es extensa en este punto.</p>
-
 <p>Lo importante es que la autenticación se hace con el usuario y contraseña proporcionados, <strong>en la base de datos <em>admin</em></strong>. El uso regular de la base de datos se hace <strong>en la base de datos de la aplicación</strong>.</p>
-
 <p>Todas las librerías tienen una forma común muy cómoda para indicar la base de datos destino: la <a href="https://docs.mongodb.com/manual/reference/connection-string/">URL de mongodb</a>. En ellas se nos permite especificar la base de datos de uso y la de autenticación (parámetro <code>authSource</code>), así como el usuario y la contraseña.</p>
-
 <p>Para el ejemplo anterior, la URL quedaría así, suponiendo que el servicio está en el <em>host</em> <strong>mongo</strong>: <code>mongodb://myapp:myapp1234@mongo:27017/myapp?authSource=admin</code></p>
 
 <div id="disqus_thread"></div>

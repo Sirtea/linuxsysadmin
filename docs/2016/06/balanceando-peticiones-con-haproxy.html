@@ -53,9 +53,7 @@
 </p>
 
 <p>Cuando tenemos un entorno grande o con previsiones de crecimiento, nos interesa poder poner a trabajar varios servidores similares. En casos así nos hace falta un <strong>balanceador de carga</strong>, que actúa como un agente de tráfico, dirigiendo las peticiones que él mismo recibe a los diferentes servidores, por ejemplo, <strong>haproxy</strong>.</p>
-
 <p>En este artículo vamos a montar el balanceador <strong>haproxy</strong>, usando <strong>ansible</strong>, basándonos en las imágenes <strong>docker</strong> de <a href="/2016/06/controlando-contenedores-docker-con-ansible.html">otro artículo</a>. La ideas es que vamos a poner un único balanceador que va a escuchar en dos puertos, balanceando dos <em>backends</em> en cada uno, por ejemplo una web y una <em>api</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 slave               latest              22a9312a1315        About an hour ago   186 MB
@@ -63,18 +61,13 @@ ansible             latest              225b431d2133        About an hour ago   
 debian              latest              bb5d89f9b6cb        2 weeks ago         125.1 MB
 gerard@sirius:~/build$ 
 </code></pre>
-
-<h2 id="preparando-el-entorno">Preparando el entorno</h2>
-
+<h2>Preparando el entorno</h2>
 <p>El primer paso es disponer de una red para que todos los servidores implicados se puedan comunicar entre ellos. La red que viene por defecto nos permite eso, pero vamos a crear una red <em>user defined</em> que nos va a permitir que los contenedores <strong>docker</strong> se conozcan entre ellos por su nombre.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker network create --subnet=172.20.0.0/16 balancing
 4585a1abd0ed69bc9d1daf0dd019e1f129a9e7328471da77541f5b4a54c19626
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Se trata de levantar 5 servidores: 1 para <strong>haproxy</strong> y otros 4 para representar los servidores de <em>backend</em>, que vamos a trucar para que parezca lo que no son. Es importante <em>publicar</em> los puertos que queramos exponer, para ver que funciona la solución final; si queremos balancear los puertos 8080 (web), 8081 (api) y 1936 (haproxy stats), pondríamos algo como esto:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ docker run -d -h balancer --name balancer --net balancing -p 8080:8080 -p 8081:8081 -p 1936:1936 slave
 70e4811e6a498c7ecdec11ed91609d43749c327e33bd3b06b1532b507f3f2141
 gerard@sirius:~/build$ for host in web1 web2 api1 api2; do docker run -d -h $host --name $host --net balancing slave; done
@@ -84,9 +77,7 @@ a0514880a44ed9109d19dc594ae991245e052554d91f0b08da80d57808df3d29
 635c9b2d04482018053dca4b4225a34d3a11be1c366e372b9536fcadea12a15a
 gerard@sirius:~/build$ 
 </code></pre>
-
 <p>Verificamos que tenemos todos nuestros contenedores corriendo:</p>
-
 <pre><code>gerard@sirius:~/build$ docker ps
 CONTAINER ID        IMAGE               COMMAND               CREATED              STATUS              PORTS                                                      NAMES
 635c9b2d0448        slave               &quot;/usr/sbin/sshd -D&quot;   10 seconds ago       Up 8 seconds                                                                   api2
@@ -96,18 +87,13 @@ a0514880a44e        slave               &quot;/usr/sbin/sshd -D&quot;   12 secon
 70e4811e6a49        slave               &quot;/usr/sbin/sshd -D&quot;   About a minute ago   Up About a minute   0.0.0.0:1936-&gt;1936/tcp, 0.0.0.0:8080-8081-&gt;8080-8081/tcp   balancer
 gerard@sirius:~/build$ 
 </code></pre>
-
-<h2 id="preparando-las-herramientas">Preparando las herramientas</h2>
-
+<h2>Preparando las herramientas</h2>
 <p>Como ya hemos comentado, vamos a utilizar <strong>ansible</strong>. Para ejecutar los <em>playbooks</em>, vamos a levantar una máquina para usar y tirar.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/build$ docker run -ti --rm --net balancing -h ansible --name ansible ansible
 root@ansible:/# cd /root
 root@ansible:~# 
 </code></pre>
-
 <p>Especificamos un fichero de <em>hosts</em> que va a servir para indicar los contenedores que tenemos y vamos a instalar paquetes en función de su grupo.</p>
-
 <pre><code class="language-bash">root@ansible:~# cat hosts 
 [all:vars]
 ansible_user = ansible
@@ -129,9 +115,7 @@ api1
 api2
 root@ansible:~# 
 </code></pre>
-
 <p>Opcionalmente, verificamos que todos los contenedores son accesibles desde <strong>ansible</strong>. Eso nos puede evitar sorpresas futuras.</p>
-
 <pre><code class="language-bash">root@ansible:~# ansible -i hosts -m ping all
 balancer | SUCCESS =&gt; {
     &quot;changed&quot;: false, 
@@ -155,15 +139,10 @@ web1 | SUCCESS =&gt; {
 }
 root@ansible:~# 
 </code></pre>
-
-<h2 id="instalando-unos-backends-sustitutos">Instalando unos backends sustitutos</h2>
-
+<h2>Instalando unos backends sustitutos</h2>
 <p>Sea lo que sea que vayan a ejecutar los <em>backends</em> reales, los podemos ver como una caja negra que ofrecen sus servicios mediante protocolo TCP/IP en un puerto concreto.</p>
-
 <p>Como no nos importa demasiado lo que hagan, y para simplificar el artículo, los vamos a reemplazar con servidores web <strong>nginx</strong>, sirviendo un fichero HTML con su nombre (para poder distinguirlos en las pruebas). De esta forma, podremos ver el tipo de servidor que responde (api o web) y su número, ya que ambos datos están en su <em>hostname</em>.</p>
-
 <p>Así pues, basta con un <em>playbook</em> que instale el servidor web y ponga el fichero <em>.html</em> en su sitio. Como <strong>docker</strong> está ejecutando el servidor <strong>ssh</strong> y no <strong>systemd</strong>, el <strong>nginx</strong> no se levanta. Con otra tarea para asegurar que está corriendo, basta.</p>
-
 <pre><code class="language-bash">root@ansible:~# cat backends.yml 
 - hosts: webs, apis
   tasks:
@@ -172,9 +151,7 @@ root@ansible:~#
     - service: name=nginx state=started
 root@ansible:~# 
 </code></pre>
-
 <p>Lanzamos el <em>playbook</em>, y los dejamos preparados para que el balanceador los pueda usar. En un entorno real, dedicaríamos mas tiempo en poner servidores de aplicaciones normales, con aplicaciones adecuadas, y que posiblemente usarían algún tipo de base de datos.</p>
-
 <pre><code class="language-bash">root@ansible:~# ansible-playbook -i hosts backends.yml 
 
 PLAY [webs, apis] **************************************************************
@@ -211,13 +188,9 @@ web2                       : ok=4    changed=3    unreachable=0    failed=0
 
 root@ansible:~# 
 </code></pre>
-
-<h2 id="montando-el-balanceador">Montando el balanceador</h2>
-
+<h2>Montando el balanceador</h2>
 <p>Para obtener un balanceador HTTP (o TCP, si lo necesitáramos), basta con elegir uno. Normalmente yo usaría un servidor <strong>nginx</strong> para balancear HTTP (que además ofrece otras funcionalidades, aunque no soporte TCP directo); en este caso, y para variar un poco, vamos a poner <strong>haproxy</strong>, que nos ofrece una bonita página de estadísticas.</p>
-
 <p>El truco está en instalar <strong>haproxy</strong>, darle un fichero de configuración adecuado y recargar su configuración. Nuevamente, al tratarse de <strong>docker</strong> hay que asegurarse que el servicio esté levantado.</p>
-
 <pre><code class="language-bash">root@ansible:~# cat balancer.yml 
 - hosts: balancer
   tasks:
@@ -227,15 +200,10 @@ root@ansible:~#
     - service: name=haproxy state=reloaded
 root@ansible:~# 
 </code></pre>
-
 <p>La funcionalidad con la que cumpla el balanceador se controla en <em>/etc/haproxy/haproxy.cfg</em>, que el <em>playbook</em> pone en su sitio, desde una carpeta en el contexto.</p>
-
 <p>HAProxy funciona mapeando <em>frontends</em> (entradas del balanceador) con sus respectivos <em>backends</em> (servidores que atienden peticiones).</p>
-
 <p>Disponemos de varios algoritmos de balanceo, así que vamos a poner uno distinto para cada <em>backend</em>. Para la web, vamos a usar <em>roundrobin</em>, que básicamente se trata de una petición a cada uno por turnos; la <em>api</em> va a contar con el algoritmo <em>leastconn</em>, que significa darle una petición al servidor que menos conexiones tiene abiertas.</p>
-
 <p>Como <em>bonus track</em>, vamos a habilitar la página de estadísticas, siempre que la queramos, claro. La he copiado tal cual de la documentación de <strong>haproxy</strong>.</p>
-
 <pre><code>root@ansible:~# cat haproxy.cfg 
 listen stats :1936
     mode http
@@ -262,9 +230,7 @@ backend apis
     server api2 api2:80
 root@ansible:~# 
 </code></pre>
-
 <p>Solo nos faltaría lanzar el <em>playbook</em> para que quede todo correctamente montado. Si la configuración cambiara o hubiera que corregirla, se debe modificar el fichero local <em>haproxy.cfg</em> y relanzar el <em>playbook</em>. <strong>Ansible</strong> no intentará cambiar nada que ya esté como debía; no instalará <strong>haproxy</strong> de nuevo, no lo levantará si ya estaba corriendo, no copiará el fichero a menos que haya cambiado, y siempre va a recargar la configuración del servicio.</p>
-
 <pre><code class="language-bash">root@ansible:~# ansible-playbook -i hosts balancer.yml 
 
 PLAY [balancer] ****************************************************************
@@ -289,13 +255,9 @@ balancer                   : ok=5    changed=4    unreachable=0    failed=0
 
 root@ansible:~# 
 </code></pre>
-
-<h2 id="comprobando-el-funcionamiento">Comprobando el funcionamiento</h2>
-
+<h2>Comprobando el funcionamiento</h2>
 <p>Si hacemos peticiones individuales, vemos que cada servidor funciona, pero lo que nos importa es el conjunto. Para ello vamos a solicitar peticiones a cada uno de los puertos que representan el <em>cluster</em> de web y de <em>api</em>. Puesto que los hemos publicado con el mismo número de puerto en la máquina anfitriona, lo podemos lanzar ahí mismo.</p>
-
 <p>Hacemos unas peticines al <em>cluster</em> de web, que se esconde detrás del puerto 8080, y comprobamos que van alternando un <em>backend</em> u otro por turnos.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl http://localhost:8080/ ; echo ''
 Content from web1
 gerard@sirius:~$ curl http://localhost:8080/ ; echo ''
@@ -306,9 +268,7 @@ gerard@sirius:~$ curl http://localhost:8080/ ; echo ''
 Content from web2
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Repetimos el procedimiento para la <em>api</em>, que se esconde en el puerto 8081 del balanceador:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl http://localhost:8081/ ; echo ''
 Content from api1
 gerard@sirius:~$ curl http://localhost:8081/ ; echo ''
@@ -319,10 +279,8 @@ gerard@sirius:~$ curl http://localhost:8081/ ; echo ''
 Content from api2
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y solo nos queda ver que la página de estadísticas funciona y nos resulta útil. Puesto que devuelve una página web completa, lo vamos a ver en un navegador cualquiera.</p>
-
-<p><img src="/images/haproxy-stats.jpg" alt="HAProxy Stats" /></p>
+<p><img src="/images/haproxy-stats.jpg" alt="HAProxy Stats"></p>
 
 <div id="disqus_thread"></div>
 <script type="application/javascript">

@@ -56,61 +56,48 @@
 Cada vez que hacía un <em>script</em> que necesitaba guardar la salida en un fichero temporal,
 reutilizaba los nombres o los acumulaba infinitamente en una carpeta temporal, cuyo nombre
 dependía de la inspiración del momento.</p>
-
 <p>Ambos comportamientos suponen un problema a la larga:</p>
-
 <ul>
 <li>El llenado de espacio o de inodos puede causar problemas en un sistema <em>linux</em>
-
 <ul>
 <li>Son servidores, así que es improbable que se reinicien y se libere la carpeta <code>/tmp</code></li>
 <li>Tener varias carpetas de ficheros temporales nos garantiza el caos absoluto y perder nuestros datos</li>
-</ul></li>
+</ul>
+</li>
 <li>El reusado de nombres de ficheros es todavía más peligroso
-
 <ul>
 <li>Podemos sobreescribir algo importante de una ejecución anterior</li>
 <li>Si hay dos ejecuciones paralelas de <em>scripts</em> que trabajen con ese fichero, los resultados serán impredecibles</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>Así pues, cuando yo trabajo con ficheros temporales, siempre utilizo el comando <code>mktemp</code>,
 que nos crea un fichero vacío (garantizando que no existiera) y nos devuelve el <em>path</em>
 completo al mismo; sin embargo <strong>no lo elimina</strong>, siendo este nuestro trabajo.</p>
-
 <p>Para ello, hay dos técnicas utilizadas habitualmente por los que escribimos <em>scripts</em>:</p>
-
 <ul>
 <li>Lo creamos y lo eliminamos sin cerrarlo, con lo que no se eliminará efectivamente hasta que lo cerremos</li>
 <li>Podemos registrar un evento tipo <em>trap</em> para que al salir de nuestro <em>script</em> lo haga el propio <em>shell</em></li>
 </ul>
-
 <p>La que me gusta más es la segunda; es más limpia y no hay que ir con cuidado de no cerrar
 el fichero antes de tiempo. Además, si el <em>script</em> falla, los <em>traps</em> se ejecutan igualmente.</p>
-
-<h2 id="un-ejemplo-práctico">Un ejemplo práctico</h2>
-
+<h2>Un ejemplo práctico</h2>
 <p>Supongamos que tenemos un proceso de importación de datos de un sistema externo. Este
 sistema nos proporciona unos datos en bruto que hay que procesar, cambiar de formato y,
 posiblemente, insertar en una base de datos local.</p>
-
 <p>Para obtener los datos es muy fácil hacerlo en <strong>bash</strong>, o tal vez alguien externo escribió el
 <em>script</em> y no nos apetece reescribirlo; sin embargo, el procesado de datos lo vamos a hacer
 en <strong>python</strong> porque nos ofrece muchas más facilidades para el proceso e inserción de los datos.</p>
-
 <p>Así pues, tenemos un sistema de 3 <em>scripts</em>:</p>
-
 <ul>
 <li>Uno escrito en <strong>bash</strong> que obtiene los datos y los escribe en la salida estándar</li>
 <li>Uno en <strong>python</strong> que los procesa, los modifica y los guarda en la base de datos</li>
 <li>El <em>script</em> principal, también en <strong>bash</strong>, que llama a los otros dos</li>
 </ul>
-
 <p>Para la salida del primer <em>script</em>, necesitamos recoger la salida en un fichero, para poder
 pasárselo al segundo <em>script</em>; vamos a utilizar un fichero temporal para esto. El responsable
 de crear y borrar los ficheros temporales va a ser el <em>script</em> principal, dejando que los
 otros dos <em>scripts</em> simplemente los usen.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/scripts$ cat ingesta_datos_externos.sh 
 #!/bin/bash
 
@@ -122,33 +109,26 @@ trap 'rm -v ${TEMPFILE}' EXIT
 ./procesar_datos.py ${TEMPFILE}
 gerard@sirius:~/scripts$ 
 </code></pre>
-
 <p>Estos dos <em>scripts</em> invocados harán lo que deban: el primero escribirá los datos en
 la salida estándar, y el segundo los leerá para hacer lo que necesitemos; para limitar
 el alcance del artículo, vamos ha hacer que no hagan nada.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/scripts$ cat consultar_sistema_externo.sh 
 #!/bin/bash
 gerard@sirius:~/scripts$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@sirius:~/scripts$ cat procesar_datos.py 
 #!/usr/bin/env python3
 gerard@sirius:~/scripts$ 
 </code></pre>
-
 <p>Nos quedamos con las tres ideas claves del artículo:</p>
-
 <ul>
 <li>Creamos un fichero temporal con <code>mktemp</code>, recogiendo su <em>path</em> en una variable</li>
 <li>Registramos un <em>trap</em> que elimine el fichero cuando el <em>script</em> principal acabe</li>
 <li>Trabajamos alegremente con nuestro fichero temporal, sin importar su nombre o su localización</li>
 </ul>
-
 <p>Si necesitamos más control sobre la posición o el nombre del fichero temporal, podemos
 poner algunos parámetros en la invocación de <code>mktemp</code>, aunque esto lo tendréis que
 estudiar por vosotros mismos; la información está fácilmente a la vista:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/scripts$ mktemp --help
 Modo de empleo: mktemp [OPCIÓN]... [PLANTILLA]
 Crea un fichero o un directorio temporal, de forma segura, y muestra su nombre.
@@ -181,9 +161,7 @@ Full documentation at: &lt;http://www.gnu.org/software/coreutils/mktemp&gt;
 or available locally via: info '(coreutils) mktemp invocation'
 gerard@sirius:~/scripts$ 
 </code></pre>
-
 <p>Y con esto evitamos seguir acumulando ficheros innecesarios, que solo molestan.</p>
-
 <p><strong>Feliz <em>scripting</em>!</strong></p>
 
 <div id="disqus_thread"></div>

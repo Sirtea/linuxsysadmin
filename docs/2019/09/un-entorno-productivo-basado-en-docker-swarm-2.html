@@ -56,63 +56,50 @@
 dockerizado completo. Vamos a ir creando la infraestructura necesaria para alojar
 nuestro <em>cluster</em> de <strong>docker swarm</strong>. Esto implica crear una red privada,
 un <em>gateway</em> para esconderla, y finalmente ataremos el <em>cluster</em> de <strong>docker swarm</strong>.</p>
-
 <p>Como ya comenté, todo este depliegue de servidores se va a hacer mediante el
 uso de virtualización en mi propia máquina, y se va a usar <strong>VirtualBox</strong>.
 Dadas las limitaciones debido a los recursos disponibles, se va a hacer un entono
 más bien pequeño, que puede ser ampliado según se necesite:</p>
-
 <ul>
 <li>Un <em>gateway</em> con 256mb de memoria</li>
 <li>Seis servidores para el <strong>docker swarm</strong> con 1gb de memoria
-
 <ul>
 <li>Tres van a actuar como <em>managers</em></li>
 <li>Tres van a actuar como <em>workers</em></li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>Todos ellos van a tener conexión de red a la red interna, y el <em>gateway</em> también va a
 tener una conexión a la red externa, que en mi caso va a ser un NAT con reenvío de puertos.</p>
-
 <p><strong>TRUCO</strong>: Instalar los 7 servidores es un trabajo largo y pesado; es más inteligente
 instalar uno solo con SSH y clonarlo, adaptando las peculiaridades de cada uno.</p>
-
 <p>Otro detalle es la elección del segmento de red privado: <strong>docker</strong> utiliza las
 direcciones del tipo <code>172.x.x.x</code> y la red de mi casa las del tipo <code>192.168.x.x</code>;
 esto nos deja el rango <code>10.x.x.x</code> para que convivan las direcciones de la red local
 con las direcciones de las redes <em>overlay</em> de <strong>docker</strong>. Así que tengamos claro:</p>
-
 <ul>
-<li><code>10.0.0.x</code> &rarr; Red local entre los servidores virtualizados</li>
-<li><code>10.1.x.x</code> &rarr; Segmento de red que servirá para las redes <em>overlay</em> del <em>swarm</em></li>
+<li><code>10.0.0.x</code> → Red local entre los servidores virtualizados</li>
+<li><code>10.1.x.x</code> → Segmento de red que servirá para las redes <em>overlay</em> del <em>swarm</em></li>
 </ul>
-
 <p>Hay que hacer esta distinción porque el <em>swarm</em> utiliza la red <code>10.x.x.x</code> por
 defecto, y eso puede causar direcciones duplicadas entre ambas redes.</p>
-
-<h2 id="el-gateway">El gateway</h2>
-
+<h2>El gateway</h2>
 <p><strong>AVISO</strong>: Estas instrucciones están sacadas de <a href="/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html">este otro artículo</a>.
 Por comodidad se exponen aquí también, a modo de referencia.</p>
-
 <p>El <em>gateway</em> es una máquina visible desde el exterior de la red privada, y tiene por
 función la de permitir el acceso al exterior a los servidores de la red privada;
 adicionalmente, muchas funcionan como <em>firewall</em> e incluso ofrecen otros servicios
 a los servidores de la red privada.</p>
-
 <p>Esto nos obliga a darle una interfaz de red por segmento de red en el que está.
 Como es el único visible desde el exterior, también conviene que dirija el tráfico
 entrante al servidor que corresponda, siendo necesario que bloquee el tráfico
 que no nos interesa, o que puede representar una amenaza.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ ip a | grep &quot;inet &quot;
     inet 127.0.0.1/8 scope host lo
     inet 10.0.2.15/24 brd 10.0.2.255 scope global dynamic enp0s3
     inet 10.0.0.1/24 brd 10.0.0.255 scope global enp0s8
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/network/interfaces
 ...
 auto enp0s8
@@ -121,21 +108,16 @@ iface enp0s8 inet static
 	netmask 255.255.255.0
 gerard@gateway:~$ 
 </code></pre>
-
 <p>Para permitir las comunicaciones y servir DHCP a los servidores de la red local,
 vamos instalar y configurar <strong>shorewall</strong> y <strong>dnsmasq</strong>, como ya hicimos en el
 <a href="/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html">artículo de referencia</a>.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo apt install shorewall dnsmasq
 ...
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="configuración-de-dnsmasq-dns-y-dhcp">Configuración de dnsmasq: DNS y DHCP</h3>
-
+<h3>Configuración de dnsmasq: DNS y DHCP</h3>
 <p>Configuramos el DHCP e instruimos al <em>gateway</em> a utilizarse a sí mismo como servidor DNS;
 Ya de paso establecemos direcciones IP &ldquo;fijas&rdquo; para los nodos del <em>swarm</em>, que usarán DHCP.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/dnsmasq.d/custom 
 interface=enp0s8
 dhcp-range=10.0.0.200,10.0.0.250,1h
@@ -147,36 +129,29 @@ dhcp-host=docker05,10.0.0.7,1h
 dhcp-host=docker06,10.0.0.8,1h
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep gateway /etc/hosts
 10.0.0.1	gateway
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep prepend /etc/dhcp/dhclient.conf
 prepend domain-name-servers 127.0.0.1;
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="configuración-de-shorewall-firewall-y-nat">Configuración de shorewall: firewall y NAT</h3>
-
+<h3>Configuración de shorewall: firewall y NAT</h3>
 <p>Repitiendo el <a href="/2019/07/otro-gateway-con-debian-shorewall-y-dnsmasq.html">artículo de referencia</a>, nos limitamos a declarar las zonas,
 interfaces, políticas y reglas específicas; no nos podemos olvidar tampoco del
 <em>MASQUERADE</em> ni del <em>FORWARDING</em>.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/zones
 fw firewall
 net ipv4
 loc ipv4
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/interfaces 
 net enp0s3 detect dhcp,tcpflags,nosmurfs,routefilter,logmartians
 loc enp0s8 detect dhcp,tcpflags,nosmurfs,routefilter,logmartians
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/policy 
 net all DROP info
 fw all ACCEPT
@@ -184,77 +159,58 @@ loc net ACCEPT
 all all REJECT info
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/rules 
 ACCEPT net fw tcp 22
 DNS(ACCEPT) loc fw
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep FORWARDING /etc/shorewall/shorewall.conf
 IP_FORWARDING=Yes
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/snat 
 MASQUERADE 10.0.0.0/24 enp0s3
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="el-gateway-listo">El gateway listo</h3>
-
+<h3>El gateway listo</h3>
 <p>Solo necesitamos habilitar el servicio <strong>shorewall</strong> y reiniciamos el servidor:</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo systemctl enable shorewall
 Synchronizing state of shorewall.service with SysV service script with /lib/systemd/systemd-sysv-install.
 Executing: /lib/systemd/systemd-sysv-install enable shorewall
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo reboot
 Connection to gateway closed by remote host.
 </code></pre>
-
-<h2 id="el-cluster-de-docker-swarm">El cluster de docker swarm</h2>
-
+<h2>El cluster de docker swarm</h2>
 <p>Para crear el <em>cluster</em> de <strong>docker swarm</strong> vamos a necesitar una serie de servidores
 con <strong>docker</strong> instalado; basándonos en las decisiones del principio del artículo van
 a ser 3 <em>managers</em> y, de momento, 3 <em>workers</em>. Me limitaré a instalar uno, que iré clonando.</p>
-
-<h3 id="los-servidores">Los servidores</h3>
-
+<h3>Los servidores</h3>
 <p>Partimos de una imagen básica con SSH, conectada a la red interna (la misma que la
 segunda pata del <em>gateway</em>); con una configuración de red básica por DHCP debería funcionar,
 ya que el <em>gateway</em> le suministrará una dirección IP.</p>
-
 <p>Vamos a llamar a esta máquina <strong>docker</strong>, por poner algo; los clones van a cambiar ese nombre.
 Es importante que no incluyan la relación entre el nombre del servidor y su dirección en
 <code>/etc/hosts</code>; de esa resolución ya se encargará el servidor DNS del <em>gateway</em>.</p>
-
 <p>A partir de aquí, solo nos queda instalar <strong>docker</strong>, y vamos a optar por la versión fácil:</p>
-
 <pre><code class="language-bash">gerard@docker:~$ wget -qO- http://get.docker.com/ | bash
 ...
 gerard@docker:~$ sudo usermod -aG docker gerard
 gerard@docker:~$ 
 </code></pre>
-
 <p>Y teniendo la imagen base, solo nos queda clonarla, creando las máquinas <strong>docker01</strong>,
 <strong>docker02</strong>, <strong>docker03</strong>, <strong>docker04</strong>, <strong>docker05</strong> y <strong>docker06</strong>. Como punto a aclarar,
 se recomienda levantarlas una por una; los clones declaran el mismo <em>hostname</em>, como indica
 el fichero <code>/etc/hostname</code>, y por lo tanto, <strong>dnsmasq</strong> se hace un lío con la asignación de IPs.</p>
-
 <p>Así pues la clono, la levanto, modifico el fichero <code>/etc/hostname</code> y la reinicio; repito hasta
 tener las 6 máquinas que van a formar el <em>cluster</em> de <strong>docker swarm</strong>. La idea es que tengamos:</p>
-
 <ul>
-<li><strong>docker01</strong>, <strong>docker02</strong> y <strong>docker03</strong> &rarr; Serán los <em>managers</em></li>
-<li><strong>docker04</strong>, <strong>docker05</strong> y <strong>docker06</strong> &rarr; Serán los <em>workers</em></li>
+<li><strong>docker01</strong>, <strong>docker02</strong> y <strong>docker03</strong> → Serán los <em>managers</em></li>
+<li><strong>docker04</strong>, <strong>docker05</strong> y <strong>docker06</strong> → Serán los <em>workers</em></li>
 </ul>
-
 <p>Si lo hemos hecho bien, tendremos las máquinas registradas en <strong>dnsmasq</strong> y con las direcciones
 IP &ldquo;fijas&rdquo; que indicamos en la configuración de <strong>dnsmasq</strong>; algo así:</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /var/lib/misc/dnsmasq.leases | awk '{print $4&quot;: &quot;$3}' | sort
 docker01: 10.0.0.3
 docker02: 10.0.0.4
@@ -264,24 +220,19 @@ docker05: 10.0.0.7
 docker06: 10.0.0.8
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="montando-el-cluster">Montando el cluster</h3>
-
+<h3>Montando el cluster</h3>
 <p>Para montar el <em>cluster</em> de <strong>docker swarm</strong> solo necesitamos lanzar en sus servidores algún comando:</p>
-
 <ul>
 <li>Un <code>docker swarm init</code> en uno de los nodos, que se va a convertir en <em>manager</em></li>
 <li>Un <code>docker swarm join</code> en el resto de nodos
-
 <ul>
 <li>Con el <em>token</em> de <em>manager</em> en los que vayan a serlo</li>
 <li>Con el <em>token</em> de <em>worker</em> en el resto</li>
 <li>Alternativamente podemos hacerlos todos <em>workers</em> y promocionarlos después</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>Así que vamos a <strong>docker01</strong> y lanzamos:</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ docker swarm init --default-addr-pool 10.1.0.0/16
 Swarm initialized: current node (ai1kllx5blrdxqq0r8azm8lam) is now a manager.
 
@@ -293,11 +244,8 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 gerard@docker01:~$ 
 </code></pre>
-
 <p><strong>NOTA</strong>: Acordáos de cambiar el rango de red para no colisionar con las IPs de la red privada.</p>
-
 <p>Sacamos los <em>tokens</em> para unirse al <em>swarm</em>, tanto para <em>managers</em> como para <em>workers</em>:</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ docker swarm join-token manager
 To add a manager to this swarm, run the following command:
 
@@ -305,7 +253,6 @@ To add a manager to this swarm, run the following command:
 
 gerard@docker01:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker01:~$ docker swarm join-token worker
 To add a worker to this swarm, run the following command:
 
@@ -313,37 +260,29 @@ To add a worker to this swarm, run the following command:
 
 gerard@docker01:~$ 
 </code></pre>
-
 <p>Solo tenemos que ejecutar el primero en <strong>docker02</strong> y en <strong>docker03</strong> (<strong>docker01</strong> ya es
 parte del <em>cluster</em> y un <em>manager</em>), y el segundo en <strong>docker04</strong>, <strong>docker05</strong> y <strong>docker06</strong>.</p>
-
 <pre><code class="language-bash">gerard@docker02:~$ docker swarm join --token SWMTKN-1-3lbcngwk7frrtgz627p9r4xna5tbh5rre3tjlmggeb7ka5y9dk-2ufy46xqt0w6etkh6oxksc0br 10.0.0.3:2377
 This node joined a swarm as a manager.
 gerard@docker02:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker03:~$ docker swarm join --token SWMTKN-1-3lbcngwk7frrtgz627p9r4xna5tbh5rre3tjlmggeb7ka5y9dk-2ufy46xqt0w6etkh6oxksc0br 10.0.0.3:2377
 This node joined a swarm as a manager.
 gerard@docker03:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker04:~$ docker swarm join --token SWMTKN-1-3lbcngwk7frrtgz627p9r4xna5tbh5rre3tjlmggeb7ka5y9dk-aejxw8c8rospdwk3vpkbcwc29 10.0.0.3:2377
 This node joined a swarm as a worker.
 gerard@docker04:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker05:~$ docker swarm join --token SWMTKN-1-3lbcngwk7frrtgz627p9r4xna5tbh5rre3tjlmggeb7ka5y9dk-aejxw8c8rospdwk3vpkbcwc29 10.0.0.3:2377
 This node joined a swarm as a worker.
 gerard@docker05:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@docker06:~$ docker swarm join --token SWMTKN-1-3lbcngwk7frrtgz627p9r4xna5tbh5rre3tjlmggeb7ka5y9dk-aejxw8c8rospdwk3vpkbcwc29 10.0.0.3:2377
 This node joined a swarm as a worker.
 gerard@docker06:~$ 
 </code></pre>
-
 <p>Si lo hemos hecho bien, podremos ver la lista de nodos del <em>swarm</em> desde cualquier <em>manager</em>, así como su estado:</p>
-
 <pre><code class="language-bash">gerard@docker01:~$ docker node ls
 ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
 ai1kllx5blrdxqq0r8azm8lam *   docker01            Ready               Active              Leader              19.03.1
@@ -354,7 +293,6 @@ ek2thbbuapf13k5sgznpv0hhp     docker05            Ready               Active    
 xagr8a97pw3phevilhcnu6bdu     docker06            Ready               Active                                  19.03.1
 gerard@docker01:~$ 
 </code></pre>
-
 <p>Y con esto ya tenemos la infraestructura lista.</p>
 
 <hr />

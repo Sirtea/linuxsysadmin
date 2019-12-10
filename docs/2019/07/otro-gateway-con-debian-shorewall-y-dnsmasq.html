@@ -53,37 +53,28 @@
 </p>
 
 <p>Hace ya algún tiempo escribí <a href="/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html">un artículo</a> sobre como montar un <em>gateway</em> utilizando <strong>Debian</strong>, <strong>iptables</strong> y <strong>dnsmasq</strong>. Siguiendo mi política de ir actualizando los artículos más útiles, y visto la aparición en mi <em>toolbox</em> de <a href="/tag/shorewall.html">una nueva herramienta</a> para simplificar <strong>iptables</strong>, le ha tocado una reescritura al artículo mencionado anteriormente.</p>
-
 <p>Haciendo memoria, se trataba de un servidor <em>gateway</em> que permitía esconder una red privada de máquinas y actuar como representante. Lo que era una curiosidad, se volvió muy útil durante el proceso de <em>clusterización</em> de mi infraestructura, así como de los artículos de <em>clusteres</em> que he escrito desde entonces.</p>
-
 <p>Las funciones de este <em>gateway</em> eran:</p>
-
 <ul>
 <li>Comunicar una red pública con una red privada:
-
 <ul>
 <li>Añadimos seguridad con reglas de <em>firewall</em> para restringir las comunicaciones indeseadas.</li>
 <li>Utilizamos DNAT para &ldquo;abrir los puertos&rdquo; que queramos ofrecer a la red pública.</li>
 <li>Haciendo SNAT o MASQUERADE para que los servidores de la red privada puedan acceder a internet.</li>
-</ul></li>
+</ul>
+</li>
 <li>Ofrecer servicios a los servidores de la red interna, concretamente DNS y DHCP</li>
 </ul>
-
-<h2 id="el-servidor-base">El servidor base</h2>
-
+<h2>El servidor base</h2>
 <p>Partimos de un servidor <strong>Debian Stretch</strong> básico, con SSH y nada más. Por sus funciones va a necesitar dos interfaces de red, conectadas a cada una de las redes implicadas.</p>
-
 <p><strong>UPDATE</strong>: Se ha probado con éxito el mismo procedimiento con la <strong>Debian Buster</strong>, que este fin de semana se publicó como la nueva estable.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ ip a | grep &quot;inet &quot;
     inet 127.0.0.1/8 scope host lo
     inet 10.0.2.15/24 brd 10.0.2.255 scope global enp0s3
     inet 10.0.0.1/24 brd 10.0.0.255 scope global enp0s8
 gerard@gateway:~$ 
 </code></pre>
-
 <p>Se ha dado una IP fija en la red privada por comodidad, y hemos dejado la red pública con su configuración habitual. Concretamente se ha hecho modificando el fichero <code>/etc/network/interfaces</code>, como sigue:</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/network/interfaces
 ...
 auto enp0s8
@@ -92,62 +83,45 @@ iface enp0s8 inet static
 	netmask 255.255.255.0
 gerard@gateway:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: En este punto, se entiende que la configuración está aplicada, sea manualmente o por reinicio del servidor.</p>
-
-<h2 id="instalando-los-servicios-básicos">Instalando los servicios básicos</h2>
-
+<h2>Instalando los servicios básicos</h2>
 <p>De entrada, vamos a necesitar los dos paquetes que nos ofrecen todos los servicios que necesitamos: <strong>shorewall</strong> y <strong>dnsmasq</strong>; los instalamos:</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo apt install shorewall dnsmasq
 ...
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="configuración-de-dnsmasq-dns-y-dhcp">Configuración de dnsmasq: DNS y DHCP</h3>
-
+<h3>Configuración de dnsmasq: DNS y DHCP</h3>
 <p>Para que <strong>dnsmasq</strong> ofrezca el servicio DHCP, necesitaremos alguna configuración adicional; para mantener las configuraciones limpias, vamos a utilizar un fichero extra de configuración en <code>/etc/dnsmasq.d/</code>.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/dnsmasq.d/custom 
 interface=enp0s8
 dhcp-range=10.0.0.200,10.0.0.250,1h
 #dhcp-host=server,10.0.0.251,1h
 gerard@gateway:~$ 
 </code></pre>
-
 <p>El servicio DNS ya se ofrece por defecto, sin cambios adicionales. Solamente nos vamos a asegurar que el <em>gateway</em> se resuelva a una IP privada (no a 127.0.0.1), por si algún servidor de la red privada lo quisiera referenciar por nombre.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep gateway /etc/hosts
 10.0.0.1	gateway
 gerard@gateway:~$ 
 </code></pre>
-
 <p>Nos conviene que el <em>gateway</em> se use a sí mismo para resolver DNS, por ejemplo, para poder utilizar el nombre de los servidores privados en vez de su IP; esta relación solo la sabe <strong>dnsmasq</strong>. Como nuestro <em>gateway</em> consigue sus DNS por DHCP de la red pública, necesitamos configurar &ldquo;algo&rdquo; para que se añada su propia IP al principio de la lista; esto lo conseguimos en la configuración del <strong>dhclient</strong>:</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep prepend /etc/dhcp/dhclient.conf
 prepend domain-name-servers 127.0.0.1;
 gerard@gateway:~$ 
 </code></pre>
-
-<h3 id="configuración-de-shorewall-firewall-y-nat">Configuración de shorewall: firewall y NAT</h3>
-
+<h3>Configuración de shorewall: firewall y NAT</h3>
 <p><strong>AVISO</strong>: La configuración de <strong>shorewall</strong> pasa por editar un puñado de ficheros de configuración. Para aquellos que no lo tengáis claro, podéis <a href="/2019/04/protegiendo-servidores-con-iptables-usando-shorewall.html">leer más al respecto</a>.</p>
-
 <p>Para las funciones de <em>firewall</em>, empezaremos definiendo las zonas, las interfaces, las políticas por defecto y las excepciones a las políticas editando los ficheros de <code>zones</code>, <code>interfaces</code>, <code>policy</code> y <code>rules</code>, todos ellos en <code>/etc/shorewall/</code>. Utilizaré la convención de que <code>net</code> es la red pública y <code>loc</code> es la red privada o local.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/zones
 fw firewall
 net ipv4
 loc ipv4
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/interfaces 
 net enp0s3 detect dhcp,tcpflags,nosmurfs,routefilter,logmartians
 loc enp0s8 detect dhcp,tcpflags,nosmurfs,routefilter,logmartians
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/policy 
 net all DROP info
 fw all ACCEPT
@@ -155,46 +129,35 @@ loc net ACCEPT
 all all REJECT info
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/rules 
 ACCEPT net fw tcp 22
 DNS(ACCEPT) loc fw
 #DNAT net loc:10.0.0.2:80 tcp 80
 gerard@gateway:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El fichero <code>rules</code> es bastante simple, y tiene unas reglas muy dependientes de las necesidades particulares de cada <em>firewall</em>. Váis a perder mucho tiempo editando este fichero en varias ocasiones; por el momento, permito SSH y DNS desde la red privada.</p>
-
 <p>Las funciones de <em>gateway</em> o NAT, pasan por permitir el <em>FORWARDING</em> de paquetes de red, y hacer el MASQUERADE pertinente de los paquetes que salgan por <code>enp0s3</code>. Esto se hace editando otros ficheros, tal como indico en <a href="/2019/04/construyendo-firewalls-complejos-de-varias-patas-con-shorewall.html">otro artículo</a>.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ grep FORWARDING /etc/shorewall/shorewall.conf
 #IP_FORWARDING=Keep
 IP_FORWARDING=Yes
 gerard@gateway:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@gateway:~$ cat /etc/shorewall/snat 
 MASQUERADE 10.0.0.0/24 enp0s3
 gerard@gateway:~$ 
 </code></pre>
-
 <p>Finalmente, hay que activar el servicio <strong>shorewall</strong> para que levante en cada reinicio; esto no lo hace por defecto porque <strong>shorewall</strong> viene sin configurar y representaría un problema de seguridad.</p>
-
 <pre><code class="language-bash">gerard@gateway:~$ sudo systemctl enable shorewall
 Synchronizing state of shorewall.service with SysV service script with /lib/systemd/systemd-sysv-install.
 Executing: /lib/systemd/systemd-sysv-install enable shorewall
 gerard@gateway:~$ 
 </code></pre>
-
-<h2 id="activando-los-servicios">Activando los servicios</h2>
-
+<h2>Activando los servicios</h2>
 <p>Tras instalar y configurar los servicios, estos deben levantarse. Esto no se hace por defecto, y aunque lo hicieran, deberían reiniciarse para aplicar las nuevas configuraciones. Dependiendo de vuestro caso de uso, podéis hacerlo de dos maneras:</p>
-
 <ul>
 <li>Reiniciando manualmente los servicios: <code>sudo systemctl restart dnsmasq</code> y <code>sudo systemctl restart shorewall</code></li>
 <li>Reiniciando directamente el servidor; personalmente prefiero esta para comprobar que todo se levanta bien de forma independiente.</li>
 </ul>
-
 <p>Hecho esto ya tenemos el <em>gateway</em> plenamente funcional y podemos empezar a enchufar servidores en la red privada. La configuración a modificar de ahora en adelante es mínima (reglas de firewall y asignación de DHCP), así que es un buen momento para hacer un <em>backup</em>&hellip;</p>
 
 <div id="disqus_thread"></div>

@@ -53,62 +53,41 @@
 </p>
 
 <p>Hace mucho tiempo que me fascinan las APIs REST; sin embargo siempre he pasado de sistemas de autenticación en mis proyectos personales. Cuando me puse en serio a investigar sobre este tema, descubrí la autenticación basada en <em>tokens</em>, y especialmente, los <strong>JSON Web Tokens</strong>, que es lo que explico hoy.</p>
-
 <p>Cuando leemos las buenas prácticas de los servicios REST, una de las máximas es que <strong>no hay estado</strong>; eso significa que no hay peticiones a medias, ni sesiones ni nada: todo lo necesario para completar una llamada está en la misma petición.</p>
-
 <p>Tradicionalmente, hemos pasado el usuario y la contraseña de algún modo en las cabeceras, evitando a terceros mediante el uso de HTTPS. Este método requiere la validación de las credenciales en cada petición, y supone un estrés innecesario a la base de datos.</p>
-
 <p>Este panorama cambia cuando aparece una nueva filosofía: hacer <em>login</em> una vez y expedir un <em>token</em> con toda la información necesaria para futuras peticiones, probablemente con validez temporal.</p>
-
 <p>Los <a href="https://jwt.io/">JSON Web Tokens</a> funcionan de esta manera, aunque no intentan encriptar ningún dato; se limitan a la verificación de que la firma del mensaje es válida.</p>
-
-<h2 id="forma-de-un-token-jwt">Forma de un token JWT</h2>
-
+<h2>Forma de un token JWT</h2>
 <p>Un <em>token</em> JWT tiene la forma <code>xxxxx.yyyyy.zzzzz</code>, con 3 partes separadas por puntos:</p>
-
 <ul>
 <li>Una cabecera, que es una especificación del tipo de <em>token</em> y un base64 del algoritmo de <em>hash</em> usado.</li>
 <li>Un payload, que es la información arbitraria que cargamos en el momento de crear el <em>token</em> y está en base64; algunos campos tienen significado especial.</li>
 <li>Una firma, que es un <em>hash</em> del mensaje con una clave del servidor, que sirve para que el servidor pueda verificarla como suya.</li>
 </ul>
-
 <p>Veamos un ejemplo, con el siguiente token:</p>
-
 <pre><code class="language-bash">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoiMTUyOTQwMzc5NSJ9.07VsjI6OFGjMwYTmzE9g8qoPpXJYAB5DuGiIROOY4HM
 </code></pre>
-
 <p><strong>NOTA</strong>: La forma habitual de obtener este <em>token</em> es mediante una operación de <em>login</em>, y normalmente tiene una fecha de expiración, que en JWT es el campo <code>exp</code>, como un <em>unix timestamp</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/jwttest$ echo &quot;eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9&quot; | base64 -d; echo ''
 {&quot;alg&quot;:&quot;HS256&quot;,&quot;typ&quot;:&quot;JWT&quot;}
 gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/jwttest$ echo &quot;eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoiMTUyOTQwMzc5NSJ9&quot; | base64 -d; echo ''
 {&quot;user&quot;:&quot;gerard&quot;,&quot;exp&quot;:&quot;1529403795&quot;}
 gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>Cualquiera (salvo uso de HTTPS) puede ver la información contenida en el <em>token</em>. Sin embargo, para verificar la firma se necesita saber la clave con la que se cifró. De esta forma, un servidor puede expedir un <em>token</em> con información, pero gracias a la firma puede verificar que el <em>token</em> que le devuelven es el que expedió y no ha sido modificado por un tercero.</p>
-
 <p>Como punto a favor, el estándar JWT permite firmar con una sola clave, o usando un par de claves RSA, la privada para cifrar y la pública para desencriptar. Esto hace que nuestros auditores de seguridad se queden tranquilos, aunque como veremos, solo tiene utilidad real en algunos casos.</p>
-
-<h2 id="creando-un-token-con-una-clave-simétrica">Creando un token con una clave simétrica</h2>
-
+<h2>Creando un token con una clave simétrica</h2>
 <p>Este es el caso de uso más simple: un solo servicio genera y consume el <em>token</em>. En este tipo de casos nos importa poco que se encripte y se desencripte con la misma clave, así que vamos a lo simple.</p>
-
-<p><img src="/images/JWT_Symmetric_Key.png" alt="JWT de clave simétrica" /></p>
-
+<p><img src="/images/JWT_Symmetric_Key.png" alt="JWT de clave simétrica"></p>
 <p>Como lo vamos a hacer en <strong>python</strong>, vamos a necesitar una librería que siga este estándar, por ejemplo, <code>PyJWT</code>:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ pip freeze
 ...
 PyJWT==1.6.4
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>Vamos a utilizar un <em>script</em> para generar el <em>token</em> y otro para validarlo, que son estos:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ cat simple_encode.py
 import jwt
 import datetime
@@ -125,7 +104,6 @@ payload = {
 print jwt.encode(payload, KEY, algorithm='HS256')
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ cat simple_decode.py
 import jwt
 import datetime
@@ -137,60 +115,43 @@ TOKEN = sys.argv[2]
 print jwt.decode(TOKEN, KEY, algorithm='HS256')
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>En algún punto, expedimos un <em>token</em> con un <em>secret</em> dado:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ python simple_encode.py secret gerard
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoxNTI5NDA1NTU0fQ.3KNRsiIEcOvxN5b8Tgv_5qd8_58nA91fCkPxmnNr9F0
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>Si lo intentamos verificar con el mismo <em>secret</em>, no hay problema:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ python simple_decode.py secret eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoxNTI5NDA1NTU0fQ.3KNRsiIEcOvxN5b8Tgv_5qd8_58nA91fCkPxmnNr9F0
 {u'user': u'gerard', u'exp': 1529405554}
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>Un <em>secret</em> que no corresponde nos da un error, indicando que no es el <em>secret</em> con el que ciframos y desciframos, seguramente porque nos han dado el cambiazo, y por lo tanto, rechazamos el <em>token</em>:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ python simple_decode.py badsecret eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoxNTI5NDA1NTU0fQ.3KNRsiIEcOvxN5b8Tgv_5qd8_58nA91fCkPxmnNr9F0
 Traceback (most recent call last):
 ...
 jwt.exceptions.InvalidSignatureError: Signature verification failed
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>Si dejamos pasar el tiempo de expiración, el <em>token</em> también pasa a ser inválido:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ python simple_decode.py secret eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZ2VyYXJkIiwiZXhwIjoxNTI5NDA1NTU0fQ.3KNRsiIEcOvxN5b8Tgv_5qd8_58nA91fCkPxmnNr9F0
 Traceback (most recent call last):
 ...
 jwt.exceptions.ExpiredSignatureError: Signature has expired
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>De esta forma podemos estar seguros que no se ha generado un <em>token</em> por un tercero, y que el que dimos no ha sido modificado.</p>
-
-<h2 id="creando-un-token-con-una-clave-asimétrica">Creando un token con una clave asimétrica</h2>
-
+<h2>Creando un token con una clave asimétrica</h2>
 <p>Se trata de un caso un poco más complicado: un servicio genera el <em>token</em> y otros lo consumen. En estos casos conviene que solo uno pueda cifrar, y todos puedan verificarlo; de esta forma, una API comprometida no expone el algoritmo de encriptación y evitamos suplantaciones.</p>
-
 <p>Este caso se utiliza en esquemas de <em>single sign on</em>, en donde un servicio de autenticación genera el <em>token</em>, indicando a qué aplicaciones tiene acceso un usuario. La responsabilidad de verificar el permiso recae en cada aplicación individual.</p>
-
-<p><img src="/images/JWT_Single_Sign_On.png" alt="JWT de clave asimétrica" /></p>
-
+<p><img src="/images/JWT_Single_Sign_On.png" alt="JWT de clave asimétrica"></p>
 <p>Vamos a asegurarnos que tenemos las librerías <strong>python</strong> necesarias:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ pip freeze
 ...
 PyJWT==1.6.4
 cryptography==2.2.2
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>También vamos a necesitar el par de claves RSA:</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ openssl genrsa -out private.pem 1024
 Generating RSA private key, 1024 bit long modulus
 ...........................++++++
@@ -198,16 +159,12 @@ Generating RSA private key, 1024 bit long modulus
 e is 65537 (0x010001)
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace/jwttest$ openssl rsa -in private.pem -pubout -out public.pem
 writing RSA key
 (env) gerard@atlantis:~/workspace/jwttest$
 </code></pre>
-
 <p>La idea es que la clave privada se queda en el servidor de autenticación, de forma que <strong>puede cifrar</strong>. La parte publica es para todas las aplicaciones que necesiten <strong>verificar</strong> el <em>token</em>. De esta forma solo una puede expedir <em>tokens</em>, y por lo tanto, es el único punto de <em>hacking</em> del sistema distribuído.</p>
-
 <p>En el servidor de autenticación haríamos algo así:</p>
-
 <pre><code class="language-python">def create_new_token(user, permissions):
     expire = datetime.timedelta(seconds=EXPIRE_SECONDS)
     payload = {
@@ -217,9 +174,7 @@ writing RSA key
     }
     return jwt.encode(payload, JWT_PRIVATE_KEY, algorithm='RS256')
 </code></pre>
-
 <p>Mientras que si el usuario facilita un <em>token</em> a una aplicación, esta hará algo como:</p>
-
 <pre><code class="language-python">def extract_token(token):
     try:
         decoded = jwt.decode(token, JWT_PUBLIC_KEY, algorithms='RS256')
@@ -227,7 +182,6 @@ writing RSA key
     except:
         raise
 </code></pre>
-
 <p>De esta forma se puede validar el <em>token</em>, que sea correcto, no se haya modificado, no esté expirado y con la seguridad que solo lo pudo generar el servidor de autenticación. No hace falta para nada ir a la base de datos, o pedir una verificación al creador del <em>token</em>. Lo único que no verifica este método es si el <em>payload</em> incluye permisos para  el uso del método de la API solicitado.</p>
 
 <div id="disqus_thread"></div>

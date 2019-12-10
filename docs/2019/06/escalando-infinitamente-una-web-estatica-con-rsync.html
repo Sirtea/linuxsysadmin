@@ -53,56 +53,41 @@
 </p>
 
 <p>Hace unos meses recibí una petición interesante; unos conocidos querían exponer un sitio web estático, pero lo querían replicado en muchos sitios porque era posible que les fueran cerrando sitios por su dudosa legalidad. Por supuesto me negué, pero el desafío era muy estimulante, así que intenté diseñarlo <em>a posteriori</em>.</p>
-
 <p>Ir copiando ficheros estáticos cada vez que se hace una modificación o se pone en circulación un nuevo servidor no es escalable, especialmente si hablamos de números grandes de servidores; así que mi solución pasó porque cada <em>replica</em> se clonara de otra de forma automatizada.</p>
-
 <p>La idea es simple:</p>
-
 <ul>
 <li>El nodo <em>master</em> dispone del sitio original, y posiblemente es donde se genera.</li>
 <li>Los nodos <em>replica</em> se limitan a clonar a un <em>master</em> o a una <em>replica</em> con soporte a clonado.
-
 <ul>
 <li>Opcionalmente pueden servir el sitio para su clonado por parte de otras <em>replicas</em>.</li>
 <li>Opcionalmente pueden servir el sitio mediante un servidor web.</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>De esta manera, podemos descargar al <em>master</em> clonando de <em>replicas</em> y tenemos el sitio alojado en un montón de <em>replicas</em>. Con un diseño inteligente de nuestra red, podemos escalar bastante clonando de <em>replicas</em> intermedias y reconfigurando las <em>replicas</em> dependientes de una que nos hayan podido cerrar.</p>
-
 <p>Si nos creemos que la cadena de clonado funciona, eventualmente todas las <em>replicas</em> se irán actualizando tal como la original vaya cambiando. Si algún nodo no actualizara, siempre dispondría de una copia ligeramente desactualizada, aunque funcional.</p>
-
 <p><strong>TRUCO</strong>: Dada la naturaleza incremental y la escasa modificación del sitio, una herramienta tipo <strong>rsync</strong> puede ser de gran utilidad.</p>
-
-<h2 id="preparando-las-piezas">Preparando las piezas</h2>
-
+<h2>Preparando las piezas</h2>
 <p>De acuerdo con el diseño anterior, todo los nodos se pueden montar con tres piezas simples y con una función bien especificada:</p>
-
 <ul>
 <li>Un servidor de ficheros <strong>rsync</strong></li>
 <li>Un clonador de ficheros que sea un cliente de <strong>rsync</strong></li>
 <li>Un servidor web para ofrecer el contenido</li>
 </ul>
-
 <p>Cada nodo tendría una configuración de las anteriores, dependiendo de su función:</p>
-
 <ul>
 <li>El nodo <em>master</em> sirve por <strong>rsync</strong> su carpeta de ficheros HTML</li>
 <li>Los nodos <em>replicas</em> clonan por <strong>rsync</strong> el contenido estático y opcionalmente pueden:
-
 <ul>
 <li>Ofrecer la replica por <strong>rsync</strong> para otras <em>replicas</em></li>
 <li>Ofrecer los ficheros replicados vía web</li>
 <li>Por supuesto pueden hacer ambas funciones, pero tendrán que hacer al menos una de ellas para ser útiles</li>
-</ul></li>
 </ul>
-
+</li>
+</ul>
 <p>Tiene sentido empaquetar las piezas como imágenes <strong>docker</strong>, para su fácil distribución y montado en cada nodo. Es responsabilidad del administrador de cada nodo saber qué servicios tiene que levantar, monitorizar la salud de la <em>replica</em> de la que están clonando y reconfigurar el clonador si es necesario.</p>
-
-<h3 id="el-servidor-rsync">El servidor rsync</h3>
-
+<h3>El servidor rsync</h3>
 <p>Aunque estamos acostumbrados a utilizar <strong>rsync</strong> por SSH, este puede funcionar de forma independiente. Para ello vamos a necesitar una imagen con <strong>rsync</strong> instalado y una configuración relevante:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ cat build/fileserver/Dockerfile 
 FROM alpine:3.9
 RUN apk add --no-cache rsync
@@ -110,9 +95,7 @@ COPY rsyncd.conf /etc/
 CMD [&quot;rsync&quot;, &quot;--daemon&quot;, &quot;--no-detach&quot;]
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>Indicamos la configuración, simple pero potente; la único importante es la carpeta que servimos y que el servidor solo va a permitir que lean los ficheros, de forma que no nos puedan modificar desde las <em>replicas</em>.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ cat build/fileserver/rsyncd.conf 
 use chroot = yes
 read only = yes
@@ -122,20 +105,14 @@ log file = /dev/stdout
 path = /srv/public
 gerard@tartarus:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Con esta configuración servimos el <em>path</em> <code>/srv/public</code> (es la directiva <code>path</code>) en la ruta <code>/public</code> (es la sección de la configuración).</p>
-
 <p>La construcción de la imagen tampoco tiene ningún misterio:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker build -t fileserver build/fileserver/
 ...
 gerard@tartarus:~$ 
 </code></pre>
-
-<h3 id="el-cliente-de-clonación">El cliente de clonación</h3>
-
+<h3>El cliente de clonación</h3>
 <p>No vamos a hacer nada demasiado complicado en este paso; se trata de una imagen con <strong>rsync</strong> que va a ejecutar un <em>script</em>.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ cat build/cloner/Dockerfile 
 FROM alpine:3.9
 RUN apk add --no-cache rsync
@@ -143,9 +120,7 @@ COPY run.sh /
 CMD [&quot;/run.sh&quot;]
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>Este <em>script</em> se limita a lanzar el comando <code>rsync</code> para el clonado de su origen, de forma infinita y con una espera entre llamadas para no saturar a su nodo origen.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ cat build/cloner/run.sh 
 #!/bin/sh
 
@@ -158,29 +133,20 @@ while true; do
 done
 gerard@tartarus:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El <em>script</em> tiene permisos de escritura; sino la imagen no lo ejecuta.</p>
-
 <p>Construimos la imagen de la forma habitual:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker build -t cloner build/cloner/
 gerard@tartarus:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El resultado de la clonación acaba en <code>/srv/files</code>, tal como indica el comando <code>rsync</code> del <em>script</em>.</p>
-
-<h3 id="el-servidor-web">El servidor web</h3>
-
+<h3>El servidor web</h3>
 <p>Por su escaso uso de recursos y su fácil configuración, elijo <strong>nginx</strong>. Esta es una decisión arbitraria y se puede cambiar.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ cat build/webserver/Dockerfile 
 FROM sirrtea/nginx:alpine
 COPY www.conf /etc/nginx/conf.d/
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>La configuración es clara y concisa y no necesita más explicaciones:</p>
-
 <pre><code>gerard@tartarus:~$ cat build/webserver/www.conf 
 server {
     listen 80;
@@ -195,19 +161,13 @@ server {
 }
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>Construimos la imagen sin complicaciones:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker build -t webserver build/webserver/
 gerard@tartarus:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong> El servidor web va a servir el contenido web localizado en <code>/srv/www</code></p>
-
-<h2 id="distribuyendo-las-imágenes">Distribuyendo las imágenes</h2>
-
+<h2>Distribuyendo las imágenes</h2>
 <p>Tras la preparación de las piezas en el punto anterior, hemos obtenido 3 imágenes:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 webserver           latest              b282a42d624d        2 minutes ago       6.97MB
@@ -215,31 +175,21 @@ cloner              latest              dc7d403cedc4        6 minutes ago       
 fileserver          latest              f05e021118f5        17 minutes ago      6.08MB
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>Vamos a necesitar que estas imágenes lleguen de alguna manera a cada <em>replica</em> que pongamos en circulación, mediante alguno de los siguientes métodos:</p>
-
 <ul>
 <li>Uso de un registro de <strong>docker</strong></li>
 <li>Construcción local en cada <em>replica</em></li>
 <li>Distribución de las imágenes en un medio físico</li>
 </ul>
-
 <p>Utilizaré la tercera por comodidad. Para ello, voy a utilizar el comando <code>docker save</code> para obtener las imágenes un un fichero comprimido, y el comando <code>docker load</code> para cargar las imágenes del fichero comprimido a cada <em>replica</em>.</p>
-
 <p>De momento, obtenemos las imágenes en un fichero comprimido y lo restableceremos en las <em>replicas</em> cuando las vayamos montando:</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker save fileserver cloner webserver | gzip -9c &gt; images.tar.gz
 gerard@tartarus:~$ 
 </code></pre>
-
-<h2 id="montando-la-red-de-replicas">Montando la red de replicas</h2>
-
-<h3 id="el-nodo-master">El nodo master</h3>
-
+<h2>Montando la red de replicas</h2>
+<h3>El nodo master</h3>
 <p>Vamos a empezar con el nodo inicial, al que llamamos <em>master</em>. La responsabilidad de este nodo es ofrecer los ficheros para ser clonados. De esta forma solo necesitaríamos el servidor de <strong>rsync</strong>.</p>
-
 <p>Supongamos que el contenido web se aloja en la carpeta <code>~/html</code>; recordemos que el servidor <strong>rsync</strong> sirve la carpeta <code>/srv/public</code>.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ tree html/
 html/
 └── index.html
@@ -247,18 +197,13 @@ html/
 0 directories, 1 file
 gerard@tartarus:~$ 
 </code></pre>
-
 <p>La forma más fácil de exponer este contenido es con un volumen, específicamente montando la carpeta local de nuestra máquina de generación de contenido HTML.</p>
-
 <pre><code class="language-bash">gerard@tartarus:~$ docker run -d --rm -p 873:873 -v ~/html:/srv/public:ro fileserver
 bc7bfffd6f8d548fff0955b5da980684d89ad600efaf94544406e2f70735ea9d
 gerard@tartarus:~$ 
 </code></pre>
-
-<h3 id="algunos-nodos-replicas">Algunos nodos replicas</h3>
-
+<h3>Algunos nodos replicas</h3>
 <p>Lo primero es restablecer las imagenes en los nodos <em>replica</em>. Puesto que decidimos montarlo &ldquo;a pendrive&rdquo;, las imagenes estan en un fichero comprimido que tenemos que cargar. Esto se repite en todas las <em>replicas</em>, tal como las vayamos montando, aunque solo vamos a poner una de ellas para simplificar.</p>
-
 <pre><code class="language-bash">gerard@mirror1:~$ docker load &lt; images.tar.gz 
 f1b5933fe4b5: Loading layer [==================================================&gt;]  5.796MB/5.796MB
 1e89db8db04f: Loading layer [==================================================&gt;]  559.6kB/559.6kB
@@ -272,62 +217,46 @@ Loaded image: cloner:latest
 Loaded image: webserver:latest
 gerard@mirror1:~$ 
 </code></pre>
-
 <p>La función principal e ineludible de las <em>replicas</em> es replicar desde un nodo padre. También decidimos parametrizar el intervalo en segundos que íbamos a esperar entre llamadas a <strong>rsync</strong>. Vamos a poner estos parámetros arbitrarios:</p>
-
 <ul>
-<li><strong>mirror1</strong> &rarr; Sincronizamos de <strong>tartarus</strong> cada 60 segundos.</li>
-<li><strong>mirror2</strong> &rarr; Sincronizamos de <strong>tartarus</strong> cada 10 segundos.</li>
-<li><strong>mirror3</strong> &rarr; Sincronizamos de <strong>mirror1</strong> cada 60 segundos.</li>
+<li><strong>mirror1</strong> → Sincronizamos de <strong>tartarus</strong> cada 60 segundos.</li>
+<li><strong>mirror2</strong> → Sincronizamos de <strong>tartarus</strong> cada 10 segundos.</li>
+<li><strong>mirror3</strong> → Sincronizamos de <strong>mirror1</strong> cada 60 segundos.</li>
 </ul>
-
 <p>Esto nos supone lanzar el <code>docker run</code> con las variables de entorno pertinentes. Es importante que la carpeta <code>/srv/files</code> sea un volumen compartido con los otros servicios, para que podamos servir lo clonado, tanto por <strong>rsync</strong> como por HTTP.</p>
-
 <pre><code class="language-bash">gerard@mirror1:~$ docker run -d --rm -v data:/srv/files -e &quot;UPSTREAM=tartarus&quot; -e &quot;INTERVAL=60&quot; cloner
 59fb9353635150f502e18fce31a596f10beaeb226c8699b5ad89b11c8400a917
 gerard@mirror1:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@mirror2:~$ docker run -d --rm -v data:/srv/files -e &quot;UPSTREAM=tartarus&quot; -e &quot;INTERVAL=10&quot; cloner
 9ed674f1bea94422bac503a859aa9ec844a29436ebdecf43500b5388c6ecede2
 gerard@mirror2:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@mirror3:~$ docker run -d --rm -v data:/srv/files -e &quot;UPSTREAM=mirror1&quot; -e &quot;INTERVAL=60&quot; cloner
 b3af2fed84b09d2ed0634a749a0f0a9ff42f8fdfddb45fb8e5ae0d05cfd09e4d
 gerard@mirror3:~$ 
 </code></pre>
-
 <p><strong>NOTA</strong>: En este punto, <strong>mirror1</strong> no está sirviendo por <strong>rsync</strong>, así que <strong>mirror3</strong> no va a poder sincronizarse hasta que levantemos la imagen <code>fileserver</code>. Basta hacer un <code>docker logs</code> para comprobarlo.</p>
-
 <p>La siguiente función es la de servir los ficheros por <strong>rsync</strong>. Supongamos de nuevo que el administrador de <strong>mirror2</strong> decide que no quiere ofrecer este servicio, así que no lo levanta. Eso significa que nadie lo va a poder utilizar como nodo padre, aunque podrá servir los ficheros por HTTP.</p>
-
 <pre><code class="language-bash">gerard@mirror3:~$ docker run -d --rm -p 873:873 -v data:/srv/public:ro fileserver
 ec50b9d46b02bed01c1881b391792e31f7dd3cd07cfdbd9a80bcea4fe8f80b4e
 gerard@mirror3:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@mirror1:~$ docker run -d --rm -p 873:873 -v data:/srv/public:ro fileserver
 cf151e53490a1fc2798669f70b89ff927541fd874bedde67bf8e1b6ffbb187f9
 gerard@mirror1:~$ 
 </code></pre>
-
 <p><strong>NOTA</strong>: La siguiente ejecución del clonador de <strong>mirror3</strong> debería dejar de fallar, ya que el servicio <strong>rsync</strong> de <strong>mirror1</strong> se ha levantado.</p>
-
 <p>La última función de los nodos es la de servir la web por HTTP. Asumamos que el administrador de <strong>mirror1</strong> decide mantenerse como un nodo de solo clonación, y no ofrece ese servicio, así que no lo levanta.</p>
-
 <pre><code class="language-bash">gerard@mirror2:~$ docker run -d --rm -p 80:80 -v data:/srv/www:ro webserver
 85304bcf17e4b2bca55f1fb044d271857b06dec6c0c6aa89939539a19fd292c9
 gerard@mirror2:~$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@mirror3:~$ docker run -d --rm -p 80:80 -v data:/srv/www:ro webserver
 addfe34788283b88b5c44dd8ced5ba834c319b3e0e6787976ad4f098140e9dff
 gerard@mirror3:~$ 
 </code></pre>
-
 <p>Solo nos queda comprobar que el contenido HTML es el esperado, lo solicitemos a <strong>mirror2</strong> o  <strong>mirror3</strong>. Evidentemente, <strong>mirror1</strong> va a fallar porque no levantó el <strong>nginx</strong>.</p>
-
 <pre><code class="language-bash">gerard@anywhere:~$ curl http://mirror1:80/
 curl: (7) Failed to connect to mirror1 port 80: Conexión rehusada
 gerard@anywhere:~$ curl http://mirror2:80/
@@ -336,15 +265,10 @@ gerard@anywhere:~$ curl http://mirror3:80/
 &lt;h1&gt;Hello world&lt;/h1&gt;
 gerard@anywhere:~$ 
 </code></pre>
-
 <p>Solo queda indicar que el contenido se va a actualizar a intervalos, y puede ser que clonar de otras <em>replicas</em> vaya introduciendo un retardo de actualización. Una cadena de 5 nodos puede suponer 5 minutos de retardo usando un intervalo de 60 segundos, pero creo que es aceptable y muy escalable&hellip;</p>
-
-<h2 id="otros-detalles">Otros detalles</h2>
-
+<h2>Otros detalles</h2>
 <p>El responsable de cada <em>replica</em> debería monitorizar los <em>logs</em> del clonador; en caso de caída o cierre del nodo padre, habría que buscar otra <em>replica</em> de la que clonar. Eso supone parar el clonador y relanzarlo con un nuevo <em>upstream</em>, o simplemente quedarse sin actualizar hasta el restablecimiento del nodo padre.</p>
-
 <p>En cuanto a la escalabilidad, podemos concluir que si una <em>replica</em> sirve como nodo padre de varias otras <em>replicas</em>, el crecimiento de la red puede ser exponencial&hellip;</p>
-
 <p>Lo único que no se resuelve es donde poner la lista de webs disponibles para el consumidor de este contenido de dudosa legalidad. Sed creativos y portáos bien.</p>
 
 <div id="disqus_thread"></div>

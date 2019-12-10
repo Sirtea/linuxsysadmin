@@ -53,17 +53,11 @@
 </p>
 
 <p>El otro día recibí una petición algo atípica en mi trabajo: querían activar y desactivar en un único punto centralizado cada una de las varias APIs que tenemos. Se trata de poner un <strong>nginx</strong> frontal que gestione los <em>virtualhosts</em> existentes y haga <em>proxy_pass</em> o no en función de un <em>flag</em>.</p>
-
 <p>La propuesta me pareció bastante interesante, así que decidí hacer una prueba de concepto que aquí queda reflejada. Se trata de ofrecer un frontal web (por ejemplo un <strong>jenkins</strong>) mediante el cual se puedan poner los ficheros cuya presencia le indican a <strong>nginx</strong> si ese <em>virtualhost</em> concreto debe dar un error o no.</p>
-
-<h2 id="simulando-las-apis">Simulando las APIs</h2>
-
+<h2>Simulando las APIs</h2>
 <p>Vamos a poner un par de contenedores <strong>docker</strong> con <strong>nginx</strong>, que sirvan una página personalizada y nos sirva para simular la API. No es especialmente complejo, así que solo se adjunta por completitud.</p>
-
 <p>el único punto interesante es que, para no repetirnos, vamos a pasar el contenido del fichero <em>index.html</em> como una variable de entorno. Así no hay que construir varias imágenes.</p>
-
 <p>Empezamos con un <em>Dockerfile</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ cat api/Dockerfile 
 FROM alpine:3.5
 RUN apk add --no-cache nginx &amp;&amp; \
@@ -78,9 +72,7 @@ COPY start.sh /
 CMD [&quot;/start.sh&quot;]
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y lo acompañamos con sus ficheros auxiliares.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ cat api/nginx.conf 
 worker_processes  1;
 events {
@@ -107,20 +99,15 @@ echo ${GREETING} &gt; /srv/www/index.html
 exec /usr/sbin/nginx -g &quot;daemon off;&quot;
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y con esto tenemos nuestra imagen lista para ser construida.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ dbuild -t api api/
 Sending build context to Docker daemon 5.632 kB
 ...  
 Successfully built c91adbf6534e
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
-<h2 id="creando-un-proxy-como-fachada">Creando un proxy como fachada</h2>
-
+<h2>Creando un proxy como fachada</h2>
 <p>Esta es la piedra angular de la solución. Vamos a empezar con un <strong>nginx</strong>, pero la novedad es que cada <em>virtualhost</em> va a incluir una condición nueva: si existe un fichero con el mismo nombre que el dominio en la carpeta raíz (la misma para todos los dominios vale), devolveremos un error 503 en JSON sin pasar la petición a nuestro <em>backend</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ cat gw/Dockerfile 
 FROM alpine:3.5
 RUN apk add --no-cache nginx &amp;&amp; \
@@ -135,9 +122,7 @@ COPY start.sh /
 CMD [&quot;/start.sh&quot;]
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y también ponemos las configuraciones necesarias para dos APIs de <em>backend</em>, que nos basta para ver si funciona.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ cat gw/nginx.conf 
 worker_processes  1;
 events {
@@ -192,20 +177,15 @@ gerard@aldebaran:~/docker/gw-poc$ cat gw/start.sh
 exec /usr/sbin/nginx -g &quot;daemon off;&quot;
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y construimos la imagen.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ dbuild -t gw gw/
 Sending build context to Docker daemon 6.656 kB
 ...
 Successfully built ddf3f294c99c
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
-<h2 id="ponemos-todo-junto">Ponemos todo junto</h2>
-
+<h2>Ponemos todo junto</h2>
 <p>El último paso es montar un entorno que nos permita lanzar pruebas y ver que funciona. Para ello, vamos a usar <strong>docker-compose</strong> por la comodidad que supone.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ cat docker-compose.yml 
 version: '2'
 services:
@@ -234,9 +214,7 @@ services:
       GREETING: &quot;Bye from api2&quot;
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Levantamos el entorno entero con los comandos habituales:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ docker-compose up -d
 Creating network &quot;gwpoc_default&quot; with the default driver
 Creating api1
@@ -244,9 +222,7 @@ Creating api2
 Creating gw
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Tras levantar el entorno, podemos hacer algunas peticiones, tanto a los contenedores que sirven la API, como al <em>gateway</em> que las engloba.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ curl http://172.18.0.2/
 Hello from api1
 gerard@aldebaran:~/docker/gw-poc$ curl http://172.18.0.3/
@@ -257,9 +233,7 @@ gerard@aldebaran:~/docker/gw-poc$ curl -H &quot;Host: api2&quot; http://localhos
 Bye from api2
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y ahora solo nos falta la magia: tiramos un fichero en <em>/srv/www/</em>, cómodamente mapeados como un <em>host volume</em> en la carpeta <em>volume/</em>. Un fichero con el nombre del <em>virtualhost</em> va a deshabilitar dicho <em>virtualhost</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ touch volume/api2
 gerard@aldebaran:~/docker/gw-poc$ curl -H &quot;Host: api1&quot; http://localhost/
 Hello from api1
@@ -267,9 +241,7 @@ gerard@aldebaran:~/docker/gw-poc$ curl -H &quot;Host: api2&quot; http://localhos
 {&quot;message&quot;:&quot;Sorry you! This entity (api2) is in maintenance mode&quot;}
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>De la misma manera, podemos rehabilitarlo quitando ese fichero de ahí.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/gw-poc$ rm volume/api2 
 gerard@aldebaran:~/docker/gw-poc$ curl -H &quot;Host: api1&quot; http://localhost/
 Hello from api1
@@ -277,13 +249,9 @@ gerard@aldebaran:~/docker/gw-poc$ curl -H &quot;Host: api2&quot; http://localhos
 Bye from api2
 gerard@aldebaran:~/docker/gw-poc$ 
 </code></pre>
-
 <p>Y lo mismo aplica para el primer dominio, aunque no lo repito por brevedad.</p>
-
-<h2 id="siguientes-pasos">Siguientes pasos</h2>
-
+<h2>Siguientes pasos</h2>
 <p>El hecho de habilitar y deshabilitar las APIs se necesitaba hacer por parte de gente que no tiene necesariamente conocimientos técnicos para acceder al entorno, o no queremos simplemente por seguridad. La solución cómoda es una bonita interfaz web que les permita hacerlo a golpe de click y con una gestión de permisos adecuada ya incorporada.</p>
-
 <p>Como no queremos inventar la rueda nuevamente, podemos usar algo que ya esté hecho, como por ejemplo un <strong>jenkins</strong>. De hecho, nada nos impide que el <strong>jenkins</strong> lance <em>playbooks</em> de <strong>ansible</strong>. Sin embargo este ya es otro proyecto y en caso de que os interese, <a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">ya he escrito sobre esto</a>.</p>
 
 <div id="disqus_thread"></div>

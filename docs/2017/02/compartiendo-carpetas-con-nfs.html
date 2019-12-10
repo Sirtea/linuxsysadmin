@@ -53,24 +53,16 @@
 </p>
 
 <p>Son muchas las veces que queremos tener una carpeta disponible en todas las máquinas que usamos habitualmente, sea una unidad de <em>backup</em>, o sea una carpeta de intercambio de fotos. Disponemos de servidores tipo FTP, pero es mas cómodo tener una unidad remota como una carpeta mas de nuestra máquina.</p>
-
 <p>Para esta guía, vamos a utilizar dos máquinas <em>Debian Jessie</em>, actuando como el servidor (el que tiene las carpetas compartidas) y como el cliente (el ordenador de un usuario concreto).</p>
-
 <p>Un <em>setup</em> mas realista sería poner el servidor en un servidor casero (tipo <em>Raspberry Pi</em>), mientras que los ordenadores cliente serían los de los diferentes usuarios de casa.</p>
-
 <p><strong>CUIDADO</strong>: El servidor NFS de <em>linux</em> va por <em>kernel</em>, así que nos os va a funcionar desde un contenedor, por ejemplo <em>LXC</em> o <em>Docker</em>. En este caso, las máquinas disponen de <em>kernel</em> completo, porque se han utilizado <em>VirtualBox</em>.</p>
-
 <p>Así pues, disponemos de 2 máquinas:</p>
-
 <ul>
-<li><strong>server</strong> &rarr; 10.0.0.2</li>
-<li><strong>client</strong> &rarr; 10.0.0.3</li>
+<li><strong>server</strong> → 10.0.0.2</li>
+<li><strong>client</strong> → 10.0.0.3</li>
 </ul>
-
-<h2 id="preparando-el-servidor">Preparando el servidor</h2>
-
+<h2>Preparando el servidor</h2>
 <p>Para preparar el servidor, necesitamos instalar el paquete que provee el servidor de <strong>NFS</strong>, que en este caso es <strong>nfs-kernel-server</strong>.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install -y nfs-kernel-server
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -92,35 +84,24 @@ Se utilizarán 23,7 MB de espacio de disco adicional después de esta operación
 ...
 root@server:~#
 </code></pre>
-
 <p>Supongamos que queremos compartir la carpeta <em>/shared/</em>, lo que significa que tenemos que crearla si no existiera, y hay que darle los permisos adecuados al uso que se le vaya a dar. A modo de ejemplo, vamos a dar todos los permisos posibles a todo el mundo.</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /shared
 root@server:~# chmod 777 /shared/
 root@server:~#
 </code></pre>
-
 <p>Vamos a declarar este punto <em>exportable</em>, con permisos de escritura para las máquinas que lo necesiten.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/exports
 /shared 10.0.0.3(rw,sync)
 root@server:~#
 </code></pre>
-
 <p>Finalmente hacemos un <em>restart</em> o un <em>reload</em> del servicio de <strong>NFS</strong> para que recargue la configuración.</p>
-
 <p><strong>AVISO</strong>: Este servicio no arranca en contenedores.</p>
-
 <pre><code class="language-bash">root@server:~# systemctl restart nfs-kernel-server
 root@server:~#
 </code></pre>
-
 <p>Y con esto ya tenemos nuestra carpeta <em>exportable</em> disponible para los clientes definidos en <em>/etc/exports</em>.</p>
-
-<h2 id="preparando-una-de-las-máquinas-cliente">Preparando una de las máquinas cliente</h2>
-
+<h2>Preparando una de las máquinas cliente</h2>
 <p>El primer paso consiste en instalar el paquete <strong>nfs-common</strong>, que nos va a proveer de las utilidades necesarias para montar el sistema de ficheros remoto.</p>
-
 <pre><code class="language-bash">root@client:~# apt-get install -y nfs-common
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -142,46 +123,32 @@ Se utilizarán 23,3 MB de espacio de disco adicional después de esta operación
 ...
 root@client:~#
 </code></pre>
-
 <p>Creamos un punto de montaje para la carpeta remota, en caso de necesitarla.</p>
-
 <pre><code class="language-bash">root@client:~# mkdir /compartida
 root@client:~#
 </code></pre>
-
 <p>Y montamos la carpeta remota, usando las herramientas estándar.</p>
-
 <pre><code class="language-bash">root@client:~# mount -t nfs 10.0.0.2:/shared /compartida
 root@client:~#
 </code></pre>
-
 <p>Si nos gustara el resultado, podemos hacer el montaje automático añadiendo una línea en <em>/etc/fstab</em>, que podéis copiar tal cual de <em>/etc/mtab</em> cuando la carpeta remota esté montada.</p>
-
-<h2 id="algunas-pruebas-de-funcionamiento">Algunas pruebas de funcionamiento</h2>
-
+<h2>Algunas pruebas de funcionamiento</h2>
 <p>Partimos de una carpeta compartida vacía, y vemos que también está vacía en el cliente.</p>
-
 <pre><code class="language-bash">root@server:~# ls /shared/
 root@server:~#
 
 root@client:~# ls /compartida/
 root@client:~#
 </code></pre>
-
 <p>Ahora podemos crear un fichero cualquiera en la máquina cliente.</p>
-
 <pre><code class="language-bash">root@client:~# touch /compartida/client_data
 root@client:~#
 </code></pre>
-
 <p>Podemos ver que no hay ningún problema por trabajar en la carpeta desde otra máquina, por ejemplo, creando un fichero en la máquina servidor.</p>
-
 <pre><code class="language-bash">root@server:~# touch /shared/server_data
 root@server:~#
 </code></pre>
-
 <p>Finalmente vemos que la carpeta, sea la carpeta local del servidor o la carpeta montada remotamente del cliente, reflejan ambos cambios aplicados anteriormente.</p>
-
 <pre><code class="language-bash">root@server:~# ls /shared/
 client_data  server_data
 root@server:~#
@@ -190,7 +157,6 @@ root@client:~# ls /compartida/
 client_data  server_data
 root@client:~#
 </code></pre>
-
 <p>Y con esto vemos que funciona como debe.</p>
 
 <div id="disqus_thread"></div>

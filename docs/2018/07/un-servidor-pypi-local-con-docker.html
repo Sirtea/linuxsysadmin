@@ -53,15 +53,10 @@
 </p>
 
 <p>Estaba yo el otro día investigando una nueva librería de <strong>python</strong>, pero necesitaba de otra librería que se compilaba. Harto de perder el tiempo compilando cada vez esta librería, recuperé un antiguo artículo que me permitía distribuir el archivo <em>wheel</em> ya compilado tantas veces yo quisiera; como no, usando <strong>docker</strong>.</p>
-
 <p>El artículo anterior es <a href="/2016/09/un-servidor-pypi-local.html">este</a>, y su único objetivo era montar un servidor de <strong>pypi</strong> local que nos permite alojar nuestros ficheros <em>wheel</em>, aunque funciona genial para evitar múltiples compilaciones y como <em>caché</em> de paquetes.</p>
-
-<h2 id="el-servidor-pypi">El servidor pypi</h2>
-
+<h2>El servidor pypi</h2>
 <p>Para facilitar el montaje y la distribución de este servidor, se ha decidido hacer una imagen de <strong>docker</strong> para encapsular lo necesario; de paso, el fichero <em>Dockerfile</em> es una magnífica receta para evitar un montón de pasos manuales que salían en el artículo citado.</p>
-
 <p>El fichero <em>Dockerfile</em> no puede ser más explícito; puesto que necesitamos instalar <strong>pypiserver</strong> mediante <strong>pip</strong>, los instalamos. También se define el comando que va a levantar el servidor y se crea la carpeta en donde deben residir nuestros paquetes. No veo muy útil crear un <em>virtualenv</em>; un contenedor <strong>docker</strong> ya es un entorno aislado en sí mismo.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ cat Dockerfile 
 FROM alpine:3.7
 RUN apk add --no-cache py2-pip tini &amp;&amp; \
@@ -71,30 +66,22 @@ ENTRYPOINT [&quot;/sbin/tini&quot;, &quot;--&quot;]
 CMD [&quot;/usr/bin/pypi-server&quot;, &quot;/srv/packages&quot;]
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El binario <code>pypi-server</code> no cumple como un <em>init</em> correcto, y el contenedor no acaba hasta que <strong>docker</strong> lo mata. Para evitar ese problema, vamos a utilizar <strong>tini</strong>, tal y como explicamos en <a href="/2017/09/un-proceso-inicial-para-docker-tini-y-dumb-init.html">otro artículo</a>.</p>
-
 <p>Construimos la imagen con los comando habituales y le damos un <em>tag</em> para su fácil uso cuando lo queramos levantar.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ docker build -t pypiserver .
 ...
 Successfully tagged pypiserver:latest
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Y solo queda revisar que la imagen existe y que su tamaño tiene sentido:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 pypiserver          latest              ad483ac352d7        56 seconds ago      52.8MB
 alpine              3.7                 3fd9065eaf02        5 months ago        4.15MB
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Para el <em>runtime</em>, vamos a utilizar <em>docker-compose</em> para reducir la longitud del comando de levantamiento, dejándolo todo explícitamente declarado en el fichero <em>docker-compose.yml</em>.</p>
-
 <p>La otra decisión de diseño es servir los <em>wheels</em> desde una carpeta local, en donde podemos ponerlos y quitarlos con gran facilidad. Solo necesitamos declarar la carpeta para los paquetes, que voy a poner en la misma carpeta del <em>docker-compose.yml</em>:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ tree
 .
 ├── packages
@@ -104,9 +91,7 @@ gerard@sirius:~/workspace/pypiserver$
 1 directory, 2 files
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>En el <em>docker-compose.yml</em> nos limitamos a montar la carpeta local como volumen y publicar el puerto del contenedor en nuestro servidor; esto hará el contenedor transparente a los ojos del resto de servidores.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ cat docker-compose.yml 
 version: '3'
 services:
@@ -121,29 +106,21 @@ services:
     restart: always
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Ya no falta nada para levantarlo todo y lo hacemos sin más preámbulo.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ docker-compose up -d
 Creating network &quot;pypiserver_default&quot; with the default driver
 Creating pypiserver
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Y con esto tenemos el servidor funcional.</p>
-
-<h2 id="rellenando-nuestro-servidor-de-paquetes">Rellenando nuestro servidor de paquetes</h2>
-
+<h2>Rellenando nuestro servidor de paquetes</h2>
 <p>El único requisito para poder servir paquetes es dejarlos en la carpeta que a ese fin hemos destinado. No es importante como llegan los paquetes ahí; podemos:</p>
-
 <ul>
 <li>Descargarlos de <a href="https://pypi.org/">https://pypi.org/</a></li>
 <li>Pescarlos de nuestra caché local en <code>~/.cache/pip/</code></li>
 <li>Obtenerlos mediante <code>pip wheel</code></li>
 </ul>
-
 <p>En este caso vamos a utilizar el tercer método. Como no tengo <strong>pip</strong> instalado en mi servidor, y para demostrar que solo necesito los fichero <em>wheel</em>, voy a utilizar el <strong>pip</strong> de un <em>virtualenv</em> temporal, que destruiré al acabar. Otra opción sería crear un contenedor que los dejara en esa carpeta, que también montaría como un volumen.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ virtualenv env
 Running virtualenv with interpreter /usr/bin/python2
 New python executable in env/bin/python2
@@ -151,22 +128,16 @@ Also creating executable in env/bin/python
 Installing setuptools, pip...done.
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Ni siquiera hace falta activar el <em>virtualenv</em>. Lo único que hace el <em>script</em> de activación es poner la carpeta <em>bin/</em> en el <em>PATH</em>, pero para lanzar el comando una vez no lo necesito&hellip;</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ ./env/bin/pip wheel -w packages/ falcon mongoengine
 ...
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>El comando <code>pip wheel</code> solo descarga los paquetes y los convierte en <em>wheels</em>, y los deja en la carpeta indicada, que es desde donde los servimos. Como ya tenemos lo que queríamos (los <em>wheels</em>), podemos eliminar el <em>virtualenv</em>, que nos deja la carpeta limpia de cosas innecesarias.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ rm -R env/
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
 <p>Podemos ver que solo hemos conservado los ficheros <em>wheel</em> solicitados y sus dependencias; no hay más que lo estrictamente necesario.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ tree
 .
 ├── packages
@@ -181,13 +152,9 @@ gerard@sirius:~/workspace/pypiserver$
 1 directory, 7 files
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-
-<h2 id="usando-nuestro-servidor-local">Usando nuestro servidor local</h2>
-
+<h2>Usando nuestro servidor local</h2>
 <p>El comando <strong>pip</strong> nos ofrece dos formas de añadir nuestro servidor: como URL única o como URL añadida a la normal. Haced un <code>pip install --help</code> para más detalles. Yo me decanto por usar solamente mi servidor, que aparentemente, tiene todo lo que necesito.</p>
-
 <p>Supongamos que necesito el paquete <strong>falcon</strong> en el servidor <strong>snowy</strong>; lo instalamos con nuestro servidor local (<em>flag</em> <code>-i</code>) y punto. Observad las URLs de las que se descarga el paquete:</p>
-
 <pre><code class="language-bash">root@snowy:~# pip install --trusted-host 172.17.0.1 -i http://172.17.0.1:8080/ falcon
 Looking in indexes: http://172.17.0.1:8080/
 Collecting falcon
@@ -201,11 +168,8 @@ Installing collected packages: six, python-mimeparse, falcon
 Successfully installed falcon-1.4.1 python-mimeparse-1.6.0 six-1.11.0
 root@snowy:~# 
 </code></pre>
-
 <p><strong>NOTA</strong>: El servidor local es HTTP plano, lo que lo convierte en un servidor no confiable; eso nos obliga  a poner el <em>flag</em> <code>--trusted-host</code> para que <strong>pip</strong> lo quiera usar. Otra opción sería utilizar HTTPS, lo que implica poner un <em>proxy reverso</em> delante, por ejemplo con <strong>nginx</strong>.</p>
-
 <p>Otro servidor podría querer descargar los mismos paquetes u otros sin que eso nos repercuta en problemas, tal y como esperamos:</p>
-
 <pre><code class="language-bash">root@stormy:~# pip install --trusted-host 172.17.0.1 -i http://172.17.0.1:8080/ mongoengine
 Looking in indexes: http://172.17.0.1:8080/
 Collecting mongoengine
@@ -220,7 +184,6 @@ Installing collected packages: pymongo, six, mongoengine
 Successfully installed mongoengine-0.15.0 pymongo-3.6.1 six-1.11.0
 root@stormy:~# 
 </code></pre>
-
 <p>Siempre y cuando utilizen los mismos tipos de CPU y versiones de <strong>python</strong>, pueden utilizar los mismos <em>wheels</em>. Eso nos evita compilarlos y reduce notoriamente el tiempo de red invertido en descargarlos.</p>
 
 <div id="disqus_thread"></div>

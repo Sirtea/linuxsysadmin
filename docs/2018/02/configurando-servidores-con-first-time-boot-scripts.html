@@ -53,21 +53,13 @@
 </p>
 
 <p>Configurar servidores desde cero es una tarea muy pesada, una fuente de errores innecesaria y hace nuestros servidores difícilmente reproducibles. Los <em>setups</em> más básicos son siempre los mismos, y podemos configurar nuestros servidores para que ejecuten un <em>script</em> la primera vez que se (re)inicien, a falta de mejores herramientas.</p>
-
 <p>De esta forma, podemos disponer fácilmente de un servidor de un tipo predefinido, especialmente en aquellos <em>hostings</em> que nos permitan <em>scripts</em> de inicialización, como por ejemplo, <a href="https://www.vultr.com/?ref=7251515">Vultr</a>.</p>
-
 <p>El truco consiste en hacer que nuestro sistema de <em>init</em> ejecute nuestro <em>script</em>, solamente en el caso de que no se haya ejecutado ya. Para ello podemos usar el mismo fichero de <em>log</em> de la ejecución efectuada.</p>
-
-<h2 id="un-ejemplo-con-systemd">Un ejemplo con systemd</h2>
-
+<h2>Un ejemplo con systemd</h2>
 <p>De acuerdo a la documentación de <strong>systemd</strong>, existe un fichero que se ejecuta en cada <em>boot</em>, suponiendo que exista y que tenga los permisos adecuados. Se trata de <em>/etc/rc.local</em>. Nos bastaría con crearlo y asignarle permisos de ejecución, y tendríamos el <em>script</em> ejecutándose en cada <em>boot</em>.</p>
-
-<h3 id="el-lanzador">El lanzador</h3>
-
+<h3>El lanzador</h3>
 <p>Con un poco de lógica, podemos hacer lo sugerido: un <em>script</em> que ejecute algo y genere el <em>log</em> para que no se vuelva a ejecutar de nuevo. Sin embargo, parece adecuado disponer de un <em>framework</em> que separe la lógica de ejecución, del <em>script</em> ejecutado.</p>
-
 <p>Esto nos permite distribuir nuestras imágenes base con el <em>script</em> y dejar al usuario la opción de poner o no un <em>script</em> de inicialización, y de que poner en él. Así pues, un posible ejemplo sería este:</p>
-
 <pre><code class="language-bash">root@firstboot:~# cat /etc/rc.local
 #!/bin/sh
 
@@ -81,19 +73,13 @@ if [ -x &quot;${SCRIPT}&quot; ]; then
 fi
 root@firstboot:~#
 </code></pre>
-
 <p>Básicamente, preguntamos si el <em>script</em> existe y es ejecutable, y en ese caso, si no existe el log previamente generado. En caso afirmativo, ejecutamos el script y recogemos la salida, a modo de <em>log</em> y a modo de marca para no volver a lanzarlo.</p>
-
 <p>Solo nos queda pendiente darle permisos de ejecución, porque sino, <strong>systemd</strong> lo ignoraría.</p>
-
 <pre><code class="language-bash">root@firstboot:~# chmod a+x /etc/rc.local
 root@firstboot:~#
 </code></pre>
-
-<h3 id="usando-la-plantilla">Usando la plantilla</h3>
-
+<h3>Usando la plantilla</h3>
 <p>Hemos llegado a ese momento en el que clonamos la plantilla y tenemos que poner el <em>script</em> de inicialización. Siguiendo el <em>script</em> arriba mencionado, solo tenemos que poner un <em>script</em> que haga lo que nos interese. En este caso, con un <em>log</em> para ver que funciona, nos vale.</p>
-
 <pre><code class="language-bash">root@firstboot:~# cat firstboot.sh
 #!/bin/bash
 
@@ -101,34 +87,25 @@ echo &quot;First time boot. Running as:&quot;
 id
 root@firstboot:~#
 </code></pre>
-
 <p>No os olvidéis de darle permisos de ejecución:</p>
-
 <pre><code class="language-bash">root@firstboot:~# chmod a+x firstboot.sh
 root@firstboot:~#
 </code></pre>
-
 <p>Si reiniciamos el servidor podremos ver la magia: como hay un script y no hay <em>log</em>, se va a ejecutar, generando el <em>log</em>. Solo nos queda verlo en directo:</p>
-
 <pre><code class="language-bash">root@firstboot:~# cat firstboot.log
 First time boot. Running as:
 uid=0(root) gid=0(root) grupos=0(root)
 root@firstboot:~#
 </code></pre>
-
 <p>Y por mucho que reiniciéis, no se va a volver a ejecutar, a menos claro, que eliminéis el fichero de <em>log</em>, dejando el <em>script</em> en su sitio.</p>
-
-<h3 id="uso-práctico">Uso práctico</h3>
-
+<h3>Uso práctico</h3>
 <p>En mi caso concreto, he creado <em>scripts</em> genéricos para instalar:</p>
-
 <ul>
 <li>Un servidor de <strong>mongodb</strong></li>
 <li>Un servidor <strong>uwsgi</strong></li>
 <li>Un frontal <strong>nginx</strong></li>
 <li>Un balanceador <strong>haproxy</strong></li>
 </ul>
-
 <p>Así pues, cuando creo un proyecto nuevo, solo tengo que asignar los <em>script</em> correspondientes a cada instancia de mi <em>hosting</em>. Con algunas modificaciones a los ficheros de configuración y la aplicación propiamente dicha, tengo un entorno corriendo en tiempo record.</p>
 
 <div id="disqus_thread"></div>

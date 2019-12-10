@@ -53,15 +53,10 @@
 </p>
 
 <p>A medida que las empresas confían más y más en las APIs REST, los datos que viajan en formato JSON ha incrementado notablemente. Con este incremento, los errores por mensajes mal formados también se ha incrementado; esto nos obliga a validar los mensajes, no solamente de sintaxis, sino de semántica.</p>
-
 <p>Y es que no podemos permitirnos que nuestros procesos fallen porque alguien ha enviado un <em>payload</em> que no es JSON, pero tampoco podemos dejar de filtrar aquellos mensages que, aun siendo JSON válidos, no cumplen con las especificaciones necesarias para cumplir el contrato de nuestras APIs.</p>
-
 <p>Investigando un poco, parece ser que ya hay una especificación formal para validar mensajes JSON de acuerdo a un <em>schema</em>; mas información <a href="https://json-schema.org/">aquí</a>. Como no podía ser menos, <strong>python</strong> incluye varias implementaciones de un validador; concretamente nos vamos a centrar en <strong>jsonschema</strong>.</p>
-
-<h2 id="exponiendo-el-problema">Exponiendo el problema</h2>
-
+<h2>Exponiendo el problema</h2>
 <p>Supongamos que queremos consumir el mensaje de un <em>endpoint</em> de <em>login</em>, en donde esperamos un JSON tipo &ldquo;object&rdquo; con dos campos de texto, el &ldquo;user&rdquo; y el &ldquo;password&rdquo;. Como ejemplo, me limitaré a sacarlos por pantalla:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace$ cat run.py
 #!/usr/bin/env python3
 
@@ -76,9 +71,7 @@ password = payload.get('password')
 print('%s / %s' % (user, password))
 gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>Para probar este <em>script</em>, vamos a poner un conjunto de posibles entradas con variedad de posibles problemas:</p>
-
 <pre><code>gerard@atlantis:~/workspace$ cat inputs/no_json
 hello world
 gerard@atlantis:~/workspace$ cat inputs/string_json
@@ -89,9 +82,7 @@ gerard@atlantis:~/workspace$ cat inputs/good_dict_json
 {&quot;user&quot;: &quot;gerard&quot;, &quot;password&quot;: &quot;s3cr3t&quot;}
 gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>El primer ejemplo es el más evidente; el mensaje no cumple con la sintaxis JSON, así que ni lo podeemos leer. De hecho, no necesitamos un <em>schema</em> para descartarlo.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace$ ./run.py &lt; inputs/no_json
 Traceback (most recent call last):
   File &quot;./run.py&quot;, line 6, in &lt;module&gt;
@@ -107,9 +98,7 @@ Traceback (most recent call last):
 json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>El segundo ejemplo es un JSON válido como tal, pero no cumple con nuestros requisitos de campos. Aunque podemos leerlo, no es un diccionario, y por lo tanto no podemos sacar los campos necesarios.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace$ ./run.py &lt; inputs/string_json
 lorem ipsum
 Traceback (most recent call last):
@@ -118,27 +107,20 @@ Traceback (most recent call last):
 AttributeError: 'str' object has no attribute 'get'
 gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>El tercer caso es un JSON válido, un objeto, pero no incluye el campo &ldquo;password&rdquo;, con lo que no nos vale. Además, el campo &ldquo;user&rdquo; no es una cadena de texto, y puede que eso sea un problema en el futuro. Hay que remarcar que no nos supone un problema en este momento, pero eventualmente lo será.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace$ ./run.py &lt; inputs/bad_dict_json
 {'user': True}
 True / None
 gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>Finalmente tenemos un ejemplo bueno, que funciona y que cumpliría con nuestras expectativas. Este es el único caso que deberíamos dar por bueno.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace$ ./run.py &lt; inputs/good_dict_json
 {'password': 's3cr3t', 'user': 'gerard'}
 gerard / s3cr3t
 gerard@atlantis:~/workspace$
 </code></pre>
-
-<h2 id="jsonschema-al-rescate">Jsonschema al rescate</h2>
-
+<h2>Jsonschema al rescate</h2>
 <p>Una de las librerías que implementan la validación de un <em>schema</em> JSON es, como su nombre indica, <strong>jsonschema</strong>. No viene en la librería estándar, así que lo instalamos (cosa que he hecho en un <em>virtualenv</em>).</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace$ pip install jsonschema
 Collecting jsonschema
   Downloading https://files.pythonhosted.org/packages/77/de/47e35a97b2b05c2fadbec67d44cfcdcd09b8086951b331d82de90d2912da/jsonschema-2.6.0-py2.py3-none-any.whl
@@ -146,11 +128,8 @@ Installing collected packages: jsonschema
 Successfully installed jsonschema-2.6.0
 (env) gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>La más importante de todas las funciones de <strong>jsonschema</strong> es <code>validate()</code> que es una función que recibe el mensaje y el <em>schema</em> y puede acabar en una excepción (si el mensaje no cumple con el <em>schema</em>) o normalmente (si el mensaje cumple con el <em>schema</em>). La documentación completa está <a href="https://python-jsonschema.readthedocs.io/en/latest/">aquí</a>.</p>
-
 <p>Nuestro <em>script</em> solo necesita declarar el <em>schema</em> e invocar la función; con un simple bloque <code>try/except</code> sabremos si la sintaxis y la semántica del mensaje son válidas.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace$ cat run_schema.py
 #!/usr/bin/env python3
 
@@ -185,9 +164,7 @@ else:
     print('ERROR')
 (env) gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>Efectivamente, solo el caso bueno nos permitiría seguir, ya que los demás no tienen sentido para nuestro caso de uso. La excepción <code>ValidationError</code> incluye los detalles de lo que falló.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace$ ./run_schema.py &lt; inputs/no_json
 ERROR
 (env) gerard@atlantis:~/workspace$ ./run_schema.py &lt; inputs/string_json
@@ -199,11 +176,8 @@ ERROR
 gerard / s3cr3t
 (env) gerard@atlantis:~/workspace$
 </code></pre>
-
-<h2 id="uso-en-apis">Uso en APIs</h2>
-
+<h2>Uso en APIs</h2>
 <p>No es muy habitual procesar ficheros JSON en un <em>script</em>, pero si hacemos una API, podemos esperar entradas de todo tipo. El estándar REST nos invita a responder un &ldquo;400 Bad Request&rdquo; cuando la petición no es la que se espera, y vamos a abusar de ello.</p>
-
 <pre><code class="language-bash">(env) gerard@atlantis:~/workspace$ cat app.py
 import falcon
 import jsonschema
@@ -233,45 +207,35 @@ app = falcon.API()
 app.add_route('/login', LoginResource())
 (env) gerard@atlantis:~/workspace$
 </code></pre>
-
 <p>Servimos nuestra API de ejemplo y probamos algunas entradas, solo para verificar que todo funciona:</p>
-
 <p>El primer ejemplo, es un objecto al que le faltan campos, así que lo rechazamos.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ curl -i -H &quot;Content-type: application/json&quot; -X POST http://localhost:8000/login/ --data '{&quot;user&quot;: &quot;gerard&quot;}'; echo ''
 HTTP/1.1 400 Bad Request
 ...
 {&quot;title&quot;: &quot;Bad JSON schema&quot;}
 gerard@atlantis:~$
 </code></pre>
-
 <p>El segundo ejemplo es un objecto con los campos correctos, pero uno de ellos es numérico, así que lo rechazamos.</p>
-
 <pre><code>gerard@atlantis:~$ curl -i -H &quot;Content-type: application/json&quot; -X POST http://localhost:8000/login/ --data '{&quot;user&quot;: &quot;gerard&quot;, &quot;password&quot;: 123}'; echo ''
 HTTP/1.1 400 Bad Request
 ...
 {&quot;title&quot;: &quot;Bad JSON schema&quot;}
 gerard@atlantis:~$
 </code></pre>
-
 <p>El tercer ejemplo, aunque es correcto, incluye un campo de más. El validador lo rechaza en virtud de la propiedad <code>additionalProperties: false</code>. Esto es una preferencia personal y os la podéis saltar, ignorando los campos extras.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ curl -i -H &quot;Content-type: application/json&quot; -X POST http://localhost:8000/login/ --data '{&quot;user&quot;: &quot;gerard&quot;, &quot;password&quot;: &quot;123&quot;, &quot;other&quot;: &quot;field&quot;}'; echo ''
 HTTP/1.1 400 Bad Request
 ...
 {&quot;title&quot;: &quot;Bad JSON schema&quot;}
 gerard@atlantis:~$
 </code></pre>
-
 <p>Finalmente le ponemos un caso correcto, y vemos que funciona como es debido.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ curl -i -H &quot;Content-type: application/json&quot; -X POST http://localhost:8000/login/ --data '{&quot;user&quot;: &quot;gerard&quot;, &quot;password&quot;: &quot;123&quot;}'; echo ''
 HTTP/1.1 200 OK
 ...
 {&quot;status&quot;: &quot;logged&quot;}
 gerard@atlantis:~$
 </code></pre>
-
 <p><strong>NOTA</strong>: El <em>framework</em> <strong>falcon</strong> ya dispone de un decorador <code>falcon.media.validators.jsonschema</code> que hace lo mismo. He optado por describir el caso general, por ser más útil en otras situaciones.</p>
 
 <div id="disqus_thread"></div>

@@ -53,21 +53,15 @@
 </p>
 
 <p>Cuando montamos un contenedor <strong>Docker</strong> para servir una aplicación cualquiera, solemos poner un montón de dependencias necesarias solamente para compilar el paquete o para empaquetar sus librerías. Esto supone un gasto innecesario en espacio y en tiempo de ejecución; usando contenedores desechables podemos agilizar este proceso de forma altamente considerable.</p>
-
 <p>Para ello vamos a partir de una aplicación simplista hecha con <strong>python</strong> que podemos encontrar en <a href="https://github.com/Sirtea/autobuilder">https://github.com/Sirtea/autobuilder</a>. La idea es que vamos a preparar las dependencias en un contenedor, para luego sacar lo justo y necesario para poner en un contenedor que disponga solamente de lo justo para el <em>runtime</em>.</p>
-
 <p>Para simplificar mas todavía, vamos a separar el código base del contenedor, de forma que este pueda ir cambiando modificando solamente un parámetro dado. Vamos a delegar la descarga y compilación del código base a un <em>script</em>, que no cambie y que permita trabajar con las diferentes versiones de nuestra aplicación.</p>
-
 <p>Para que todo esto funcione, necesitamos seguir una cantidad mínima de reglas, que van a poderse cumplir independientemente del proyecto o del <em>framework</em> usado.</p>
-
 <ul>
 <li>En la base del repositorio hay un <em>requirements.txt</em> que nos va a indicar las librerías necesarias.</li>
 <li>La aplicación quedará alojada en una carpeta <em>app</em>, el módulo con la aplicación se va a llamar <em>app</em> (módulo o <em>package</em>) y el <em>callable</em> también se va a llamar <em>app</em>.</li>
 <li>El <em>virtualenv</em> se va aconstruir en <em>/app/env</em>, para su uso futuro, en tiempo de <em>runtime</em>.</li>
 </ul>
-
 <p>Vamos a empezar construyendo una carpeta contenedora de las dos imágenes que vamos a usar, separadas a su vez por otro nivel de carpetas.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder$ tree
 .
 ├── builder
@@ -80,11 +74,8 @@
 2 directories, 4 files
 gerard@sirius:~/docker/autobuilder$ 
 </code></pre>
-
-<h2 id="la-imagen-de-build">La imagen de build</h2>
-
+<h2>La imagen de build</h2>
 <p>La filosofía es muy simple: crearemos una imagen que tenga todas las dependencias necesarias para la construcción de la aplicación (en nuestro caso el <em>virtualenv</em>), y vamos a poner un <em>script</em> llamado <em>build.sh</em> que se va a encargar de clonar un repositorio en <a href="https://github.com/">GitHub</a> y va a construir una refererencia tambien indicada mediante variables de entorno.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder$ cat builder/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache py-virtualenv git gcc musl-dev python-dev
@@ -92,9 +83,7 @@ COPY build.sh /
 ENTRYPOINT [&quot;sh&quot;, &quot;build.sh&quot;]
 gerard@sirius:~/docker/autobuilder$ 
 </code></pre>
-
 <p>El <em>script</em> de <em>build</em> va a depender bastante de como se prepara nuestra aplicación. En este caso va a clonar el repositorio en una carpeta <em>/build</em>, y va a copiar la referencia solicitada en una carpeta <em>/app</em>, que luego va a ser acompañada con un <em>virtualenv</em>. Puesto que el <em>virtualenv</em> es dependiente de la localización en el servidor, vamos a usar también <em>/app</em> en la máquina de <em>runtime</em>. En este paso es cuando hace falta usar la convención del fichero <em>requirements.txt</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder$ cat builder/build.sh 
 #!/bin/sh
 
@@ -107,11 +96,8 @@ virtualenv /app/env
 tar czf /shared/app.tar.gz -C / app
 gerard@sirius:~/docker/autobuilder$ 
 </code></pre>
-
 <p>La idea es que el producto acabado quede comprimido en la carpeta <em>/shared</em>. Personalmente he utilizado un fichero <em>.tar.gz</em>, pero se podría haber utilizado ficheros <em>.deb</em>, <em>.rpm</em> o lo que hiciera falta.</p>
-
 <p>Falta construir la imagen a partir de los ficheros dados:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/builder$ docker build -t builder .
 Sending build context to Docker daemon 3.072 kB
 Step 1 : FROM alpine:3.4
@@ -173,15 +159,10 @@ Removing intermediate container ec43f4786949
 Successfully built 9887ce973fe2
 gerard@sirius:~/docker/autobuilder/builder$ 
 </code></pre>
-
 <p>Esta imagen no se va a reconstruir -en principio- nunca. Las diferentes ejecuciones van a producir diferentes productos.</p>
-
-<h2 id="la-imagen-de-runtime">La imagen de runtime</h2>
-
+<h2>La imagen de runtime</h2>
 <p>Esta imagen es todavía mas fácil; se trata de un servidor de aplicaciones estándar que va a servir la aplicación siguiendo las reglas descritas mas arriba.</p>
-
 <p>Vamos a asumir que tenemos el <em>bundle</em> construido y llamado <em>app.tar.gz</em>, así que solo faltaría descomprimirlo para que quede todo en <em>/app</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ cat Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache uwsgi-python
@@ -190,9 +171,7 @@ COPY app.ini /app/
 ENTRYPOINT [&quot;uwsgi&quot;, &quot;--ini&quot;, &quot;/app/app.ini&quot;]
 gerard@sirius:~/docker/autobuilder/runner$ 
 </code></pre>
-
 <p>El fichero que va a servir la aplicación depende de cada servidor de aplicaciones, y de momento, nos vale un sencillo. En este punto se vuelve especialmente importante respetar las convenciones del <em>virtualenv</em> y de la localización de la aplicación.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ cat app.ini 
 [uwsgi]
 http-socket = :8080
@@ -202,11 +181,8 @@ virtualenv = /app/env/
 module = app:app
 gerard@sirius:~/docker/autobuilder/runner$ 
 </code></pre>
-
-<h2 id="la-hora-de-la-release">La hora de la release</h2>
-
+<h2>La hora de la release</h2>
 <p>Ha llegado el momento de hacer una <em>release</em>; así que vamos a hacer el <em>bundle</em> y la imagen de servicio, para luego poder servirlo. Este paso se va a repetir muy a menudo, dependiendo de la política de <em>releases</em> de vuestra compañía. Para obtener el <em>bundle</em>, necesitamos compilar la referencia del repositorio.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ docker run -ti --rm -e &quot;REPO=https://github.com/Sirtea/autobuilder.git&quot; -e &quot;REF=v1.0.0&quot; -v /home/gerard/docker/autobuilder/runner/:/shared/ builder
 Cloning into '/build'...
 remote: Counting objects: 10, done.
@@ -255,9 +231,7 @@ Installing collected packages: click, MarkupSafe, Jinja2, Werkzeug, itsdangerous
 Successfully installed Flask-0.11.1 Jinja2-2.8 MarkupSafe-0.23 Werkzeug-0.11.10 click-6.6 itsdangerous-0.24 mongoengine-0.10.6 pymongo-3.3.0
 gerard@sirius:~/docker/autobuilder/runner$ 
 </code></pre>
-
 <p>Puesto que el <em>script</em> llamado <em>build.sh</em> deja el fichero <em>.tar.gz</em> en <em>/shared</em>, y este es un volumen montado en la carpeta actual, vemos que nos aparece nuestro producto compilado.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder$ tree
 .
 ├── builder
@@ -271,9 +245,7 @@ gerard@sirius:~/docker/autobuilder/runner$
 2 directories, 5 files
 gerard@sirius:~/docker/autobuilder$ 
 </code></pre>
-
 <p>Efectivamente, este <em>bundle</em> contiene la aplicación y el <em>virtualenv</em> en la forma requerida, así que el siguiente paso es construir la imagen de <em>runtime</em> con este <em>bundle</em> incorporado.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ docker build -t runner .
 Sending build context to Docker daemon 5.027 MB
 Step 1 : FROM alpine:3.4
@@ -313,19 +285,13 @@ Removing intermediate container 586c9d5f49ae
 Successfully built a83cfc054bdc
 gerard@sirius:~/docker/autobuilder/runner$ 
 </code></pre>
-
 <p>Y con esto tenemos nuestra imagen.</p>
-
-<h2 id="ejecutando-la-imagen">Ejecutando la imagen</h2>
-
+<h2>Ejecutando la imagen</h2>
 <p>Esta parte no tiene mucho misterio; basta con ejecutar la imagen como lo haríamos normalmente. Esta aplicación en concreto lee las configuraciones desde las variables de entorno, así que se las ponemos. En este caso particular, tenemos la imagen de <strong>Docker Hub</strong> <a href="https://hub.docker.com/_/mongo/">mongo</a> en la dirección <em>IP</em> indicada.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ docker run -ti --rm -p 8888:8080 -e &quot;MONGODB_URI=mongodb://172.17.0.2:27017/shop&quot; runner
 ...
 </code></pre>
-
 <p>Podemos comprobar que todo funciona lanzando una petición <em>HTTP</em> estándar:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ curl http://localhost:8888/
 &lt;h1&gt;Fruits&lt;/h1&gt;
 &lt;ul&gt;
@@ -335,16 +301,13 @@ gerard@sirius:~/docker/autobuilder/runner$
 &lt;/ul&gt;
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y ahora podemos ver que la imagen de <em>runtime</em> queda mucho mas reducida, mas rápida de construir y sin tanto <em>bloat</em>. Supongo que podemos reducir mas lo que ocupa la imagen seleccionando versiones de <strong>python</strong> alternativas; el sistema operativo base son solo 4.8mb&hellip;</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/autobuilder/runner$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 runner              latest              e190cce7685a        31 seconds ago      60.75 MB
 builder             latest              edf62460d187        7 minutes ago       164 MB
 gerard@sirius:~/docker/autobuilder/runner$ 
 </code></pre>
-
 <p>De hecho, la <em>cache</em> de <strong>Docker</strong> funciona a las mil maravillas en este caso; si hubiera que reconstruir la imagen de <em>runtime</em>, se ejecutarían solo los pasos 3, 4 y 5. Esto convierte el hecho de &ldquo;hacer una <em>release</em>&rdquo; en casi inmediato.</p>
 
 <div id="disqus_thread"></div>

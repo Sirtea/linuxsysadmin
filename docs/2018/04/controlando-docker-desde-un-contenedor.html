@@ -53,11 +53,8 @@
 </p>
 
 <p>Curioso de ver como mucho contenedores eran capaces de ver el contenido <strong>Docker</strong> de mi servidor, he decidido aprender como se hace, por si me hiciera falta en un futuro. En este artículo intento explicar las lecciones aprendidas, de forma que sean una futura referencia en caso de ser necesario.</p>
-
 <p>El primer paso para conseguir mi objetivo era tener el binario <code>docker</code> en un contenedor. Una opción es copiarlo de mi servidor, junto con todas las dependencias; una opción más cuerda es aprovecharme de los paquetes existentes para ello.</p>
-
 <p>Así pues, vamos a partir de un <em>Alpine Linux</em>, que por su tamaño, su seguridad y su magnífico gestor de paquetes, se hace el candidato ideal:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/docker-client$ cat Dockerfile
 FROM alpine:3.7
 RUN apk add --no-cache docker &amp;&amp; \
@@ -69,11 +66,8 @@ RUN apk add --no-cache docker &amp;&amp; \
     rm /usr/bin/dockerd
 gerard@atlantis:~/projects/docker-client$
 </code></pre>
-
 <p><strong>TRUCO</strong>: El paquete <em>docker</em> en <em>Alpine Linux</em> ocupa mucho espacio. Esto es debido a que incluye todos los binarios necesarios para ejecutar también el servidor. Como no nos interesa el servidor en un contenedor, los he eliminado.</p>
-
 <p>Lo construímos para llegar a una imagen adecuada, que vamos a etiquetar <em>docker-client</em>:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/docker-client$ docker build -t docker-client .
 Sending build context to Docker daemon  2.048kB
 ...
@@ -85,19 +79,14 @@ docker-client       latest              583d47952c7a        7 seconds ago       
 alpine              3.7                 3fd9065eaf02        4 weeks ago         4.15MB
 gerard@atlantis:~/projects/docker-client$
 </code></pre>
-
 <p>La ejecución de un contenedor desde la nueva imagen nos permite usar el comando <code>docker</code>, aunque los resultados no son los esperados.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/docker-client$ docker run -ti --rm docker-client
 / # docker images
 Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 / #
 </code></pre>
-
 <p>Esto es debido a que el cliente de <strong>Docker</strong> se comunica con el servidor mediante un <em>unix socket</em> que, al no tener el servicio corriendo, no está creado.</p>
-
 <p>Como sabemos, <strong>absolutamente todo</strong> en <em>Linux</em> es un fichero, y podemos montar ficheros desde el servidor como <em>host volumes</em>. Por ejemplo:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/docker-client$ docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock docker-client
 / # docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
@@ -105,9 +94,7 @@ docker-client       latest              583d47952c7a        5 minutes ago       
 alpine              3.7                 3fd9065eaf02        4 weeks ago         4.15MB
 / #
 </code></pre>
-
 <p>El resultado es que vemos el contenido del servidor <strong>Docker</strong> del <em>host</em>, justo como queríamos. Cabe decir que no solo podemos listar las imágenes del <em>host</em>, sino que podemos controlar el ciclo de vida de un contenedor (<code>docker run</code>, <code>docker start</code>, <code>docker restart</code>, <code>docker stop</code>) e incluso ejecutar en ellos cosas (<code>docker exec</code>).</p>
-
 <p>Esto va a tener muchas aplicaciones prácticas en el futuro, seguro&hellip;</p>
 
 <div id="disqus_thread"></div>

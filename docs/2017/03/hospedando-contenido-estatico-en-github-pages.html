@@ -53,30 +53,20 @@
 </p>
 
 <p>Algunas veces nos hemos planteado la posibilidad de tener nuestro propio servidor con nuestras propias aplicaciones, pero el coste del <em>hosting</em> nos lo ha hecho replantear, especialmente para proyectos de pruebas sin beneficio. Si no nos importa hospedar contenido <strong>HTML</strong> estático, las páginas de <strong>GitHub</strong> pueden cumplir con nuestras necesidades.</p>
-
 <p>De hecho, este <em>blog</em> está hospedado en <em>GitHub pages</em> sin ningún coste de <em>hosting</em>. Añadimos un nombre de registro gratuito, y obtenemos una plataforma sin coste de mantenimiento.</p>
-
 <p>La contrapartida es que este <em>blog</em> está compuesto de páginas <strong>HTML</strong> y no dispone de ninguna base de datos ni de ningún tipo de procesado en el servidor. Mantener este contenido sería una pesadilla, a no ser que se utilicen <a href="/2017/03/generadores-de-contenido-web-estaticos.html">generadores automáticos de HTML</a>, que es lo que utilizo en este <em>blog</em>.</p>
-
 <p>Las páginas de <em>GitHub</em> pueden ser de dos tipos: una por cada cuenta de usuario, y una por cada proyecto. De esta forma, como usuarios normales, deberíamos trabajar con las páginas de proyecto, puesto que solo disponemos de una página personal.</p>
-
-<h2 id="páginas-de-proyecto">Páginas de proyecto</h2>
-
+<h2>Páginas de proyecto</h2>
 <p>Cada repositorio puede disponer de un espacio web propio. Solo se necesita indicar a <em>GitHub</em> qué rama tratar como <em>document root</em>, para que pueda servirla adecuadamente. Vamos a ilustrar como se hace con un ejemplo:</p>
-
 <p>Vamos a empezar creando un nuevo repositorio en <a href="https://github.com/new">https://github.com/new</a>, de acuerdo a vuestras preferencias. En mi caso, me he dejado llevar por la sugerencia, puesto que este nombre no influye en nada; de esta forma nuestro repositorio se llama <code>didactic-meme</code>.</p>
-
 <p>Como no puede ser de otra forma, vamos a tener que clonar este repositorio para poder trabajar con él.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects$ git clone https://github.com/Sirtea/didactic-meme.git
 Cloning into 'didactic-meme'...
 warning: You appear to have cloned an empty repository.
 Checking connectivity... done.
 gerard@aldebaran:~/projects$ 
 </code></pre>
-
 <p>Tras poner algún fichero en la rama <code>master</code> y hacer un <em>commit</em>, podemos crear una rama para alojar nuestro contenido <strong>HTML</strong>. Esta rama se puede llamar <code>master</code> (que viene por defecto) o <code>gh-pages</code>. Esto es una decisión personal, pero como yo utilizo un generador de páginas <strong>HTML</strong>, yo prefiero dejar la rama <code>master</code> para el contenido escrito, y la rama <code>gh-pages</code> para el contenido generado.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects/didactic-meme$ git checkout -b gh-pages master
 Switched to a new branch 'gh-pages'
 gerard@aldebaran:~/projects/didactic-meme$ git branch -v
@@ -84,16 +74,12 @@ gerard@aldebaran:~/projects/didactic-meme$ git branch -v
   master   9b33086 Some master content
 gerard@aldebaran:~/projects/didactic-meme$ 
 </code></pre>
-
 <p>A partir de aquí el flujo de trabajo es el que usaríamos normalmente con <strong>Git</strong>. Creamos el contenido <strong>HTML</strong>, lo copiamos a lo generamos; el resto es tan simple como hacer un <em>commit</em> y subirlo a <em>GitHub</em> con un <em>push</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects/didactic-meme$ cat index.html 
 &lt;h1&gt;Hello World&lt;/h1&gt;
 gerard@aldebaran:~/projects/didactic-meme$ 
 </code></pre>
-
 <p>Un detalle del <em>push</em>:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/projects/didactic-meme$ git push origin gh-pages
 Username for 'https://github.com': sirtea
 Password for 'https://sirtea@github.com': 
@@ -102,33 +88,22 @@ To https://github.com/Sirtea/didactic-meme.git
  * [new branch]      gh-pages -&gt; gh-pages
 gerard@aldebaran:~/projects/didactic-meme$ 
 </code></pre>
-
 <p>Y como ya tenemos las dos ramas en <em>GitHub</em>, podemos continuar con el <em>setup</em> de nuestro sitio. Para ello vamos a la página de nuestro repositorio y cambiamos a la pestaña <em>Settings</em>. En esta sección existe un desplegable para elegir la rama que queremos servir como página de proyecto. Seleccionamos <code>gh-pages</code> y guardamos.</p>
-
 <p>Solo nos queda visitar la dirección que nos proporcionan en la misma página de <em>Settings</em>, y ver que ya tenemos un espacio web.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl https://sirtea.github.io/didactic-meme/
 &lt;h1&gt;Hello World&lt;/h1&gt;
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: las páginas se sirven usando mecanismos de <em>caché</em>, así que puede pasar algunos segundos hasta que el contenido se actualice o aparezca. Sed pacientes.</p>
-
-<h2 id="sirviendo-la-página-de-proyecto-con-un-dominio-propio">Sirviendo la página de proyecto con un dominio propio</h2>
-
+<h2>Sirviendo la página de proyecto con un dominio propio</h2>
 <p>La verdad es que la dirección que nos ha quedado no es bonita. La buena noticia es que puede ser mejor; podemos servir el contenido en un dominio propio, sin la coletilla del nombre del repositorio.</p>
-
 <p>El primer paso es conseguir un dominio al que tengamos acceso a los registros; vamos a tener que poner un registro <em>CNAME</em> apuntando a <em>GitHub</em>. Para evitar la lentitud del proceso, vamos a mostrar el caso de este <em>blog</em>, ya configurado.</p>
-
 <p>Para que <em>GitHub</em> sepa qué página de proyecto debe servir con cada dominio, nos sugieren que pongamos un fichero <em>CNAME</em> en la raíz del espacio web. Este fichero solo puede contener un dominio, y debe coincidir con el del dominio elegido.</p>
-
 <pre><code>gerard@aldebaran:~$ curl http://www.linuxsysadmin.tk/CNAME
 www.linuxsysadmin.tk
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Ahora solo falta instruir a nuestro DNS para que resuelva las peticiones contra <em>GitHub</em>. La forma recomendada es poner un registro <em>CNAME</em> apuntando a <code>&lt;usuario&gt;.github.io</code>, dejando a su criterio donde apunta este dominio, y despreocupándonos en el caso de que esta dirección IP final cambiara.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ dig www.linuxsysadmin.tk
 ...  
 ;; QUESTION SECTION:
@@ -141,9 +116,7 @@ github.map.fastly.net.	20	IN	A	151.101.120.133
 ...  
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Cada vez que pidamos nuestro dominio, <em>GitHub</em> se va a encargar a servir la página de proyecto que corresponde a ese dominio, cosa que sabe porque el fichero <em>CNAME</em> se lo indica. con esto nos queda una dirección mas bonita en el navegador web.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl -s http://www.linuxsysadmin.tk/ | head
 &lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;es&quot; prefix=&quot;og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml&quot;&gt;
@@ -157,9 +130,7 @@ gerard@aldebaran:~$
 
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>De hecho, si solicitamos la dirección anterior, <em>GitHub</em> nos devuelve una redirección al nuevo dominio, ya que asume que es la dirección &ldquo;oficial&rdquo;.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl -i http://sirtea.github.io/www.linuxsysadmin.tk/
 HTTP/1.1 301 Moved Permanently
 ...  
@@ -175,18 +146,13 @@ Location: http://www.linuxsysadmin.tk/
 &lt;/html&gt;
 gerard@aldebaran:~$ 
 </code></pre>
-
-<h2 id="páginas-personales">Páginas personales</h2>
-
+<h2>Páginas personales</h2>
 <p>Las páginas personales son las que se encargan de servir las direcciones tipo <code>&lt;http|https&gt;://&lt;usuario&gt;.github.io/</code>, sin la coletilla del proyecto.</p>
-
 <p>El funcionamiento es el mismo, con dos excepciones:</p>
-
 <ul>
 <li>El repositorio debe llamarse igual que el dominio (<code>&lt;usuario&gt;.github.io</code>)</li>
 <li>La rama que se sirve SIEMPRE es la rama <code>master</code></li>
 </ul>
-
 <p>Entonces solo hace falta cargar esa rama de contenido <strong>HTML</strong>. De hecho, el truco del <em>CNAME</em> también funciona.</p>
 
 <div id="disqus_thread"></div>

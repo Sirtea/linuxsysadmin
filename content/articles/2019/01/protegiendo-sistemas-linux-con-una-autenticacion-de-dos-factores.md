@@ -59,7 +59,7 @@ gerard@secure:~$
 
 **TRUCO**: El parámetro `nullok` permite que un usuario que no haya configurado la autenticación (ver más adelante), pueda seguir entrando sin ella, de la forma tradicional. Por supuesto, tras un periodo razonable, esta directiva se va a quitar, para obligar a todo el mundo a cumplir con las nuevas exigencias de seguridad.
 
-Otro punto conflictivo es el **SSH**, al que hay que dar a entender que "hay dos peticiones de *login*". Esto se hace mediante la directiva `ChallengeResponseAuthentication` en su configuración, que tendrá que recargar después.
+Otro punto conflictivo es el **SSH**, al que hay que dar a entender que "hay dos peticiones de *login*" seguidas. Esto se hace mediante la directiva `ChallengeResponseAuthentication` en su configuración, que tendrá que recargar después.
 
 ```bash
 gerard@secure:~$ grep -i ^challenge /etc/ssh/sshd_config

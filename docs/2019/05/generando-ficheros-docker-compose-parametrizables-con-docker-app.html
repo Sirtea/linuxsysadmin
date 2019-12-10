@@ -53,11 +53,8 @@
 </p>
 
 <p>Casi siempre he utilizado <strong>docker-compose</strong> en mi local, y eso me ayudó mucho cuando empecé a usar <strong>Docker Swarm</strong>. El fichero <code>docker-compose.yml</code> varía un poco en cada entorno y cada vez que se modifica se degrada respecto al original, por no mencionar el problema de mantener actualizadas las copias.</p>
-
 <p>Luego vienen los destrozos, con compañeros que hacen desaparecer pedazos de fichero, especialmente la lista completa de variables de entorno necesarias. Por eso es necesario mantener un <code>docker-compose.yml</code> único como si de una plantilla se tratara, y proveer alguna forma de sobreescribir los parámetros propios de cada entorno.</p>
-
 <p>Vamos a suponer para este artículo que tenemos un <em>webservice</em> en un contenedor. Por brevedad voy a utilizar un servidor que responda solamente con un texto parametrizable.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat docker-compose.yml 
 version: '3.2'
 services:
@@ -68,51 +65,36 @@ services:
       - 5678:5678
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Lo levantamos y comprobamos que devuelve lo esperado:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-compose up -d
 Creating network &quot;dockerapp_default&quot; with the default driver
 Creating dockerapp_hello_1 ... done
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ curl http://localhost:5678
 hello world
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Ahora empezad a pensar en varias copias del fichero, con modificaciones locales según el servidor o el entorno&hellip; En fin, mantenerlo o versionarlo es <strong>una auténtica pesadilla</strong>.</p>
-
 <p>Para ello, los mismos desarrolladores de <strong>Docker</strong> han pensado en una forma de parametrizar estos ficheros y, aunque todavía está muy verde, es un paso en la dirección correcta. Las llaman <strong>docker apps</strong>, y <a href="https://github.com/docker/app">esta es su documentación</a>.</p>
-
 <p>Vamos a empezar &ldquo;instalando&rdquo; el binario <code>docker-app</code>, que no es más que descargarlo de <a href="https://github.com/docker/app/releases">https://github.com/docker/app/releases</a> y ponerlo en el <em>path</em> del usuario que lo necesite. Personalmente, yo lo he puesto en <code>/usr/local/bin</code>.</p>
-
-<h2 id="creando-una-docker-app">Creando una docker app</h2>
-
+<h2>Creando una docker app</h2>
 <p>Una <strong>docker app</strong> no es otra cosa que la unión de 3 partes:</p>
-
 <ul>
 <li>Metadatos de la aplicación: nombre, versión, mantenedores, &hellip;</li>
 <li>El fichero <code>docker-compose.yml</code>, posiblemente con variables declaradas</li>
 <li>Una sección de variables que, aunque se pueden sobreescribir, nos valen como &ldquo;las habituales&rdquo; que se usan por defecto</li>
 </ul>
-
 <p>Estas partes se pueden distribuir como 3 ficheros dentro de una carpeta, o como un solo fichero. Como es fácil de juntarlos y partirlos <em>a posteriori</em>, vamos a empezar con uno solo. Esto nos simplifica las salidas, y no perdemos legibilidad por ser un ejemplo pequeño.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app init --single-file myapp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Esto nos genera un fichero con el nombre indicado y la extensión <code>.dockerapp</code>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ ls
 docker-compose.yml  myapp.dockerapp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Este fichero está lleno de comentarios explicativos, pero creo personalmente que no hacen ninguna falta, así que no los mostraré. Veamos las 3 partes indicadas:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat myapp.dockerapp | grep -v ^#
 version: 0.1.0
 name: myapp
@@ -134,20 +116,15 @@ services:
 {}
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Es un buen momento para eliminar el fichero original, para mantener el ejemplo mínimo.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ rm docker-compose.yml 
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ ls
 myapp.dockerapp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>La idea es que un fichero tipo <code>docker-compose.yml</code> se <strong>renderiza</strong> a demanda:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render
 version: &quot;3.2&quot;
 services:
@@ -163,15 +140,10 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Hasta aquí, no ha cambiado nada. Es el momento de sacarle provecho a la complejidad añadida.</p>
-
-<h2 id="introduciendo-las-variables">Introduciendo las variables</h2>
-
+<h2>Introduciendo las variables</h2>
 <p>Es normal que los entornos o servidores apliquen pequeños cambios en este fichero, y para ello, <code>docker-app</code> introduce las variables. Se trata de declarar como variables lo que pueda cambiar, darles valores por defecto, y luego ya las sobreescribiremos si nos hace falta.</p>
-
 <p>Por la sencillez del ejemplo, poco podemos cambiar; como ejemplo podemos usar el texto devuelto o el puerto en el que vamos a mapear el servicio en el servidor. Se trata de reemplazar los valores modificables de la segunda sección de la <strong>docker app</strong> por variables de la forma <code>${variable}</code>, dándole valores por defecto en la tercera sección de la <strong>docker app</strong>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat myapp.dockerapp 
 version: 0.1.0
 name: myapp
@@ -194,9 +166,7 @@ text: hello world
 port: 5678
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Si renderizamos la aplicación, no vamos a ver cambio ninguno:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render
 version: &quot;3.2&quot;
 services:
@@ -212,18 +182,13 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
-<h2 id="sobreescribiendo-las-variables">Sobreescribiendo las variables</h2>
-
+<h2>Sobreescribiendo las variables</h2>
 <p>Si necesitamos modificar alguna de las variables, <code>docker-app</code> nos ofrece dos formas:</p>
-
 <ul>
 <li>Con un parámetro durante el <em>renderizado</em></li>
 <li>Con un fichero de cambios</li>
 </ul>
-
 <p>La primera es la más fácil, necesitando solamente indicar el <em>flag</em> <code>--set</code> para indicar el cambio. Veamos la sobreescritura del puerto, pero dejando el texto por defecto:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render --set port=8080
 version: &quot;3.2&quot;
 services:
@@ -239,14 +204,11 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Esta opción está bien para un caso aislado o prueba, pero si queremos versionar los cambios, no es lo recomendable. Para ello se nos ofrece la otra opción, que es creando un fichero de cambios:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat test.yml 
 text: lorem ipsum
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render -f test.yml 
 version: &quot;3.2&quot;
 services:
@@ -262,35 +224,26 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
-<h2 id="un-caso-práctico">Un caso práctico</h2>
-
+<h2>Un caso práctico</h2>
 <p>Vamos a suponer que tenemos 3 servidores, con las excepciones que siguen:</p>
-
 <ul>
 <li><strong>serverA</strong>: Es el servidor de desarrollo; vamos a cambiar el texto para que no hayan confusiones durante los tests</li>
 <li><strong>serverB</strong>: Primera réplica de producción; como el puerto 5678 está ocupado, lo cambiamos por el 5679</li>
 <li><strong>serverC</strong>: Segunda réplica de producción; este no necesita cambios respecto a la plantilla</li>
 </ul>
-
 <p>Así pues, vamos a organizar el repositorio en donde guardamos las configuraciones con un fichero plantilla, y 3 ficheros especificando las diferencias de cada instancia, que quedan así:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat dev.yml 
 text: lorem ipsum (this is development)
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat prod1.yml 
 port: 5679
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ cat prod2.yml 
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Vemos claramente que según el fichero usado se cumple con las necesidades específicas, pero manteniendo la plantilla unificada.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render -f dev.yml 
 version: &quot;3.2&quot;
 services:
@@ -306,7 +259,6 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render -f prod1.yml 
 version: &quot;3.2&quot;
 services:
@@ -322,7 +274,6 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@atlantis:~/workspace/dockerapp$ docker-app render -f prod2.yml 
 version: &quot;3.2&quot;
 services:
@@ -338,42 +289,34 @@ services:
       protocol: tcp
 gerard@atlantis:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Solo nos queda lanzar los comandos que los aplican en cada servidor, que a su vez, tendrá un clon del repositorio:</p>
-
 <pre><code class="language-bash">gerard@serverA:~/workspace/dockerapp$ docker-app render -f dev.yml | docker-compose -f - up -d
 Creating network &quot;dockerapp_default&quot; with the default driver
 Creating dockerapp_hello_1 ... done
 gerard@serverA:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@serverA:~/workspace/dockerapp$ curl http://localhost:5678
 lorem ipsum (this is development)
 gerard@serverA:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@serverB:~/workspace/dockerapp$ docker-app render -f prod1.yml | docker-compose -f - up -d
 Creating network &quot;dockerapp_default&quot; with the default driver
 Creating dockerapp_hello_1 ... done
 gerard@serverB:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@serverB:~/workspace/dockerapp$ curl http://localhost:5679
 hello world
 gerard@serverB:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@serverC:~/workspace/dockerapp$ docker-app render -f prod2.yml | docker-compose -f - up -d
 Creating network &quot;dockerapp_default&quot; with the default driver
 Creating dockerapp_hello_1 ... done
 gerard@serverC:~/workspace/dockerapp$ 
 </code></pre>
-
 <pre><code class="language-bash">gerard@serverC:~/workspace/dockerapp$ curl http://localhost:5678
 hello world
 gerard@serverC:~/workspace/dockerapp$ 
 </code></pre>
-
 <p>Y con esto mantenemos un solo repositorio, una sola plantilla, y los cambios de forma centralizada y controlada.</p>
 
 <div id="disqus_thread"></div>

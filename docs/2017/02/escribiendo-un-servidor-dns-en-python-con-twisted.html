@@ -53,13 +53,9 @@
 </p>
 
 <p>El otro día tuvimos una caída del centro de datos de desarrollo. Inmediatamente después vimos que teníamos afectación en el entorno de producción, ya que lanzaba peticiones al <strong>DNS</strong> de desarrollo. Sin saber claramente porque pasaba, hice un servidor <strong>DNS</strong> en <strong>python</strong>, para ver que tipos de peticiones se lanzaban.</p>
-
 <p>Para hacerlo, utilicé una librería magnífica llamada <strong>twisted</strong>, que hace la mayoría del trabajo. Aunque su documentación es bastante escasa, tirando de ejemplos pude sacar algo interesante en poco tiempo.</p>
-
-<h2 id="un-servidor-chivato">Un servidor chivato</h2>
-
+<h2>Un servidor chivato</h2>
 <p>Cambiamos el fichero <em>/etc/resolv</em> de nuestro servidor de producción, para añadirle su propia dirección IP, en la que ejecutamos el siguiente <em>script</em>:</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 from twisted.internet import reactor, defer
@@ -86,19 +82,14 @@ def main():
 if __name__ == '__main__':
     raise SystemExit(main())
 </code></pre>
-
 <p>Si os interesa trabajar con <em>virtualenv</em>, aquí os dejo el <em>requirements.txt</em>:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/projects/dns$ cat requirements.txt 
 Twisted==16.3.2
 zope.interface==4.2.0
 gerard@sirius:~/projects/dns$ 
 </code></pre>
-
 <p>Es el resultado de ejecutar <em>pip install twisted</em>.</p>
-
 <p>Comprobamos lo que pasa cuando el servidor recibe peticiones:</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ dig @localhost -p 10053 nowhere.com
 
 ; &lt;&lt;&gt;&gt; DiG 9.9.5-9+deb8u6-Debian &lt;&lt;&gt;&gt; @localhost -p 10053 nowhere.com
@@ -118,22 +109,15 @@ gerard@sirius:~/projects/dns$
 
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Y en el otro terminal:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/projects/dns$ ./env/bin/python dns.py 
 &lt;Query nowhere.com A IN&gt;
 
 </code></pre>
-
 <p>Este <em>script</em> implementa un servidor que no es capaz de encontrar el dominio, pero registra la petición recibida. Con el tipo de peticiones nos dimos cuenta de que había algo mal configurado en el entorno de producción.</p>
-
-<h2 id="añadiendo-resolución-de-peticiones">Añadiendo resolución de peticiones</h2>
-
+<h2>Añadiendo resolución de peticiones</h2>
 <p>La librería <strong>twisted</strong> ofrece clases para entender las peticiones y para formular las respuestas. Eso nos da una <em>toolbox</em> muy interesante para hacer nuestro propio servidor.</p>
-
 <p>Supongamos que queremos asociar <em>example.com</em> a las direcciones <em>1.2.3.4</em> y <em>1.2.3.5</em>; adicionalmente asociaremos también el nombre <em>example.my</em> a la dirección <em>1.2.3.5</em>. Se podría utilizar una base de datos, pero vamos a no hacerlo para mantener el ejemplo pequeño.</p>
-
 <pre><code class="language-python">#!/usr/bin/env python
 
 from twisted.internet import reactor, defer
@@ -189,9 +173,7 @@ def main():
 if __name__ == '__main__':
     raise SystemExit(main())
 </code></pre>
-
 <p>Y si ejecutamos este nuevo <em>script</em> y le lanzamos peticiones, vemos que funciona.</p>
-
 <pre><code class="language-bash">gerard@sirius:~$ dig @localhost -p 10053 +short example.com
 1.2.3.4
 1.2.3.5
@@ -206,7 +188,6 @@ example.my.
 gerard@sirius:~$ dig @localhost -p 10053 +short -x 1.2.3.6
 gerard@sirius:~$ 
 </code></pre>
-
 <p>Aunque ya hay servidores <strong>DNS</strong> magníficos, podemos levantar uno con <strong>python</strong> de forma fácil, rápida y sencilla.</p>
 
 <div id="disqus_thread"></div>

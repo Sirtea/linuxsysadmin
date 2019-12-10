@@ -53,19 +53,12 @@
 </p>
 
 <p>En el artículo anterior de esta serie montamos el cluster de la base de datos que íbamos a necesitar para las aplicaciones que conformaban este entorno de ejemplo. Ahora que tenemos la base de datos, falta poner los servidores de aplicaciones que sirven nuestras aplicaciones y que usan el cluster.</p>
-
 <p>Las aplicaciones que pretendemos servir son aplicaciones hechas en <strong>python</strong>, siguiendo el protocolo <strong>WSGI</strong>. Para ir rápidos, ambas utilizan el <em>framework</em> <strong>bottle</strong>. En realidad, nos sirve cualquier <em>framework</em> que construya aplicaciones <strong>WSGI</strong> estándares, de acuerdo al protocolo. Estas aplicaciones se conectan a la base de datos antes creadas para resolver las peticiones, mediante el <em>driver</em> de <strong>mongodb</strong>.</p>
-
 <p>Desde el punto de vista de entrada al servidor, ambas aplicaciones se van a servir mediante el protocolo <strong>HTTP</strong> en puerto TCP 8080. Hay muchos servidores que sirven aplicaciones <strong>WSGI</strong>, por ejemplo, <strong>Apache mod_wsgi</strong>, <strong>gunicorn</strong> o <strong>uWSGI</strong>. De hecho hay docenas de ellos, casi todos capaces de servir aplicaciones <strong>WSGI</strong> en un puerto cualquiera TCP.</p>
-
 <p>En este caso, usaremos un servidor de aplicaciones <strong>uWSGI</strong> que, aunque es un poco mas complicado que <strong>gunicorn</strong> (y menos que <strong>mod_wsgi</strong>), me tiene enamorado. Destaco especialmente el modo de funcionamiento <em>emperador</em> y la capacidad de usar un <em>virtualenv</em> distinto para cada aplicación servida. De hecho, puede servir diferentes lenguajes y/o versiones, una por cada aplicación.</p>
-
-<h2 id="instalar-el-servidor-de-aplicaciones">Instalar el servidor de aplicaciones</h2>
-
+<h2>Instalar el servidor de aplicaciones</h2>
 <p>Este paso se repite en las máquinas <em>backend1</em>, <em>backend2</em> y  <em>backoffice</em>; aunque cada una va a servir una aplicación distinta, el servidor de aplicaciones es el mismo. En puntos posteriores pondremos y activaremos las aplicaciones.</p>
-
 <p>El servidor <strong>uWSGI</strong> está disponible en los repositorios oficiales de <em>Debian Jessie</em>. Vamos a instalarlo con un <em>init script</em> que levante un emperador y le vamos a añadir el <em>plugin</em> para servir <strong>python</strong> (en la versión 2.7, según podemos ver).</p>
-
 <pre><code class="language-bash">root@backend1:~# apt-get install uwsgi-emperor uwsgi-plugin-python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -87,15 +80,10 @@ Se utilizarán 25,9 MB de espacio de disco adicional después de esta operación
 ...
 root@backend1:~#
 </code></pre>
-
 <p>Y con esto ya tenemos el servidor de aplicaciones en funcionamiento. Las instancias se declaran con un fichero de configuración en <em>/etc/uwsgi-emperor/vassals/</em>, que haremos mas adelante.</p>
-
-<h2 id="consideraciones-de-seguridad">Consideraciones de seguridad</h2>
-
+<h2>Consideraciones de seguridad</h2>
 <p>Estas aplicaciones usarán el <em>driver</em> <strong>pymongo</strong> para conectar a las instancias de <strong>mongodb</strong>. Para eso hay que habilitar el tráfico relativo (de los servidores de aplicaciones a los de mongodb, por el puerto TCP 27017).</p>
-
 <p>En nuestro caso, como estamos trabajando con <strong>LXC</strong>, lo haremos desde el <em>host</em>, mediante la modificación de las reglas de <em>firehol</em>.</p>
-
 <pre><code class="language-bash">root@lxc:~# cat /etc/firehol/firehol.conf
 mongo_servers=&quot;10.0.0.5 10.0.0.6 10.0.0.7&quot;
 app_servers=&quot;10.0.0.3 10.0.0.4 10.0.0.5&quot;
@@ -106,23 +94,15 @@ router internal inface lxc0 outface lxc0
 ...  
 root@lxc:~#
 </code></pre>
-
 <p>No os olvidéis de reiniciar el servicio <em>firehol</em>.</p>
-
-<h2 id="instalando-las-aplicaciones">Instalando las aplicaciones</h2>
-
+<h2>Instalando las aplicaciones</h2>
 <p>Este punto se hace en los tres servidores que sirven aplicaciones (<em>backend1</em>, <em>backend2</em> y <em>backoffice</em>).</p>
-
 <p>Las aplicaciones de ejemplo que vamos a usar las podéis encontrar en <a href="/downloads/shop.tar.gz">este enlace</a>. Debo admitir que no son bonitas, pero para esta demostración, nos valen.</p>
-
 <p>Descomprimimos el fichero comprimido con las dos aplicaciones.</p>
-
 <pre><code class="language-bash">root@backend1:~# tar xzf shop.tar.gz
 root@backend1:~#
 </code></pre>
-
 <p>Esta es la estructura que queda tras descomprimir:</p>
-
 <pre><code class="language-bash">root@backend1:~# tree
 .
 ├── shop
@@ -140,21 +120,14 @@ root@backend1:~#
 4 directories, 7 files
 root@backend1:~#
 </code></pre>
-
 <p>Esta estructura tiene las dos aplicaciones. Cada tipo de servidor usará solo una por simplicidad, así que borraremos la que no se utilice, de acuerdo al tipo de servidor.</p>
-
 <p>En resumen, vamos a poner la carpeta <em>shop</em> en <em>/opt/</em>, y vamos a poner dentro el <em>virtualenv</em> con las librerías necesarias.</p>
-
 <p>Como buena <em>praxis</em>, vamos a instalar las librerías en un <em>virtualenv</em> dedicado por aplicación. Para ello necesitamos la herramienta, que puede salir del repositorio oficial o lo podemos descargar, para usarlo y desecharlo posteriormente. Podemos encontrar el paquete en <a href="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-14.0.6.tar.gz#md5=a035037925c82990a7659ecf8764bcdb">este enlace</a></p>
-
 <p>Lo descomprimimos y lo dejamos ahí, para que los puntos específicos para cada servidor lo usen a su antojo.</p>
-
 <pre><code class="language-bash">root@backend1:~# tar xzf virtualenv-14.0.6.tar.gz
 root@backend1:~#
 </code></pre>
-
 <p>El <em>script</em> de creación del <em>virtualenv</em> se ejecuta con <strong>python</strong>; así que también lo necesitamos.</p>
-
 <pre><code>root@backend1:~# apt-get install python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -172,21 +145,14 @@ Se utilizarán 5.131 kB de espacio de disco adicional después de esta operació
 ..
 root@backend1:~#
 </code></pre>
-
 <p>Veamos ahora los puntos específicos por tipo de aplicación.</p>
-
-<h3 id="aplicación-de-backend-la-api-pública">Aplicación de backend: la API pública</h3>
-
+<h3>Aplicación de backend: la API pública</h3>
 <p>Este punto se ejecuta solamente en los <em>backends</em> (<em>backend1</em> y <em>backend2</em>).</p>
-
 <p>Eliminamos la aplicación de administración, que no se usa en los <em>backends</em>.</p>
-
 <pre><code class="language-bash">root@backend1:~# rm -R shop/shop_admin/
 root@backend1:~#
 </code></pre>
-
 <p>Así nos queda la carpeta:</p>
-
 <pre><code class="language-bash">root@backend1:~# tree shop
 shop
 ├── requirements.txt
@@ -196,29 +162,21 @@ shop
 1 directory, 2 files
 root@backend1:~#
 </code></pre>
-
 <p>Copiamos la carpeta a <em>/opt/</em> que va a ser su emplazamiento habitual.</p>
-
 <pre><code class="language-bash">root@backend1:~# cp -R shop/ /opt/
 root@backend1:~#
 </code></pre>
-
 <p>Vamos a trabajar ya desde la carpeta contenedora del proyecto.</p>
-
 <pre><code class="language-bash">root@backend1:~# cd /opt/shop/
 root@backend1:/opt/shop#
 </code></pre>
-
 <p>El siguiente paso es crear el conjunto de librerías necesarias, construyendo un <em>virtualenv</em> con las librerías.</p>
-
 <pre><code class="language-bash">root@backend1:/opt/shop# /root/virtualenv-14.0.6/virtualenv.py env
 New python executable in /opt/shop/env/bin/python
 Installing setuptools, pip, wheel...done.
 root@backend1:/opt/shop#
 </code></pre>
-
 <p>Activamos el entorno virtual para instalar las librerías declaradas en el fichero <em>requirements.txt</em>. Luego salimos del entorno.</p>
-
 <pre><code class="language-bash">root@backend1:/opt/shop# . env/bin/activate
 (env) root@backend1:/opt/shop# pip install -r requirements.txt
 Collecting bottle==0.12.9 (from -r requirements.txt (line 1))
@@ -228,15 +186,11 @@ Successfully installed bottle-0.12.9 pymongo-3.2
 (env) root@backend1:/opt/shop# deactivate
 root@backend1:/opt/shop#
 </code></pre>
-
 <p>Y para evitarnos problemas de permisos, uniformizamos el propietario de la carpeta:</p>
-
 <pre><code class="language-bash">root@backend1:~# chown -R www-data:www-data /opt/shop/
 root@backend1:~#
 </code></pre>
-
 <p>Con todo lo necesario para levantar la aplicación, la declaramos como <em>vasallo</em> del <em>emperador</em>; el mismo <strong>emperador</strong> va a levantar un proceso para servir esa configuración.</p>
-
 <pre><code class="language-bash">root@backend1:/opt/shop# cat /etc/uwsgi-emperor/vassals/shop_api.ini
 [uwsgi]
 plugin = python
@@ -248,9 +202,7 @@ chdir = /opt/shop/shop_api
 module = app:app
 root@backend1:/opt/shop#
 </code></pre>
-
 <p>Y podemos comprobar que todo funciona como debe haciendo una petición a la <strong>API</strong>.</p>
-
 <pre><code class="language-bash">root@backend1:~# curl -i http://localhost:8080/products/
 HTTP/1.1 200 OK
 Content-Length: 3
@@ -260,19 +212,13 @@ Backend: backend1
 []
 root@backend1:~#
 </code></pre>
-
-<h3 id="aplicación-de-backoffice-la-interfaz-de-administración">Aplicación de backoffice: la interfaz de administración</h3>
-
+<h3>Aplicación de backoffice: la interfaz de administración</h3>
 <p>Este punto aplica solamente a la máquina <em>backoffice</em>.</p>
-
 <p>El proceso es análogo al de los <em>backends</em>; quitamos la aplicación que no vamos a utilizar.</p>
-
 <pre><code class="language-bash">root@backoffice:~# rm -R shop/shop_api/
 root@backoffice:~#
 </code></pre>
-
 <p>Así nos queda la carpeta:</p>
-
 <pre><code class="language-bash">root@backoffice:~# tree shop
 shop
 ├── requirements.txt
@@ -286,29 +232,21 @@ shop
 2 directories, 5 files
 root@backoffice:~#
 </code></pre>
-
 <p>La transferimos a la carpeta <em>/opt/</em>.</p>
-
 <pre><code class="language-bash">root@backoffice:~# cp -R shop/ /opt/
 root@backoffice:~#
 </code></pre>
-
 <p>Nos situamos en la carpeta contenedora:</p>
-
 <pre><code class="language-bash">root@backoffice:~# cd /opt/shop/
 root@backoffice:/opt/shop#
 </code></pre>
-
 <p>Creamos el <em>virtualenv</em> en la carpeta contenedora.</p>
-
 <pre><code class="language-bash">root@backoffice:/opt/shop# /root/virtualenv-14.0.6/virtualenv.py env
 New python executable in /opt/shop/env/bin/python
 Installing setuptools, pip, wheel...done.
 root@backoffice:/opt/shop#
 </code></pre>
-
 <p>Y le instalamos las librerías necesarias, declaradas en el fichero <em>requirements.txt</em>.</p>
-
 <pre><code class="language-bash">root@backoffice:/opt/shop# . env/bin/activate
 (env) root@backoffice:/opt/shop# pip install -r requirements.txt
 Collecting bottle==0.12.9 (from -r requirements.txt (line 1))
@@ -318,15 +256,11 @@ Successfully installed bottle-0.12.9 pymongo-3.2
 (env) root@backoffice:/opt/shop# deactivate
 root@backoffice:/opt/shop#
 </code></pre>
-
 <p>Actualizamos el propietario de la aplicación <strong>WSGI</strong>.</p>
-
 <pre><code class="language-bash">root@backoffice:/opt/shop# chown -R www-data:www-data /opt/shop/
 root@backoffice:/opt/shop#
 </code></pre>
-
 <p>Y creamos el fichero de configuración del <em>vasallo</em>, para que lo levante el <em>emperador</em>, quedando así:</p>
-
 <pre><code class="language-bash">root@backoffice:/opt/shop# cat /etc/uwsgi-emperor/vassals/shop_admin.ini
 [uwsgi]
 plugin = python
@@ -338,9 +272,7 @@ chdir = /opt/shop/shop_admin
 module = app:app
 root@backoffice:/opt/shop#
 </code></pre>
-
 <p>Y comprobamos que obtenemos la página web que se espera:</p>
-
 <pre><code class="language-bash">root@backoffice:~# curl -i http://localhost:8080/
 HTTP/1.1 200 OK
 Content-Length: 33
@@ -349,9 +281,7 @@ Content-Type: text/html; charset=UTF-8
 &lt;a href=&quot;/products&quot;&gt;Products&lt;/a&gt;
 root@backoffice:~#
 </code></pre>
-
 <p>Y con esto hemos acabado con las aplicaciones. Nuevamente, todo lo que queda en la carpeta <em>/root/</em> es desechable.</p>
-
 <p>En el siguiente artículo vamos a montar el <em>proxy</em>/balanceador que va a actuar como fachada de todo el sistema.</p>
 
 <hr />

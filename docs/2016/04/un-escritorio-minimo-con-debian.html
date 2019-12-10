@@ -53,13 +53,9 @@
 </p>
 
 <p>Harto de distribuciones para escritorio cargados con aplicaciones que no se usan, decidí que esta vez iba a instalar un escritorio de trabajo partiendo de una <em>Debian netinstall</em>. El resto va a ser instalar las aplicaciones justas y necesarias para nuestro trabajo diario. En este artículo describo como lo hice.</p>
-
 <p>Este tutorial se asume que ya tenemos la distribución instalada de una forma mínima, sin nada que sea innecesario. Vamos a instalar los paquetes que se necesiten para nuestro escritorio.</p>
-
 <p>Para practicar la instalación y probar variaciones, es recomendable hacerlo en una máquina virtual, por ejemplo, usando <strong>VirtualBox</strong>.</p>
-
 <p>En cuanto a los requisitos, vamos a partir de una distribución <em>Debian Jessie</em> normal, con una cantidad de memoria tirando a poca, y con un disco también bastante escaso. El resultado es bastante ligero.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# cat /etc/debian_version
 8.4
 root@kobayashi-maru:~# free -m
@@ -77,74 +73,50 @@ tmpfs            5,0M      0  5,0M   0% /run/lock
 tmpfs            251M      0  251M   0% /sys/fs/cgroup
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Las buenas prácticas requieren separar algunas de las carpetas en particiones distintas, de forma que el disco raíz no se llene por el uso diario de los usuarios. Especialmente se recomienda asignar una partición o disco para la carpeta <em>/home/</em>.</p>
-
-<h2 id="el-sistema-de-ventanas">El sistema de ventanas</h2>
-
+<h2>El sistema de ventanas</h2>
 <p>Como primer paso, necesitamos el servidor de ventanas, que se encarga de mediar entre los <em>drivers</em> y las aplicaciones. En la distribución utilizada, se utiliza <strong>xorg</strong> para esta función.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install xorg
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Esto nos va a instalar el servidor, y gracias al sistema de dependencias de <em>Debian</em>, todos los drivers de entrada y de vídeo; esto añade muchos paquetes que seguramente no usaremos jamás, que necesitan irse actualizando y ocupan espacio en disco. En caso de querer reducir la cantidad de drivers instalados, y sabiendo los que necesitamos, podemos instalar los necesarios solamente.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install xserver-xorg xserver-xorg-input-kbd xserver-xorg-input-mouse xserver-xorg-video-vesa
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>En este caso, yo opté por este sistema, instalando el <em>driver</em> de vídeo <em>vesa</em>, que es el que funciona con <strong>VirtualBox</strong> (este <em>driver</em> funciona siempre). En el caso de mi ordenador, puse el <em>driver</em> de vídeo <em>intel</em> (que es la tarjeta gráfica que tengo) y añadí el <em>driver</em> de entrada <em>synaptics</em> (que gestiona el <em>touchpad</em>).</p>
-
-<h2 id="el-entorno-de-escritorio">El entorno de escritorio</h2>
-
+<h2>El entorno de escritorio</h2>
 <p>En este apartado tenemos muchas posibilidades; el ecosistema de entornos de escritorio es grande, pudiendo elegir entre <em>GNOME</em>, <em>KDE</em>, <em>XFCE</em>, <em>LXDE</em> y otros tantos.</p>
-
 <p>Un entorno de escritorio que me gusta por su simplicidad es <em>LXDE</em>, que se puede instalar con el paquete <strong>lxde</strong>.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install lxde
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>En caso de no necesitar todos los paquetes, es posible instalar un conjunto menor de paquetes. Una selección bastante completa podría ser la siguiente:</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install lxde-core lxappearance lxterminal lxtask
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Sin embargo, este entorno de escritorio está muy limitado en cuando a herramientas de configuración, y yo preferí instalar <em>XFCE</em>, que conseguí con los paquetes <strong>xfce4</strong> y <strong>xfce4-goodies</strong> (opcional; incluye algunos <em>plugins</em> y aplicaciones extras).</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install xfce4 xfce4-goodies
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
-<h2 id="cargar-el-modo-gráfico">Cargar el modo gráfico</h2>
-
+<h2>Cargar el modo gráfico</h2>
 <p>El primer método consiste en trabajar en modo terminal, levantando manualmente el entorno gráfico invocando el comando <strong>startx</strong>, que se encuentra en el paquete <strong>xinit</strong>.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install xinit
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Esto no es cómodo para el usuario corriente; lo normal es tener una pantalla de <em>login</em> para entrar en la sesión de escritorio. Nuevamente hay muchas alternativas, pero en nuestro caso hemos optado por poner el paquete <strong>lightdm</strong>.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install lightdm
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
-<h2 id="otras-utilidades">Otras utilidades</h2>
-
+<h2>Otras utilidades</h2>
 <p>Dependiendo del uso que vayamos a hacer, es interesante que nuestro ordenador pueda reproducir sonidos y tenga un gestor de redes, tanto cableadas como <em>wifi</em>.</p>
-
 <p>El primero consiste en usar <em>ALSA</em>, y detectar la configuración de nuestro sonido, guardando dicha configuración para futuros reinicios de la máquina.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install alsa-utils
 ...
 root@kobayashi-maru:~# alsactl init
@@ -153,56 +125,37 @@ Hardware is initialized using a generic method
 root@kobayashi-maru:~# alsactl store
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Para la parte del gestor de redes, hay nuevamente debate. Uno que me gusta y que cumple bien con su función es <strong>wicd</strong>.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install wicd
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
-<h2 id="las-aplicaciones">Las aplicaciones</h2>
-
+<h2>Las aplicaciones</h2>
 <p>Las aplicaciones a instalar son un tema muy personal; cada usuario va a necesitar unos tipos de aplicaciones u otras. Incluso así, de las aplicaciones de un tipo dado, pueden haber diversas opciones.</p>
-
 <p>Estas aplicaciones se pueden ir instalando a <em>posteriori</em>, tal como se vayan necesitando. Sin embargo, podemos poner aquellas que se van a usar seguro, como un navegador web, por ejemplo <em>Chromium</em>.</p>
-
 <pre><code class="language-bash">root@kobayashi-maru:~# apt-get install chromium
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Y para los fans de <em>Firefox</em>, también hay su alternativa:</p>
-
 <pre><code>root@kobayashi-maru:~# apt-get install iceweasel
 ...
 root@kobayashi-maru:~#
 </code></pre>
-
-<h2 id="y-finalmente-la-magia">Y finalmente, la magia</h2>
-
+<h2>Y finalmente, la magia</h2>
 <p>Podemos limpiar los paquetes descargados e instalados, mediante un <em>clean</em> simple de <strong>apt-get</strong>. Esto liberará algunos <em>megas</em>.</p>
-
 <pre><code>root@kobayashi-maru:~# apt-get clean
 root@kobayashi-maru:~#
 </code></pre>
-
 <p>Rebotamos nuestro ordenador, y dejamos que lo instalado tome el control del <em>boot</em>.</p>
-
 <pre><code>root@kobayashi-maru:~# reboot
 ...
 </code></pre>
-
 <p>Iremos a parar a la pantalla de <em>login</em>, y con un usuario adecuado deberíamos ver nuestro escritorio, tal como se muestra.</p>
-
-<p><img src="/images/escritorio-xfce.jpg" alt="Escritorio XFCE" /></p>
-
+<p><img src="/images/escritorio-xfce.jpg" alt="Escritorio XFCE"></p>
 <p>Ahora es tarea del usuario tunear el escritorio a su gusto, con paneles, <em>plugins</em> y <em>wallpapers</em>.</p>
-
-<h2 id="un-apunte-sobre-los-recursos">Un apunte sobre los recursos</h2>
-
+<h2>Un apunte sobre los recursos</h2>
 <p>Tras instalar todos los componentes, vemos que los recursos apenas han subido; lo que nos da una idea del tipo de <em>hardware</em> que podemos usar.</p>
-
 <pre><code class="language-bash">gerard@kobayashi-maru:~$ df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
 /dev/sda1        4,0G   1,4G  2,5G  36% /
@@ -220,11 +173,8 @@ Mem:           500        238        262          5         15        125
 Swap:            0          0          0
 gerard@kobayashi-maru:~$
 </code></pre>
-
 <p>El disco ha aumentado en unos 900 mb y la memoria ha pasado de 23 a 96 mb, sin tener ninguna aplicación abierta.</p>
-
 <p><strong>CUIDADO</strong>: Algunas aplicaciones necesitan mucho disco y también memoria. Depende de lo que se ponga, podemos pasar de unos requerimientos <em>hardware</em> austeros, a una máquina que dejaría de juguete a un supercomputador&hellip;</p>
-
 <p>Para el uso que doy de mi <em>netbook</em> (navegar, redacción de artículos, programación de <em>scripts</em> y alguna sesión de <em>SSH</em>), los 2gb de memoria me sobran; con 128 mb tendría suficiente.</p>
 
 <div id="disqus_thread"></div>

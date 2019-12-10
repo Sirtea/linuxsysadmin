@@ -63,7 +63,7 @@ gerard@sirius:~/docker/tunnelmaker$
 Podemos observar el el fichero *docker-compose.yml* otras varias anomalías:
 
 * **restart: always** &rarr; Este es el punto de todo el artículo; queremos que cuando el túnel se caiga, el mismo demonio de **Docker** se ocupe de levantarlo de nuevo.
-* ** stdin_open: true** &rarr; Sin este parámetro, el túnel se cerraba nada más establecerse; sospecho que esta era la causa de que no funcionara la solución con **SystemD**.
+* **stdin_open: true** &rarr; Sin este parámetro, el túnel se cerraba nada más establecerse; sospecho que esta era la causa de que no funcionara la solución con **SystemD**.
 * **extra_hosts** &rarr; No es indispensable, pero he querido utilizar nombres de servidor por claridad, aunque no dispongo de resolución de nombres para mis servidores locales. Esto añade la correspondiente entrada en */etc/hosts*.
 * **ports** &rarr; Nuestro contenedor va a levantar el túnel en el puerto arbitrario 9999; lo mapeamos en cualquier puerto que tengamos libre en nuestro ordenador.
 

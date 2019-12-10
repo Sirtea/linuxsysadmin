@@ -53,45 +53,32 @@
 </p>
 
 <p>Una de las operaciones más rutinarias que podemos tener como administradores de sistemas Linux es la actualización de un servidor. Mecánicamente lanzas <strong>apt-get upgrade</strong> y te quedas tan tranquilo con la tarea completa. Poco después te encuentras con alguien cabreado porque alguna librería o servicio no va adecuadamente como antes.</p>
-
 <p>Lo que realmente ha pasado es que hemos cambiado de versión alguna pieza de <em>software</em>, y la nueva tiene incompatibilidades con lo que hay funcionando. Es un caso raro, pero a veces se da, y muchas veces con previo aviso.</p>
-
 <p>¿Como se puede evitar que un servicio cambie de versión cuando actualiza? Muy sencillo: se llama <em>pinning</em> y es muy fácil de hacer con <strong>Debian</strong> o <strong>Ubuntu</strong>. Veamos un ejemplo:</p>
-
 <p>Supongamos que tenemos un servidor de contenedores <strong>Docker</strong>. Por un tema de estabilidad queremos mantener la versión actual. Para ello necesitamos saber el nombre del paquete que queramos congelar.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ dpkg -l | grep docker
 ii  docker-ce                     17.09.0~ce-0~debian            amd64        Docker: the open-source application container engine
 gerard@atlantis:~$
 </code></pre>
-
 <p>En nuestro caso, el paquete es <strong>docker-ce</strong>. Solo hace falta utilizar el comando <strong>apt-mark</strong> para que lo mantenga en la version actual.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ sudo apt-mark hold docker-ce
 docker-ce fijado como retenido.
 gerard@atlantis:~$
 </code></pre>
-
 <p>A partir de ahora, este paquete <strong>no se va a actualizar</strong>. Si queremos ver que paquetes tenemos congelados, el mismo comando ofrece la operación <em>showhold</em> que nos listaría los paquetes en modo <em>pinning</em>:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ sudo apt-mark showhold
 docker-ce
 gerard@atlantis:~$
 </code></pre>
-
 <p>Si en algún momento quisieramos volver a actualizarlo, bastaría con quitarle el <em>hold</em>, con el mismo comando:</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ sudo apt-mark unhold docker-ce
 Se ha cancelado la retención de docker-ce.
 gerard@atlantis:~$
 </code></pre>
-
 <p>Y ahora ya podríamos modificar la versión de <strong>docker-ce</strong>. Necesitaríamos los comandos habituales <strong>apt-get</strong>, <strong>aptitude</strong> u otro frontal gráfico. Podéis verificar que vuestro paquete ya no está en modo <em>hold</em> listando los paquetes en dicho estado.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~$ sudo apt-mark showhold
 gerard@atlantis:~$
 </code></pre>
-
 <p>Y con esto nos evitamos esos molestos cambios de versión que nos traen incompatibilidades con las aplicaciones que mantenemos.</p>
 
 <div id="disqus_thread"></div>

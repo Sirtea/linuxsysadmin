@@ -53,16 +53,12 @@
 </p>
 
 <p>Tras cambiar de oficina en mi trabajo, vuelvo a tener el dudoso honor de trabajar tras un <em>proxy</em>. Como viene siendo habitual, me puse un servidor <strong>Virtualbox</strong> con <strong>Debian</strong> para disponer de las opciones que una máquina auxiliar me ofrece, pero no fue hasta instalar <strong>Docker</strong> que estalló el desastre.</p>
-
 <p>Y el caso es que tenía el servidor básico funcionando, bien configurado, con acceso a internet y sin problemas. Fuí a instalar <strong>Docker</strong> y todo parecía correcto, con las configuraciones de <em>proxy</em> adecuadas. De repente intento comprobar la red solicitando una página web cualquiera, y&hellip; ¡sorpresa!</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ curl http://www.google.es/
 curl: (7) Failed to connect to proxy.acme.biz port 3128: No existe ninguna ruta hasta el `host'
 gerard@shangrila:~$
 </code></pre>
-
 <p>Por supuesto, lo primero tras un error de este estilo es mirar la tabla de rutas, a ver que es lo que aplica para resolver esta ruta:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ ip route
 default via 10.0.2.2 dev enp0s3
 10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15
@@ -70,25 +66,17 @@ default via 10.0.2.2 dev enp0s3
 172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown
 gerard@shangrila:~$
 </code></pre>
-
 <p>Y es que la IP del <em>proxy</em> es privada, estando en el rango 172.17.x.x; concretamente estaba en la 172.17.10.20. De esta forma, todas las peticiones al <em>proxy</em> caen en la última ruta, y entran en el dominio de <strong>Docker</strong>, que por supuesto, no tiene ningún contenedor con esa dirección IP.</p>
-
 <p>Visto esto solo queda instruir a <strong>Docker</strong> para que no haga uso de ese rango. Parece difícil, pero no lo es; <strong>Docker</strong> decide que el rango está ocupado o no mirando la tabla de rutas, con mejor o menor acierto.</p>
-
 <p>El truco es simple: consiste en hacer creer a <strong>Docker</strong> que ese bloque está ocupado, añadiendo algo a la tabla de rutas. En principio, la regla caería en la zona <strong>default</strong>, saldría por el dispositivo <strong>enp0s3</strong> y utilizaría el <em>gateway</em> <strong>10.0.2.2</strong>. Hagamos un bloque con el rango 172.17.0.0/16 que haga exactamente eso.</p>
-
 <p>Lo primero es parar el servicio de <strong>Docker</strong>, y eliminar su carpeta de datos en <code>/var/lib/docker</code>. Esto nos permitirá trabajar sin <strong>Docker</strong> recuerde nada en el inicio y que olvide cualquier red que ya haya podido crear.</p>
-
 <p><strong>AVISO</strong>: Esto va a eliminar configuraciones, imágenes, redes, volúmenes y contenedores; yo partía de un servidor vacío.</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ sudo service docker stop
 [sudo] password for gerard:
 gerard@shangrila:~$ sudo rm -R /var/lib/docker/
 gerard@shangrila:~$
 </code></pre>
-
 <p>Tenemos que conseguir preconfigurar una ruta, que es relativamente simple y bien documentado; en mi caso concreto se trata de un servidor <strong>Debian</strong> y la documentación me hizo añadir la ruta en <code>/etc/network/interfaces</code>:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ cat /etc/network/interfaces
 ...
 allow-hotplug enp0s3
@@ -97,14 +85,10 @@ iface enp0s3 inet dhcp
 ...
 gerard@shangrila:~$
 </code></pre>
-
 <p>Para descartar los cambios residuales y aplicar los nuevos, me limité a reiniciar el servidor.</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ sudo reboot
 </code></pre>
-
 <p>Tras el reinicio, se puede ver que la ruta ha aplicado, y que <strong>Docker</strong> ha tenido que configurarse en otro rango libre:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ ip route
 default via 10.0.2.2 dev enp0s3
 10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15
@@ -113,7 +97,6 @@ default via 10.0.2.2 dev enp0s3
 172.18.0.0/16 dev docker0 proto kernel scope link src 172.18.0.1 linkdown
 gerard@shangrila:~$
 </code></pre>
-
 <pre><code class="language-bash">gerard@shangrila:~$ docker inspect bridge
 [
     {
@@ -133,9 +116,7 @@ gerard@shangrila:~$
 ]
 gerard@shangrila:~$
 </code></pre>
-
 <p>Solo nos queda comprobar que el problema inicial, que era la falta de acceso a internet, se ha solucionado.</p>
-
 <pre><code class="language-bash">gerard@shangrila:~$ curl -I http://www.google.es/
 HTTP/1.1 200 OK
 ...
@@ -146,7 +127,6 @@ Connection: keep-alive
 
 gerard@shangrila:~$
 </code></pre>
-
 <p>Y con esto hemos acabado.</p>
 
 <div id="disqus_thread"></div>

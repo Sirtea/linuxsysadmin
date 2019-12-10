@@ -53,26 +53,18 @@
 </p>
 
 <p>Muchos de los <em>microframeworks</em> que existen en <strong>python</strong> no ofrecen ninguna ayuda con las tareas más simples que toda aplicación acaba implementando; eso nos hace decantarnos casi siempre por una opción más pesada de <em>framework</em>, como por ejemplo, <strong>Django</strong>. Sin embargo, gracias a los <strong>blueprints</strong> de <strong>Flask</strong>, esto es innecesario.</p>
-
 <p>Ya vimos en <a href="/2017/12/creciendo-con-flask-los-blueprints.html">otro artículo</a> que este <em>framework</em> tiene una funcionalidad llamada <strong>blueprints</strong>, que nos permiten encapsular un subconjunto de rutas, vistas y contenido estático para mantenibilidad y para su uso en otros proyectos.</p>
-
 <p>Este mismo modelo de desarrollo ha permitido que muchas personas desarrollen sus <strong>blueprints</strong> reusables y, en alguno de los casos, ofrecerlos a cualquiera que los pueda necesitar. Son especialmente interesantes las extensiones oficiales que se ofrecen con <strong>Flask</strong>, que podemos encontrar en <a href="http://flask.pocoo.org/extensions/">la página de extensiones</a>.</p>
-
 <p>Hay una lista interesante de extensiones, tanto en la página oficial, como por otros lugares de internet; cualquiera puede ofrecer extensiones. A pesar de ello, hay extensiones de plena confianza que van a servir de base para casi cualquier proyecto que deseemos empezar.</p>
-
 <p>En mi caso, mis favoritas son <strong>flask-mongoengine</strong> y <strong>flask-admin</strong> y suelen ser motivo suficiente para empezar cada nuevo proyecto en <strong>Flask</strong>. Vamos a intentar introducir el uso de extensiones con estos dos ejemplos.</p>
-
-<h2 id="un-proyecto-vacío">Un proyecto vacío</h2>
-
+<h2>Un proyecto vacío</h2>
 <p>Todas las modificaciones que se van a ir haciendo, se basan en una aplicación básica vacía. Siguiendo nuestra metodología, vamos a utilizar <em>virtualenv</em>, vamos recoger las dependencias en un fichero <em>requirements.txt</em> y vamos a disponer de un servidor de desarrollo.</p>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat requirements.txt
 Flask==0.12.2
 Flask-Admin==1.5.0
 flask-mongoengine==0.9.3
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat server.sh
 #!/bin/bash
 
@@ -84,22 +76,16 @@ SECRET_KEY='1234567890' \
 flask run --host 0.0.0.0 --port 8080
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat app.py
 from flask import Flask
 
 app = Flask(__name__)
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <p>Sobra decir que tenemos un servidor de <strong>mongodb</strong> en alguna parte, dispuesto a ser utilizado por nuestra capa de datos. En este caso concreto, el servidor corre en local.</p>
-
-<h2 id="definiendo-el-modelo-con-flask-mongoengine">Definiendo el modelo con flask-mongoengine</h2>
-
+<h2>Definiendo el modelo con flask-mongoengine</h2>
 <p>Esta extensión no añade demasiado valor en sí misma, pero se integra magníficamente con <strong>Flask</strong>. En esencia se trata de un <strong>blueprint</strong> que utiliza la misma configuración que nuestra aplicación y se conecta al servidor de acuerdo a esta configuración.</p>
-
 <p>Vamos a definir nuestros modelos como lo haríamos en <strong>mongoengine</strong>, salvo que los tipos declarados en <strong>mongoengine</strong> también lo están dentro del <strong>blueprint</strong> que hemos creado. Con un modelo pequeño de demostración nos vale:</p>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat models.py
 from flask_mongoengine import MongoEngine
 
@@ -120,9 +106,7 @@ class Product(db.Document):
     meta = {'collection': 'products'}
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <p>Vamos a recurrir a la clase principal (que es la que declara el objeto <em>app</em>) y vamos a importar el <strong>blueprint</strong>, para registrarlo posteriormente. Como añadido, vamos a sacar la URL de <strong>mongodb</strong> de una variable de entorno, porque la idea es usar esta aplicación en un contenedor en el futuro; de momento, esta variable queda declarada en el fichero <em>server.sh</em>.</p>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat app.py
 from flask import Flask
 from models import db
@@ -135,17 +119,11 @@ app.config['MONGODB_SETTINGS'] = {'host': MONGODB_URL}
 db.init_app(app)
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <p>Los modelos definidos con <strong>flask-mongoengine</strong> disponen de un <em>QuerySet</em> modificado, que nos permitirá hacer paginación o lanzar automáticamente un error 404 si no se encuentra un elemento, pero eso ya queda como deberes para el lector.</p>
-
-<h2 id="una-interfaz-de-administración-gratuita-con-flask-admin">Una interfaz de administración gratuita con flask-admin</h2>
-
+<h2>Una interfaz de administración gratuita con flask-admin</h2>
 <p>Esta extensión trabaja más que la anterior, pero en cierta manera, depende de ella. Se trata de un <strong>blueprint</strong> que crea un interfaz de administración en base a los modelos y de unas clases <em>ModelView</em> que son capaces de analizar los mismos y crear automáticamente las listas y formularios necesarios.</p>
-
 <p>La idea es la misma: creamos el <strong>blueprint</strong> y registramos el objeto <em>ModelView</em> para cada objeto que deseemos en el panel de administración. El objeto básico <em>ModelView</em> suele ser suficiente para la mayoría de casos, pero en otros vamos a querer personalizar lo que se ve, lo que se puede hacer, y los filtros disponibles.</p>
-
 <p>Esto lo dejamos para el lector, y nos vamos a centrar en como se haría. Para ello, imaginemos que queremos ocultar el campo <em>password</em> en la gestión de usuarios:</p>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat models.py
 from flask_mongoengine import MongoEngine
 
@@ -178,9 +156,7 @@ admin.add_view(HidePasswordModelView(User))
 admin.add_view(ModelView(Product))
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <p>Solo queda importar el <strong>blueprint</strong> y registrarlo en nuestra aplicación; esto se consigue en el fichero <em>app.py</em>. Cabe decir que esta extensión requiere de una configuración <code>SECRET_KEY</code> para encriptar las <em>cookies</em> de <strong>Flask</strong>.</p>
-
 <pre><code class="language-bash">(.venv) gerard@atlantis:~/projects/flask-extensions$ cat app.py
 from flask import Flask
 from models import db
@@ -197,13 +173,9 @@ db.init_app(app)
 admin.init_app(app)
 (.venv) gerard@atlantis:~/projects/flask-extensions$
 </code></pre>
-
 <p>Y sin especificar ningún parámetro extra, nuestro panel de administración se va a encontrar por defecto en <code>http://localhost:8080/admin/</code>. Esto se puede modificar al registrar el <strong>blueprint</strong>.</p>
-
 <p><strong>WARNING</strong>: El panel de administración solo sirve para administrar. No tiene autenticación integrada y queda como responsabilidad del usuario decidir que hacer. Se puede desactivar antes de ir a producción, se puede limitar el acceso mediante autenticación básica o certificados, e incluso se puede poner una extensión de autenticación como <strong>flask-login</strong> o <strong>flask-auth</strong>.</p>
-
-<h2 id="en-resumen">En resumen</h2>
-
+<h2>En resumen</h2>
 <p>Con esto tenemos un interesante esqueleto sobre el que crear en un tiempo mínimo cualquier aplicación que nos propongamos. Para acelerar la inicialización de un nuevo proyecto, he creado esta base como un repositorio de <strong>GitHub</strong>, que podéis clonar en <a href="https://github.com/Sirtea/flask-skel">https://github.com/Sirtea/flask-skel</a>.</p>
 
 <hr />

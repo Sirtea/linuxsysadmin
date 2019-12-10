@@ -53,24 +53,17 @@
 </p>
 
 <p>Muchas veces necesitamos herramientas para nuestro trabajo y no las usamos desde la misma máquina; otras veces no queremos instalar muchos paquetes en nuestra máquina. Tener una máquina virtual suele ser <em>overkill</em> para ejecutar algunos binarios. En este caso podemos tener nuestras imágenes <strong>docker</strong> listas para ser usadas según convenga.</p>
-
 <p>En este artículo vamos a ver algunos ejemplos de imágenes de mi <em>toolbox</em> como inspiración para otras, demostrando que podemos tener nuestras herramientas con una portabilidad máxima, y sin ocupar tanto espacio como nos podríamos imaginar; y lo mejor de todo: de usar y tirar, sin ensuciar nuestras distribuciones habituales.</p>
-
-<h2 id="generando-contraseñas">Generando contraseñas</h2>
-
+<h2>Generando contraseñas</h2>
 <p>Creo que este es el peor ejemplo, ya que hay miles de webs que hacen esto mismo, pero cumple con la función didáctica. Hay un paquete en linux llamado <strong>pwgen</strong> que nos ofrece el binario con el mismo nombre. Solo necesitamos un contenedor que invoque esta herramienta, escriba una contraseña aleatoria y se acabe, sin dejar nada instalado.</p>
-
 <p>Este paquete está disponible en <strong>Alpine Linux</strong>, así que es muy fácil generar el contenedor con un tamaño adecuado. solamente necesitamos instalarlo y darle el comando base.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ cat pwgen/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache pwgen
 CMD [&quot;pwgen&quot;, &quot;-cnyB&quot;, &quot;8&quot;, &quot;1&quot;]
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Lo podemos construir si no lo tuviéramos, o lo podemos descargar de un registro <strong>docker</strong>. Ocupa menos de 5 mb, contando el sistema operativo; nada mal.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker build -t pwgen pwgen/
 ...
 gerard@hermes:~/docker/tools$ docker images
@@ -78,9 +71,7 @@ REPOSITORY                                                                      
 pwgen                                                                                 latest              4b338afada4e        19 seconds ago      4.844 MB
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>La ejecución es bastante simple también; basta con ejecutar hasta encontrar una contraseña que nos guste:</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker run --rm pwgen
 Es4toh(f
 gerard@hermes:~/docker/tools$ docker run --rm pwgen
@@ -89,15 +80,10 @@ gerard@hermes:~/docker/tools$ docker run --rm pwgen
 jei!s7ph
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
-<h2 id="analizando-el-rendimiento-de-un-servidor">Analizando el rendimiento de un servidor</h2>
-
+<h2>Analizando el rendimiento de un servidor</h2>
 <p>Existe una aplicación llamada <strong>sysbench</strong> que hace una batería de pruebas para determinar el rendimiento de los parámetros básicos de una máquina. Como no podemos ir instalando este paquete, y como no tenemos la certeza que el sistema operativo del servidor soporte este binario, lo podemos poner en un contenedor y acompañarlo del sistema operativo que nos apetezca.</p>
-
 <p>En este caso, el contenedor ejecuta usando los recursos de la máquina <em>host</em>, y eso es precisamente lo que <strong>sysbench</strong> mide. Así obtendremos diferentes resultados en cada máquina, a pesar de que la imagen es la misma.</p>
-
 <p>La mala noticia es que este paquete no está disponible para <strong>Alpine Linux</strong>, así que usaré otra imagen, por ejemplo, <strong>Debian Jessie</strong>.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ cat sysbench/Dockerfile 
 FROM debian:jessie
 RUN apt-get update &amp;&amp; \
@@ -120,11 +106,8 @@ echo &quot;Disk: $(sysbench --test=fileio --file-test-mode=rndrw run | grep &quo
 sysbench --test=fileio cleanup &gt; /dev/null
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p><strong>CUIDADO</strong>: el <em>script bench.sh</em> tiene permisos de ejecución, por lo que también lo tendrá en la imagen.</p>
-
 <p>Tras construir o hacer el correspondiente <em>docker pull</em>, comprobamos que el tamaño es bastante superior, debido al sistema operativo base.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker build -t sysbench sysbench/
 ...  
 gerard@hermes:~/docker/tools$ docker images
@@ -132,29 +115,22 @@ REPOSITORY                                                                      
 sysbench                                                                              latest              ec75e66aae41        5 seconds ago       127.1 MB
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Solo queda ejecutar para ver el rendimiento de la máquina testeada, sin dejar basura en la máquina destino.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker run --rm sysbench
 CPU: 11.1682s
 Memory: 3059.66 MB/sec
 Disk: 12.088Mb/sec
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
-<h2 id="pruebas-de-carga-web">Pruebas de carga web</h2>
-
+<h2>Pruebas de carga web</h2>
 <p>Hay muchas herramientas en este campo, pero a mi me sigue gustando mucho el <em>Apache benchmark</em>. El binario <strong>ab</strong> se suele encontrar en el paquete <strong>apache2-utils</strong> y este está disponible en <strong>Alpine Linux</strong>.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ cat ab/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache apache2-utils
 ENTRYPOINT [&quot;/usr/bin/ab&quot;]
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Conseguimos nuestra imagen por los medios habituales; la imagen no llega a los 10 mb.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker build -t ab ab/
 ...  
 gerard@hermes:~/docker/tools$ docker images
@@ -162,9 +138,7 @@ REPOSITORY                                                                      
 ab                                                                                    latest              51b78f9dfeea        4 seconds ago       9.808 MB
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Y solo nos queda testear contra la víctima de nuestra prueba de estrés.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker run --rm ab -k -c5 -t5 http://www.linuxsysadmin.tk/
 This is ApacheBench, Version 2.3 &lt;$Revision: 1748469 $&gt;
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
@@ -214,20 +188,15 @@ Percentage of the requests served within a certain time (ms)
  100%    216 (longest request)
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
-<h2 id="pruebas-de-penetración-de-puertos">Pruebas de penetración de puertos</h2>
-
+<h2>Pruebas de penetración de puertos</h2>
 <p>La herramienta más versátil en este campo es <strong>nmap</strong>. El uso de este comando no es trivial, y un <em>pentester</em> experto puede hacer cosas realmente impresionantes. De momento nos basta con que funcione.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ cat nmap/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache nmap
 ENTRYPOINT [&quot;/usr/bin/nmap&quot;]
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Usamos el anterior <em>Dockerfile</em> para crear la imagen (o hacemos el <em>docker pull</em> correspondiente) y vemos que la imagen se nos va a 18 mb. Nada mal.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker build -t nmap nmap/
 ...  
 gerard@hermes:~/docker/tools$ docker images
@@ -235,9 +204,7 @@ REPOSITORY                                                                      
 nmap                                                                                  latest              d808ce19de05        4 seconds ago       17.58 MB
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Solo nos faltaría probar que todo funciona, lanzando un contenedor para testear alguna IP o nombre de dominio. En este caso, con escanear los puertos web, ssh, mongodb y mysql, nos vale. El resultado es que solamente los puertos web están abiertos, con un <em>firewall</em> cortando los demás.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker run --rm nmap www.linuxsysadmin.tk -p80,443,22,27017,3306 -Pn
 
 Starting Nmap 7.12 ( https://nmap.org ) at 2016-12-21 10:14 UTC
@@ -254,22 +221,16 @@ PORT      STATE    SERVICE
 Nmap done: 1 IP address (1 host up) scanned in 1.41 seconds
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
-<h2 id="pruebas-de-seguridad-web">Pruebas de seguridad web</h2>
-
+<h2>Pruebas de seguridad web</h2>
 <p>Una <em>suite</em> muy interesante para descubrir vulnerabilidades web es <strong>nikto</strong>. Se trata de un <em>script</em> de <strong>perl</strong> bastante completo, que va a probar las vulnerabilidades conocidas y nos va a dar los códigos en la <a href="https://en.wikipedia.org/wiki/Open_Source_Vulnerability_Database">Open_Source_Vulnerability_Database</a>, ahora cerrada.</p>
-
 <p>Para obtener nuestra imagen, basta con instalar el paquete en una imagen <strong>Alpine Linux</strong>:</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ cat nikto/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache nikto
 ENTRYPOINT [&quot;/usr/bin/nikto.pl&quot;]
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>Tras la construcción vemos que esta imagen es la mas grande de las anteriormente mencionadas, de entre las que hemos basado en <strong>Alpine Linux</strong>, ocupando mas de 60 mb; pensad en el tamaño de una máquina virtual dedicada: no bajaría de 1 gb.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker build -t nikto nikto/
 ...  
 gerard@hermes:~/docker/tools$ docker images
@@ -277,9 +238,7 @@ REPOSITORY                                                                      
 nikto                                                                                 latest              9167dce64715        3 seconds ago       61.05 MB
 gerard@hermes:~/docker/tools$ 
 </code></pre>
-
 <p>El comando <strong>nikto</strong> tiene muchas opciones, que saltan a la vista si usáis el contenedor sin parámetros adicionales. Para verificar su funcionamiento me voy a limitar a escanear un solo <em>host</em> con la batería de pruebas estándares.</p>
-
 <pre><code class="language-bash">gerard@hermes:~/docker/tools$ docker run --rm nikto -host www.linuxsysadmin.tk
 - ***** SSL support not available (see docs for SSL install) *****
 - Nikto v2.1.5

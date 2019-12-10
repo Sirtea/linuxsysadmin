@@ -53,13 +53,9 @@
 </p>
 
 <p>Cuando trabajamos con <strong>python</strong>, muchas veces necesitamos instalar librerías con <em>pip</em> o <em>easy_install</em>. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar los mismos. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.</p>
-
 <p>Para estos casos podemos montar un servidor exactamente igual que el de <a href="https://pypi.python.org/pypi">PyPI</a>, que se distribuye como una librería <strong>python</strong> adicional, que nos ofrece una aplicación <strong>WSGI</strong>.</p>
-
 <p>Nuestro despliegue es bastante básico; con un solo servidor nos basta, y puede estar compartido con otros usos. El único servicio que vamos a poner es un servidor <strong>WSGI</strong> capaz de servir la aplicación. En nuestro caso vamos a usar <strong>uwsgi</strong>.</p>
-
 <p>Así pues, creamos dos máquinas, una va a ser el servidor y la otra, un cliente de ejemplo que necesite los paquetes locales.</p>
-
 <pre><code class="language-bash">root@lxc:~# lxc-ls -f
 NAME        STATE    IPV4      IPV6  AUTOSTART
 ----------------------------------------------
@@ -67,19 +63,13 @@ pyclient    RUNNING  10.0.0.3  -     NO
 pypiserver  RUNNING  10.0.0.2  -     NO
 root@lxc:~#
 </code></pre>
-
-<h2 id="montando-el-servidor">Montando el servidor</h2>
-
+<h2>Montando el servidor</h2>
 <p>Como decisión de diseño, he optado por instalar el paquete <em>pypiserver</em> en un <em>virtualenv</em>, para no interferir con otros paquetes que pudiera haber en el servidor.</p>
-
 <p>Empezaremos creando una carpeta contenedora, en donde va a ir el <em>virtualenv</em>, la aplicación y el índice de paquetes disponibles en el servidor.</p>
-
 <pre><code class="language-bash">root@pypiserver:~# mkdir /opt/pypi &amp;&amp; cd /opt/pypi
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Vamos a descargar <em>virtualenv</em>, sin instalarlo, para &ldquo;usar y tirar&rdquo;. Para ello vamos a necesitar alguna herramienta para descargarlo de la red, por ejemplo, <strong>wget</strong>.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# apt-get install -y wget
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -91,9 +81,7 @@ Se utilizarán 35,7 MB de espacio de disco adicional después de esta operación
 ...
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Tanto la herramienta <em>virtualenv</em> como la herramienta <em>pip</em> que vamos a necesitar mas adelante, usan <strong>python</strong>. Es un buen momento para asegurar que esté instalado, y si no lo está, lo instalamos.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# apt-get install -y python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -105,16 +93,12 @@ Se utilizarán 21,2 MB de espacio de disco adicional después de esta operación
 ...
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Descargamos el paquete <em>virtualenv</em> y lo descomprimimos.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# wget -q https://pypi.python.org/packages/5c/79/5dae7494b9f5ed061cff9a8ab8d6e1f02db352f3facf907d9eb614fb80e9/virtualenv-15.0.2.tar.gz
 root@pypiserver:/opt/pypi# tar xzf virtualenv-15.0.2.tar.gz
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Vamos a crear el <em>virtualenv</em> dentro de nuestra carpeta contenedora. Luego instalamos el paquete <em>pypiserver</em>, previo activado del <em>virtualenv</em>.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# ./virtualenv-15.0.2/virtualenv.py env
 New python executable in /opt/pypi/env/bin/python
 Installing setuptools, pip, wheel...done.
@@ -128,29 +112,21 @@ Successfully installed pypiserver-1.1.10
 (env) root@pypiserver:/opt/pypi# deactivate
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Y con esto tenemos el <em>virtualenv</em>. Si no ha habido problemas, y no lo pensamos reconstruir, es un buen momento para eliminar los <em>scripts</em> de creación del mismo.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# rm -R virtualenv-15.0.2*
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Vamos a hacer que nuestro servidor sirva los paquetes de una carpeta <em>packages</em>, dentro de la carpeta contenedora. Como no existe esta carpeta <em>packages</em>, la creamos.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# mkdir packages
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Y finalmente creamos una aplicación <strong>WSGI</strong> para poder servir nuestros paquetes. Realmente es una instancia de la aplicación que ofrece el paquete <em>pypiserver</em>, con la única diferencia que consiste en especificar la raíz de los paquetes servidos.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# cat app.py
 import pypiserver
 app = pypiserver.app(root='/opt/pypi/packages')
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>Lo único que queda es servir la aplicación en un servidor de nuestra preferencia. En mi caso he optado por <strong>uwsgi</strong>, por lo que lo instalo. Se va a usar el modo <em>emperor</em> por comodidad.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# apt-get install -y uwsgi-emperor uwsgi-plugin-python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -162,9 +138,7 @@ Se utilizarán 9.799 kB de espacio de disco adicional después de esta operació
 ...
 root@pypiserver:/opt/pypi#
 </code></pre>
-
 <p>De acuerdo con el modo <em>emperor</em>, necesitamos declarar la aplicación mediante un fichero de configuración. Con esto el <em>emperor</em> la tiene fichada y se encarga de mantenerla levantada.</p>
-
 <pre><code class="language-bash">root@pypiserver:/opt/pypi# cat /etc/uwsgi-emperor/vassals/pypiserver.ini
 [uwsgi]
 plugins = python
@@ -176,15 +150,10 @@ virtualenv = /opt/pypi/env/
 module = app:app
 root@pypiserver:/opt/pypi#
 </code></pre>
-
-<h2 id="añadiendo-paquetes-a-nuestro-servidor">Añadiendo paquetes a nuestro servidor</h2>
-
+<h2>Añadiendo paquetes a nuestro servidor</h2>
 <p>Esta es la parte mas fácil de todas; basta con dejar nuestros paquetes <strong>python</strong> en la carpeta <em>/opt/pypi/packages/</em>. Así de fácil.</p>
-
 <p>El formato es cualquiera aceptado por <em>pip</em> o <em>easy_install</em>, pudiendo ser ficheros <em>.zip</em>, <em>.egg</em> o <em>.whl</em> entre otros; pueden ser descargados, compilados, o creados por nosotros mismos.</p>
-
 <p>Para ver un ejemplo, voy a generar unos ficheros <em>.whl</em>, mediante el uso de <em>pip</em>. Esto nos garantiza que los tendremos cerca, pero que también van a estar ya compilados para la arquitectura concreta del servidor (presumiblemente la misma que van a usar los clientes).</p>
-
 <pre><code class="language-bash">root@pypiserver:~# /opt/pypi/env/bin/pip wheel -w /opt/pypi/packages/ flask mongoengine
 Collecting flask
   Downloading Flask-0.11.1-py2.py3-none-any.whl (80kB)
@@ -229,9 +198,7 @@ Building wheels for collected packages: mongoengine, click, itsdangerous, pymong
 Successfully built mongoengine click itsdangerous pymongo MarkupSafe
 root@pypiserver:~#
 </code></pre>
-
 <p>Y podemos ver que tenemos varios paquetes en la carpeta, algunos de ellos descargados ya en formato <em>wheel</em> (por ejemplo <em>flask</em>), y otros que se descargaron en formato <em>source</em> y se compilaron (por ejemplo <em>pymongo</em>).</p>
-
 <pre><code class="language-bash">root@pypiserver:~# ls -1 /opt/pypi/packages/
 click-6.6-py2.py3-none-any.whl
 Flask-0.11.1-py2.py3-none-any.whl
@@ -243,11 +210,8 @@ pymongo-3.2.2-cp27-cp27mu-linux_i686.whl
 Werkzeug-0.11.10-py2.py3-none-any.whl
 root@pypiserver:~#
 </code></pre>
-
-<h2 id="usando-el-servidor-desde-un-cliente">Usando el servidor desde un cliente</h2>
-
+<h2>Usando el servidor desde un cliente</h2>
 <p>Ya que vamos a trabajar con <strong>python</strong>, aseguramos que lo tenemos instalado, o lo instalamos. Vamos a poner también la herramienta <strong>wget</strong> porque la vamos a necesitar.</p>
-
 <pre><code class="language-bash">root@pyclient:~# apt-get install -y wget python
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -259,9 +223,7 @@ Se utilizarán 56,9 MB de espacio de disco adicional después de esta operación
 ...
 root@pyclient:~#
 </code></pre>
-
 <p>Una prueba rápida: hay que ver que llegamos al servidor creado, y que este ofrece los paquetes en un formato adecuado.</p>
-
 <pre><code class="language-bash">root@pyclient:~# wget -qO- http://10.0.0.2:8080/simple/; echo ''
     &lt;html&gt;
         &lt;head&gt;
@@ -282,25 +244,19 @@ root@pyclient:~#
 
 root@pyclient:~#
 </code></pre>
-
 <p>Descargamos los <em>scripts</em> de creación del <em>virtualenv</em>, tal como lo hacemos mas arriba.</p>
-
 <pre><code class="language-bash">root@pyclient:~# wget -q https://pypi.python.org/packages/5c/79/5dae7494b9f5ed061cff9a8ab8d6e1f02db352f3facf907d9eb614fb80e9/virtualenv-15.0.2.tar.gz
 root@pyclient:~# tar xzf virtualenv-15.0.2.tar.gz
 root@pyclient:~#
 </code></pre>
-
 <p>Creamos un <em>virtualenv</em> en donde instalar los paquetes y lo activamos.</p>
-
 <pre><code class="language-bash">root@pyclient:~# ./virtualenv-15.0.2/virtualenv.py env
 New python executable in /root/env/bin/python
 Installing setuptools, pip, wheel...done.
 root@pyclient:~# . env/bin/activate
 (env) root@pyclient:~#
 </code></pre>
-
 <p>Y lo usamos para instalar alguno de los paquetes. Es importante ver que modificamos el <em>index url</em>, para usar nuestro servidor, y que debemos indicarle que confíe en nuestro servidor.</p>
-
 <pre><code class="language-bash">(env) root@pyclient:~# pip install --trusted-host 10.0.0.2 -i http://10.0.0.2:8080/simple/ mongoengine
 Collecting mongoengine
   Downloading http://10.0.0.2:8080/packages/mongoengine-0.10.6-py2-none-any.whl (90kB)
@@ -312,9 +268,7 @@ Installing collected packages: pymongo, mongoengine
 Successfully installed mongoengine-0.10.6 pymongo-3.2.2
 (env) root@pyclient:~#
 </code></pre>
-
 <p><strong>TRUCO</strong>: Podemos crear un fichero de configuración de <em>pip</em> para que esos parámetros queden ocultos.</p>
-
 <pre><code class="language-bash">(env) root@pyclient:~# mkdir -p /root/.config/pip/
 (env) root@pyclient:~# cat /root/.config/pip/pip.conf
 [global]
@@ -322,9 +276,7 @@ index-url = http://10.0.0.2:8080/simple/
 trusted-host = 10.0.0.2
 (env) root@pyclient:~#
 </code></pre>
-
 <p>Tras aplicar el truco, nos queda una orden <em>pip</em> bastante mas bonita, sin tantos parámetros que recordar y nos permite trabajar como la haríamos sin el servidor intermedio.</p>
-
 <pre><code class="language-bash">(env) root@pyclient:~# pip install flask
 Collecting flask
   Downloading http://10.0.0.2:8080/packages/Flask-0.11.1-py2.py3-none-any.whl (80kB)
@@ -347,15 +299,11 @@ Installing collected packages: click, Werkzeug, MarkupSafe, Jinja2, itsdangerous
 Successfully installed Jinja2-2.8 MarkupSafe-0.23 Werkzeug-0.11.10 click-6.6 flask-0.11.1 itsdangerous-0.24
 (env) root@pyclient:~#
 </code></pre>
-
 <p>Finalmente salimos del <em>virtualenv</em>.</p>
-
 <pre><code class="language-bash">(env) root@pyclient:~# deactivate
 root@pyclient:~#
 </code></pre>
-
 <p>Como punto final, queda indicar que si el paquete no está en nuestro servidor, no pasa nada; nuestro servidor va a pasar la petición al índica <em>pypi</em> titular, de forma transparente.</p>
-
 <pre><code class="language-bash">root@pyclient:~# ./env/bin/pip install requests
 Collecting requests
   Downloading requests-2.10.0-py2.py3-none-any.whl (506kB)
@@ -364,7 +312,6 @@ Installing collected packages: requests
 Successfully installed requests-2.10.0
 root@pyclient:~#
 </code></pre>
-
 <p><strong>TRUCO</strong>: Activar un <em>virtualenv</em> solo pone su carpeta <em>bin</em> en el <em>PATH</em>. Podemos ahorrarnos comandos invocando directamente esos binarios, por ejemplo <em>pip</em>. Esto es lo que se ha hecho en el comando anterior.</p>
 
 <div id="disqus_thread"></div>

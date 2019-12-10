@@ -53,11 +53,8 @@
 </p>
 
 <p>Muchas veces nos pasa que necesitamos un objeto de esos que luego necesitan algún tipo de limpieza cuando ya no se necesitan. Cualquier programador avanzado os puede contar lo fácil que es olvidarse de la destrucción del mismo, y de las veces que lo ha hecho, él u otras personas.</p>
-
 <p>Por suerte, <strong>python</strong> nos ofrece una forma de crear objetos con el <em>keyword with</em>, que nos asegura que el mismo lenguaje de programación llamará a los métodos de creación y destrucción del objeto. Este mecanismo se llama <em>context manager</em>.</p>
-
 <p>Veamos un ejemplo simple de un <em>context manager</em> muy común y disponible en la biblioteca estándar de <strong>python</strong>:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/contextmanagers$ cat example.py 
 #!/usr/bin/env python
 
@@ -70,15 +67,10 @@ Hello world
 
 gerard@sirius:~/contextmanagers$ 
 </code></pre>
-
 <p>La idea es que la función <code>open()</code> va a inicializar y devolver un <em>file descriptor</em> que vamos a recoger como <code>f</code> gracias al <em>keyword</em> <code>as</code>. Cuando salgamos del bloque <code>with</code>, se va a llamar a una función que se va a encargar de cerrar el fichero a nivel de sistema operativo.</p>
-
-<h2 id="creando-un-context-manager">Creando un context manager</h2>
-
+<h2>Creando un context manager</h2>
 <p>Un <em>context manager</em> no es otra cosa que un objeto que tiene dos métodos: <code>__enter__()</code> y <code>__exit__()</code>. El método <code>__enter__()</code> es el que inicializa el objeto a devolver (el que recogemos con el <em>keyword</em> <code>as</code>) y lo devuelve, aunque es opcional devolver algo. El método <code>__exit__()</code> es el que se llama automáticamente cuando acaba el bloque <code>with</code>, y se encargaría de destruir el objeto devuelto.</p>
-
 <p>Veamos un ejemplo para generar el marcado HTML de una forma programática:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/contextmanagers$ cat html_v1.py 
 #!/usr/bin/env python
 
@@ -109,15 +101,10 @@ et dolor sit amet
 &lt;/div&gt;
 gerard@sirius:~/contextmanagers$ 
 </code></pre>
-
 <p>Este ejemplo no es muy útil, pero queda claro como y cuando se llaman los creadores y destructores. Es interesante que no devolvemos ninguna variable en el método <code>__enter__()</code>, y que por lo tanto, la cláusula <code>with</code> no recoge nada con un <code>as</code>.</p>
-
-<h2 id="una-versión-todavía-más-simple">Una versión todavía más simple</h2>
-
+<h2>Una versión todavía más simple</h2>
 <p>Crear el objeto que va a actuar como <em>context manager</em> es interesante, pero también un montón de líneas en nuestro código. Si queremos simplificar nuestro <em>context manager</em>, podemos encontrar la solución en la biblioteca estándar de <strong>python</strong>, en el módulo <em>contextlib</em>.</p>
-
 <p>De esta forma, el ejemplo anterior queda reducido a uno similar, que es el que sigue:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/contextmanagers$ cat html_v2.py 
 #!/usr/bin/env python
 
@@ -145,7 +132,6 @@ et dolor sit amet
 &lt;/div&gt;
 gerard@sirius:~/contextmanagers$ 
 </code></pre>
-
 <p>E·n este caso es todavía más simple de entender: tenemos la inicialización, devolvemos la variable o nada con el <em>keyword</em> <code>yield</code> y finalmente tenemos el código de finalización.</p>
 
 <div id="disqus_thread"></div>

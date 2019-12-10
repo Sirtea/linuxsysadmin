@@ -53,38 +53,28 @@
 </p>
 
 <p>Muchas veces me pregunto para qué necesito guardar un histórico de comandos en mis sesiones de <strong>bash</strong>. Como no soy nada repetitivo con los comandos que uso, solo se trata de basura acumulándose en <code>~/.bash_history</code>, y un riesgo innecesario de que otros usuarios puedan chafardear los comandos que voy utilizando.</p>
-
 <p>¿Pero como funciona el mecanismo de <em>history</em> en <strong>bash</strong>?</p>
-
 <ol>
 <li>Cuando inicias sesión en <strong>bash</strong>, se lee la lista del historial de comandos desde el fichero <code>~/.bash_history</code>. Concretamente el fichero es el que indica el parámetro del <em>shell</em> <code>HISTFILE</code>.</li>
 <li>Cada vez que escribes un comando, la lista en memoria se actualiza con el nuevo comando, quedando limitado por el parámetro de <em>shell</em> <code>HISTSIZE</code>.</li>
 <li>Al salir de la sesión, las últimas <code>HISTFILESIZE</code> líneas de la historia se escriben en <code>HISTFILE</code>, para su uso en sesiones posteriores.</li>
 </ol>
-
-<h2 id="eliminar-el-historial-de-comandos">Eliminar el historial de comandos</h2>
-
+<h2>Eliminar el historial de comandos</h2>
 <p>Con esto en mente podemos hacer algunas modificaciones en los parámetros del <em>shell</em> mediante el comando <code>set</code> que puede tener consecuencias en el comportamiento del historial de comandos:</p>
-
 <ul>
 <li>Hacer un <code>unset</code> de <code>HISTFILE</code> va a causar que el histórico no se guarde en ningún fichero.</li>
 <li>Hacer un <code>set</code> de <code>HISTSIZE</code> a un valor dado, nos va a limitar los comandos recordados en la sesión de <strong>bash</strong> actual.</li>
 <li>Hacer un <code>set</code> de <code>HISTFILESIZE</code> a un valor dado, va a limitar el número de comandos que se recuerden entre sesiones.</li>
 </ul>
-
 <p>Considero interesante que los comandos se recuerden en esta sesión, pero no quiero que se guarden entre sesiones. En estos casos podemos limitar a 0 el valor de <code>HISTFILESIZE</code>, con lo que el fichero <code>.bash_history</code> quedaría vacío; otra opción es hacer un <code>unset</code> de <code>HISTFILE</code> para que el fichero no se guarde, y por lo tanto lo podamos eliminar sin que se recree.</p>
-
 <p>Para hacer estos <code>set</code> y <code>unset</code> permanentes, voy a utilizar el fichero <code>.bashrc</code>, que nos permite ejecutarlos automáticamente en cada incio de sesión de <strong>bash</strong>.</p>
-
 <pre><code class="language-bash">gerard@server:~$ tail -1 .bashrc
 unset HISTFILE
 gerard@server:~$ . .bashrc
 gerard@server:~$ rm .bash_history
 gerard@server:~$
 </code></pre>
-
 <p>Y con esto no vamos a volver a ver el molesto fichero, aunque mantenemos el historial de la sesión actual, que por defecto en <strong>Debian</strong> se indica en el mismo fichero:</p>
-
 <pre><code class="language-bash">gerard@server:~$ cat .bashrc
 ...
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
@@ -94,15 +84,10 @@ HISTFILESIZE=2000
 unset HISTFILE
 gerard@server:~$
 </code></pre>
-
 <p>En este caso recordaríamos un máximo de 1000 comandos durante la sesión, pero no entre sesiones.</p>
-
-<h2 id="otros-shells">Otros shells</h2>
-
+<h2>Otros shells</h2>
 <p>Ya hemos visto como se puede hacer con <strong>bash</strong>, pero no siempre tenemos un <em>shell</em> tan configurable; yo mismo utilizo mucho <strong>Alpine Linux</strong> y su <em>shell</em> no admite estas variables.</p>
-
 <p>Si os pasa esto, tenéis dos opciones:</p>
-
 <ul>
 <li>Quitar todos los permisos de escritura en el fichero, para que la lista no se pueda escribir en el mismo (con lo que se perdería entre sesiones)</li>
 <li>Sustituir el fichero <code>.ash_history</code> o similar por un <em>soft link</em> a <code>/dev/null</code>; esto hará que no se escriba nada y, si se lee, devolverá 0 bytes (interpretado como 0 comandos).</li>

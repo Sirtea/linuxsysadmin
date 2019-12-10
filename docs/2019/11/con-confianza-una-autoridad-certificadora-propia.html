@@ -56,41 +56,32 @@
 algunos son entornos productivos o copias exactas, pero muchos otros son entornos
 de desarrollo y de pruebas que solo son accedidos por una minoría, normalmente
 de nuestra misma empresa. Y si usan certificados SSL válidos, el coste se dispara.</p>
-
 <p>En estos casos podemos recurrir a generar certificados autofirmados, en los que
 solemos confiar cuando el navegador nos los presenta. Sin embargo, la arquitectura
 basada en microservicios nos plantea nuevos desafíos, que convierten esta acción
 de confianza en un problema:</p>
-
 <ol>
 <li>Tenemos muchos dominios o subdominios, uno por microservicio y entorno.</li>
 <li>Creamos y destruimos entornos con gran facilidad, y los cambios son frecuentes.</li>
 <li>Necesitamos que otros servicios confíen en sus homólogos de forma automática.</li>
 </ol>
-
 <p>Podemos simplificar todos ellos de forma fácil si generamos nuestros certificados
 usando uno nuestro intermedio; de esta forma podemos generar los certificados
 finales de forma rápida y automatizada. Esto simplifica las relaciones de confianza,
 que quedan reducidas a una sola: confiar en el certificado intermedio.</p>
-
 <p>Trabajando de esta forma, los certificados finales serán confiables sí también
 lo es el certificado intermedio. De esto último se encargará una sola excepción
 manual. Así tendremos a nuestra disposición una autoridad certificadora (CA)
 de &ldquo;estar por casa&rdquo;, simple, sencilla y efectiva. Y lo mejor: solo necesitamos
 instalar un solo paquete, que seguramente ya tenemos instalado: <strong>openssl</strong>.</p>
-
-<h2 id="crear-los-certificados-de-la-ca">Crear los certificados de la CA</h2>
-
+<h2>Crear los certificados de la CA</h2>
 <p>Una CA no es otra cosa que una metodología de trabajo. La idea es que es una
 fábrica para firmar certificados, basándonos en un certificado <em>master</em>. A su
 vez, este certificado puede estar firmado por otro, y así sucesivamente.</p>
-
 <p><strong>NOTA</strong>: Para simplificar, vamos a asumir que solo tenemos un certificado <em>master</em>,
 que vamos a tratar como nuestro certificado raíz o intermedio.</p>
-
 <p>El primer paso para crear un certificado es generar una clave. Esta clave es
 privada, y no debería ser accesible a nadie ajeno a nuestro intereses.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ openssl genrsa -out ca.key 2048
 Generating RSA private key, 2048 bit long modulus
 ...................................................+++++
@@ -98,32 +89,25 @@ Generating RSA private key, 2048 bit long modulus
 e is 65537 (0x010001)
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Es interesante añadir el <em>flag</em> <code>-des3</code> para que la clave esté cifrada
 con una contraseña. No lo he puesto para que la operación de firma no me la pida
 y se pueda automatizar el proceso en un futuro.</p>
-
 <p>Teniendo la clave, la podemos usar para generar un certificado autofirmado, que
 va a ser nuestro certificado raíz. Este certificado es público, y lo deberemos
 distribuir entre todos aquellos clientes que tengan que confiar en él.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ openssl req -sha256 -x509 -days 3650 -key ca.key -out ca.crt -subj &quot;/CN=LinuxSysadmin CA&quot;
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p><strong>NOTA</strong>: El campo <code>CN</code> solo sirve para que el navegador lo ponga en la lista de
 autoridades conocidas, y es el texto que va a aparecer en el nombre. Realmente se
 puede poner lo que nos apetezca, y nada va a cambiar.</p>
-
 <p>En este punto tenemos dos ficheros: un <code>ca.key</code> y un <code>ca.crt</code>.</p>
-
 <p>Muchos navegadores modernos exigen como medida extra de seguridad que el dominio
 de un sitio aparezca en dos lugares del certificado final: el campo <code>CN</code> y el
 campo <code>subjectAltName</code>. Para ello necesitamos firmar los certificados con cierto
 fichero de opciones que es siempre el mismo, excepto el dominio; vamos a utilizar
 una especie de plantilla, que dejamos aquí para el futuro para que la operación
 de firma la utilice:</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ cat v3.ext.tpl 
 authorityKeyIdentifier=keyid,issuer
 basicConstraints=CA:FALSE
@@ -134,28 +118,21 @@ subjectAltName = @alt_names
 DNS.1 = %%DOMAIN%%
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p>Con esto tenemos nuestra CA funcional, y no tendremos que tocarla hasta que
 tengamos que cambiar el certificado raíz o la clave, ya sea porque han sido
 comprometidos o porque ha caducado el certificado a los 10 años indicados.</p>
-
-<h2 id="creando-un-certificado">Creando un certificado</h2>
-
+<h2>Creando un certificado</h2>
 <p>Esta operación se va a tener que hacer para cada certificado generado.</p>
-
 <p><strong>TRUCO</strong>: Para facilitar el <em>copy-paste</em> de comandos, todos ellos van a utilizar
 una variable de entorno para indicar el dominio, que es fácil de cambiar y sirve
 en varios puntos de los diferentes comandos usados.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ export DOMAIN=web.local
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p>Para crear un certificado nuevo necesitamos una clave nueva. Esta clave se genera
 una sola vez y se puede reutilizar hasta que decidamos revocarla por razones de
 fuerza mayor, sean de seguridad o de pérdida de la misma. Así pues, si ya la
 tenemos, podemos saltar este paso.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ openssl genrsa -out ${DOMAIN}.key 2048
 Generating RSA private key, 2048 bit long modulus
 .....................................................................+++++
@@ -163,24 +140,19 @@ Generating RSA private key, 2048 bit long modulus
 e is 65537 (0x010001)
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p>Teniendo la clave, necesitamos hacer una petición de firma (CSR). Esta será firmada
 por el certificado raíz para generar el certificado final, y nuevamente podemos
 reciclar el fichero tanto como queramos, incluso irlo firmando de nuevo cuando
 el certificado generado caduque, sin cambiar el CSR.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ openssl req -new -sha256 -out ${DOMAIN}.csr -key ${DOMAIN}.key -subj &quot;/CN=${DOMAIN}&quot;
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: El campo <code>CN</code> debe coincidir con el nombre de dominio, o será rechazado por
 cualquiera que intente verificar el certificado mostrado, sea un navegador o una librería.</p>
-
 <p>El firmado es el proceso en el que un CSR se convierte en un certificado correcto.
 La firma es una operación caduca, que dura según se lo indiquemos en el parámetro
 <code>-days</code>; transcurrido ese periodo, la validación fallará siempre, hasta que firmemos
 otra vez el CSR (o una nuevo), creando un nuevo certificado en el proceso.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/ca$ sed &quot;s/%%DOMAIN%%/${DOMAIN}/&quot; v3.ext.tpl &gt; v3.ext
 gerard@umbra:~/services/ca$ openssl x509 -sha256 -CA ca.crt -CAkey ca.key -req -in ${DOMAIN}.csr -days 365 -CAcreateserial -out ${DOMAIN}.crt -extfile v3.ext
 Signature ok
@@ -189,28 +161,21 @@ Getting CA Private Key
 gerard@umbra:~/services/ca$ rm v3.ext
 gerard@umbra:~/services/ca$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Fijáos en el uso de <code>sed</code> para crear el fichero <code>v3.ext</code> a partir de
 la plantilla que creamos en <code>v3.ext.tpl</code>. Luego lo usamos y lo limpiamos.</p>
-
 <p>En este punto tenemos 3 ficheros: <code>web.local.key</code>, <code>web.local.csr</code> y <code>web.local.crt</code>.
 Los conservaremos todos porque la clave y el CSR nos pueden servir en un futuro,
 y la clave y el certificado se necesitan para su uso en los servicios SSL. No hace
 falta ser muy conservador tampoco; los podemos volver a crear cuando queramos.</p>
-
-<h2 id="usando-los-certificados-creados">Usando los certificados creados</h2>
-
+<h2>Usando los certificados creados</h2>
 <p>Todos los servicios que necesiten certificados, necesitan también la clave. Hay
 algunas variaciones en el formato de los ficheros de certificados; indico como
 van en los dos servicios SSL más usados en este <em>blog</em>:</p>
-
 <ul>
-<li><strong>nginx</strong> &rarr; La configuración de un dominio SSL utiliza ambos ficheros tal como los tenemos.</li>
-<li><strong>haproxy</strong> &rarr; Los ficheros de certificados se concatenan en uno solo, juntando la clave y el certificado.</li>
+<li><strong>nginx</strong> → La configuración de un dominio SSL utiliza ambos ficheros tal como los tenemos.</li>
+<li><strong>haproxy</strong> → Los ficheros de certificados se concatenan en uno solo, juntando la clave y el certificado.</li>
 </ul>
-
 <p>Una configuración de <strong>nginx</strong> para un sitio estático HTTPS podría ser la siguiente:</p>
-
 <pre><code class="language-bash">server {
     server_name web.local;
 
@@ -227,14 +192,11 @@ van en los dos servicios SSL más usados en este <em>blog</em>:</p>
     }
 }
 </code></pre>
-
 <p><strong>NOTA</strong>: Para los que no lo sospechen, la configuración anterior se utiliza en
 un contenedor <strong>docker</strong> usando <a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">secretos y configuraciones</a>.</p>
-
 <p>Si hacemos una petición al dominio anterior, veremos que falla: el certificado
 <code>web.local</code> falla la verificación sin más motivos ni errores que el fallo del
 certificado <em>issuer</em>, que es el intermedio, del que no confía.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/webserver$ curl https://web.local/
 curl: (60) SSL certificate problem: unable to get local issuer certificate
 More details here: https://curl.haxx.se/docs/sslcerts.html
@@ -251,9 +213,7 @@ If you'd like to turn off curl's verification of the certificate, use
  the -k (or --insecure) option.
 gerard@umbra:~/services/webserver$ 
 </code></pre>
-
 <p>Vamos a ver algunos detalles, ignorando la verificación:</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services/webserver$ curl -svk https://web.local/ 2&gt;&amp;1 | egrep &quot;Host|CN=|h1&quot;
 *  subject: CN=web.local
 *  issuer: CN=LinuxSysadmin CA
@@ -261,22 +221,16 @@ gerard@umbra:~/services/webserver$
 &lt;h1&gt;Hello world!&lt;/h1&gt;
 gerard@umbra:~/services/webserver$ 
 </code></pre>
-
 <p>Podemos comprobar que estamos solicitando el <code>Host: web.local</code>, y se nos presenta
 el certificado de <code>CN=web.local</code>, que está firmado por el <em>issuer</em>, que es
 el certificado <code>CN=LinuxSysadmin CA</code> (en el que no confiamos todavía). Por lo
 demás, todo parece correcto.</p>
-
-<h2 id="confiando-en-el-certificado-de-nuestra-ca">Confiando en el certificado de nuestra CA</h2>
-
+<h2>Confiando en el certificado de nuestra CA</h2>
 <p>Ahora nos urge indicar al cliente HTTPS indicar que debe confiar en el certificado
 intermedio, que el el que llamamos <code>ca.crt</code>, y que deberemos distribuir adecuadamente.</p>
-
-<h3 id="usando-curl">Usando curl</h3>
-
+<h3>Usando curl</h3>
 <p>Las peticiones <code>curl</code> aceptan un parámetro indicando un certificado de confianza.
 Podemos poner directamente el de <code>web.local</code> o el intermedio, que es el objetivo:</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services$ curl -v --cacert ca/ca.crt https://web.local/
 ...
 * Server certificate:
@@ -290,22 +244,17 @@ Podemos poner directamente el de <code>web.local</code> o el intermedio, que es 
 ...
 gerard@umbra:~/services$ 
 </code></pre>
-
-<h3 id="usando-python">Usando python</h3>
-
+<h3>Usando python</h3>
 <p>Si estamos protegiendo por HTTPS un servicio REST, la idea es que el consumidor
 sea el que confíe en el certificado de la CA. Esto es dependiente de cada librería,
 aunque voy a poner un ejemplo con <strong>python-requests</strong> que es la que utilizo casi
 siempre, por su excelente documentación y facilidad de uso.</p>
-
 <pre><code class="language-bash">gerard@umbra:~/services$ python3
 ...
 &gt;&gt;&gt; import requests
 &gt;&gt;&gt; 
 </code></pre>
-
 <p>Si el certificado no está aceptado, obtenemos una excepción:</p>
-
 <pre><code class="language-bash">&gt;&gt;&gt; r = requests.get('https://web.local/')
 Traceback (most recent call last):
 ...
@@ -314,9 +263,7 @@ ssl.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c
 requests.exceptions.SSLError: HTTPSConnectionPool(host='web.local', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:720)'),))
 &gt;&gt;&gt; 
 </code></pre>
-
 <p>Podemos optar por ignorar el certificado completamente, pero no se recomienda:</p>
-
 <pre><code class="language-bash">&gt;&gt;&gt; r = requests.get('https://web.local/', verify=False)
 /home/gerard/services/env/lib/python3.5/site-packages/urllib3/connectionpool.py:1004: InsecureRequestWarning: Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings
   InsecureRequestWarning,
@@ -324,49 +271,38 @@ requests.exceptions.SSLError: HTTPSConnectionPool(host='web.local', port=443): M
 '&lt;h1&gt;Hello world!&lt;/h1&gt;\n'
 &gt;&gt;&gt; 
 </code></pre>
-
 <p>Si embargo, podemos indicar el certificado final o el intermedio en el parámetro
 <code>verify</code>, lo que causa plena confianza con el certificado de la CA. Nuevamente
 indico que necesitaremos tener el certificado (que no la clave), en un fichero local.</p>
-
 <pre><code class="language-bash">&gt;&gt;&gt; r = requests.get('https://web.local/', verify='ca/ca.crt')
 &gt;&gt;&gt; r.text
 '&lt;h1&gt;Hello world!&lt;/h1&gt;\n'
 &gt;&gt;&gt; 
 </code></pre>
-
-<h3 id="usando-un-navegador">Usando un navegador</h3>
-
+<h3>Usando un navegador</h3>
 <p>Los navegadores tienen una forma peculiar de aceptar nuevas autoridades certificadoras.
 Cada uno es un mundo, pero por lo general suelen tener un apartado de configuración,
 en donde podemos importar certificados (en nuestro caso, el <code>ca.crt</code>).</p>
-
 <p>En este ordenador, tengo <strong>chromium</strong>, y llego a esta configuración si voy a la URL
 <code>chrome://settings/certificates</code>. Basta con ir a la pestaña &ldquo;Authorities&rdquo; y darle
 al botón de &ldquo;Import&rdquo;. Tras importar el certificado, aparece en la lista, en donde
 lo podéis ver, examinar o eliminar cuando os convenga.</p>
-
 <p><strong>NOTA</strong>: El navegador guarda el certificado, con lo que no necesitamos repetir
 este paso nunca más, a menos que cambiemos el certificado o lo hayamos borrado
 del navegador en una acción manual (o reinstalemos el navegador).</p>
-
 <p>De ahora en adelante (y hasta la eliminación), los certificados firmados por nuestra
 CA, van a ser aceptados como seguros, sin ningún tipo de problema por parte de
 <strong>este navegador concreto</strong>. Para el resto de navegadores, buscad en la web.</p>
-
-<h2 id="siguientes-pasos">Siguientes pasos</h2>
-
+<h2>Siguientes pasos</h2>
 <p>Nuestros certificados van a caducar pasado el tiempo de vigencia. Si se han seguido
 los comandos indicados, el certificado de la CA va a caducar en 10 años (y va a haber
 que redistribuirlo o importarlo en el navegador), y los certificados finales van a
 caducar en 1 año. Eso significa que vamos a tener que volver a recrear el certificado
 de la CA y refirmar un CSR para cada dominio (que puede ser el mismo) cada cierto tiempo.</p>
-
 <p>Por supuesto, si añadimos más dominios a nuestro servidor web, <em>proxy</em> o balanceador,
 vamos a tener que generar nuevos certificados, con sus claves y CSRs. Eso no entraña
 ningúna dificultad y, como confiamos en el certificado de la CA que los firma, no va
 a haber que añadir más excepciones al navegador ni a nuestro código consumidor.</p>
-
 <p>Eso convierte en el paso intermedio de crear una CA en una herramienta cómoda; añade
 un poco de complejidad a nuestro algoritmo de generación de certificados, pero a la
 larga nos libera de muchos pasos relacionados con la confianza de los certificados.

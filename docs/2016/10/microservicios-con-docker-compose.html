@@ -53,15 +53,10 @@
 </p>
 
 <p><strong>Docker</strong> es una gran herramienta para levantar contenedores aislados, pero en el mundo real nos encontramos con despliegues mas complejos, que requieren varias imágenes trabajando en conjunto. En este caso, levantar los contenedores puede ser una auténtica pesadilla. Para automatizar estos casos podemos utilizar un <em>orquestador</em>, como por ejemplo, <strong>docker-compose</strong>.</p>
-
 <p>Para entender como funciona nos vamos a servir de un microservicio básico, que consiste en un <em>balanceador</em> público y varios <em>frontends</em>, que en este caso van a ser mínimos para no complicar innecesariamente este artículo.</p>
-
 <p>Estos <em>frontends</em> van a responder a las peticiones con su <em>hostname</em>, solo para ver que el balanceador hace lo que debe. En un caso mas cercano a la realidad, las aplicaciones harían algo mas útil, posiblemente utilizando una base de datos.</p>
-
-<h2 id="el-balanceador">El balanceador</h2>
-
+<h2>El balanceador</h2>
 <p>Esta imagen se declara con un <em>Dockerfile</em> y sus ficheros auxiliares. Aunque en este caso se ha copiado un <a href="/2016/09/imagenes-docker-reusables-mediante-configuraciones-dinamicas.html">artículo anterior</a>, se vuelven a exponer los ficheros por comodidad.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ cat balancer/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache nginx &amp;&amp; \
@@ -109,11 +104,8 @@ gerard@sirius:~/docker/composetest$ cat balancer/entrypoint.sh
 exec /usr/sbin/nginx -g &quot;daemon off;&quot;
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
-<h2 id="el-frontend">El frontend</h2>
-
+<h2>El frontend</h2>
 <p>Vamos a poner una aplicación básica en <strong>python</strong>, que se va a servir con el servidor de aplicaciones <strong>uWSGI</strong> y solo va a informar de su <em>hostname</em>. Ahí pego su <em>Dockerfile</em> y los otros ficheros auxiliares.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ cat frontend/Dockerfile 
 FROM alpine:3.4
 RUN apk add --no-cache uwsgi-python
@@ -132,17 +124,11 @@ chdir = /opt/app/
 module = app:app
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
-<h2 id="declarando-y-levantando-el-servicio-con-docker-compose">Declarando y levantando el servicio con docker-compose</h2>
-
+<h2>Declarando y levantando el servicio con docker-compose</h2>
 <p>Vamos a crear un fichero para gobernar las acciones de <strong>docker-compose</strong>, siguiendo la <a href="https://docs.docker.com/compose/compose-file/">documentación</a>. La filosofía es muy simple; vamos a declarar como se construyen las imágenes, los puertos que publican y exponen, las variables de entorno necesarias y las dependencias entre las imágenes.</p>
-
 <p>Empezamos con la imagen que no tiene dependencias, que es el <em>frontend</em>. Simplemente indicamos la carpeta que contiene el <em>Dockerfile</em> (desde la carpeta actual, por ejemplo), y vamos a indicar el puerto que expone, tal como indica la configuración de <strong>uWSGI</strong>.</p>
-
 <p>El balanceador es un poco mas complejo; hay que indicar que no se puede levantar hasta que lo hagan los <em>frontends</em>, porque sino, el <strong>nginx</strong> no puede resolver sus nombres y acabaría inmediatamente. Hay que indicar que necesita acceso a los <em>frontends</em> para comunicar con su puerto 8080, y que vamos a publicar el puerto 80 en el contenedor como el 8888 en nuestra máquina física. El último paso es declarar las variables de entorno que se van a pasar al contenedor cuando este se ejecute; en este caso declaramos los servidores contra los que hay que hacer balanceo.</p>
-
 <p><strong>IMPORTANTE</strong>: Cuando ejecutemos <strong>docker-compose</strong>, va a levantar una instancia de cada imagen, pudiendo escalar a <em>posteriori</em>. Como <strong>nginx</strong> no va  levantar si no conoce alguno de los <em>hostnames</em> contra los que balancea, vamos indicar solamente el primero.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ cat docker-compose.yml 
 version: '2'
 services:
@@ -162,9 +148,7 @@ services:
       - BACKENDS=composetest_frontend_1:8080
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Con todo delcarado, solo nos falta levantar el servicio. Esto va a reconstruir todas las imágenes que crea necesarias, ya levantar los contenedores que no lo estén.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ docker-compose up -d
 Creating network &quot;composetest_default&quot; with the default driver
 Building frontend
@@ -230,9 +214,7 @@ Successfully built ff47baa82723
 Creating composetest_balancer_1
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Podemos ver que ahora tenemos un solo contenedor por imagen declarada:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ docker-compose ps
          Name                       Command               State          Ports         
 --------------------------------------------------------------------------------------
@@ -240,9 +222,7 @@ composetest_balancer_1   /entrypoint.sh                   Up      0.0.0.0:8888-&
 composetest_frontend_1   uwsgi --plugin=python /opt ...   Up      8080/tcp             
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Y si probamos nuestro servicio, vemos que funciona, aunque solo balancea contra un <em>frontend</em>, que es lo que indicamos.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ curl http://localhost:8888/
 9ae8f4367e2b
 gerard@sirius:~/docker/composetest$ curl http://localhost:8888/
@@ -251,24 +231,17 @@ gerard@sirius:~/docker/composetest$ curl http://localhost:8888/
 9ae8f4367e2b
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
-<h2 id="escalando-nuestro-servicio">Escalando nuestro servicio</h2>
-
+<h2>Escalando nuestro servicio</h2>
 <p>Escalar no es fácil; <strong>docker-compose</strong> solo nos permite modificar el número de contenedores de cada tipo que están corriendo en un momento dado. Para que estos nuevos contenedores reciban peticiones, hay que modificar la configuración del balanceador.</p>
-
 <p>Empezaremos levantando otras 3 instancias de nuestro <em>frontend</em>; indicando que queremos 4, <strong>docker-compose</strong> va a levantar las 3 que faltan.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ docker-compose scale frontend=4
 Creating and starting 2 ... done
 Creating and starting 3 ... done
 Creating and starting 4 ... done
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Para la parte del balanceador, no nos queda mas remedio que reconstruirlo. Por suerte, nuestra imagen se configura con variables de entorno, de forma que <strong>docker-compose</strong> solo va a levantar un contenedor nuevo, sin el proceso de reconstruir la imagen, que es innecesario.</p>
-
 <p>Vamos a modificar el <em>docker-compose.yml</em>, para cambiar la variable de entorno <em>BACKENDS</em>. Como ya tenemos 4 instancias funcionando, no hay problema por parte del <strong>nginx</strong>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ cat docker-compose.yml 
 version: '2'
 services:
@@ -288,9 +261,7 @@ services:
       - BACKENDS=composetest_frontend_1:8080,composetest_frontend_2:8080,composetest_frontend_3:8080,composetest_frontend_4:8080
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Levantamos el servicio de nuevo, y dejamos que <strong>docker-compose</strong> aplique su buen criterio. Vemos que no va a hacer nada con los <em>frontends</em> porque no han cambiado, y va a recrear el balanceador, con un tiempo mínimo.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ docker-compose up -d
 composetest_frontend_4 is up-to-date
 composetest_frontend_2 is up-to-date
@@ -299,9 +270,7 @@ composetest_frontend_1 is up-to-date
 Recreating composetest_balancer_1
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Vemos que efectivamente hay nuestros 5 contenedores en marcha:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ docker-compose ps
          Name                       Command               State          Ports         
 --------------------------------------------------------------------------------------
@@ -312,9 +281,7 @@ composetest_frontend_3   uwsgi --plugin=python /opt ...   Up      8080/tcp
 composetest_frontend_4   uwsgi --plugin=python /opt ...   Up      8080/tcp             
 gerard@sirius:~/docker/composetest$ 
 </code></pre>
-
 <p>Y solo nos queda admirar como funcionan las peticiones balanceadas, siguiendo el algoritmo <em>round robin</em>.</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/composetest$ curl http://localhost:8888/
 9ae8f4367e2b
 gerard@sirius:~/docker/composetest$ curl http://localhost:8888/

@@ -53,13 +53,9 @@
 </p>
 
 <p>Finalmente ha sucedido: el ingeniero de seguridad de la empresa ha decidido cerrar servicios de sincronizado de ficheros, dejando inútiles servicios como <strong>Dropbox</strong>, <strong>Mega</strong> y otros. Sin embargo, cualquier bloqueo que se haga mediante el dominio hace que sea imposible cerrar todos estos servicios, e incluso podemos poner el nuestro.</p>
-
 <p>La forma mas simple de tener un servicio privado es utilizar algo que ya esté hecho, y en esta categoría tenemos un contendiente ganador: <a href="https://owncloud.org/">ownCloud</a>. Solo sería necesario alojarlo en algún lugar desde donde todos nuestros dispositivos tengan acceso.</p>
-
 <p>Vamos a tirar de <strong>Docker</strong> y de <strong>DockerHub</strong>, concretamente de la imagen oficial, que podemos encontrar <a href="https://hub.docker.com/_/owncloud/">aquí</a>. Como necesitamos una base de datos, vamos a utilizar <strong>docker-compose</strong> para levantar fácilmente ambas, usando también la imagen oficial de <strong>MariaDB</strong>.</p>
-
 <p>Así nos queda el <em>docker-compose.yml</em>:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/owncloud$ cat docker-compose.yml 
 version: '2'
 
@@ -78,33 +74,24 @@ services:
       MYSQL_ROOT_PASSWORD: root1234
 gerard@sirius:~/docker/owncloud$ 
 </code></pre>
-
 <p>Levantamos el servicio con los comandos habituales:</p>
-
 <pre><code class="language-bash">gerard@sirius:~/docker/owncloud$ docker-compose up -d
 Creating network &quot;owncloud_default&quot; with the default driver
 Creating owncloud
 Creating mysql
 gerard@sirius:~/docker/owncloud$ 
 </code></pre>
-
 <p>Y solamente nos queda acceder al puerto expuesto, desde un navegador cualquiera, usando la URL que corresponda. En mi caso, accedo desde la máquina local, que es donde he levantado ambos contenedores; simplemente usamos <code>http://localhost/</code>.</p>
-
-<p><img src="/images/owncloud_setup.jpg" alt="Owncloud setup" /></p>
-
+<p><img src="/images/owncloud_setup.jpg" alt="Owncloud setup"></p>
 <p>Vemos que la primera vez que accedemos nos pide configurar algunas cosas. Rellenamos los campos con los valores mas apropiados, con un usuario de administrador y su contraseña, y los datos de conexión de la base de datos, con cuidado de elegir <strong>mysql</strong>. Usad los valores del <em>docker-compose.yml</em>.</p>
-
 <ul>
 <li><strong>Database user</strong>: root</li>
 <li><strong>Database password</strong>: root1234</li>
 <li><strong>Database name</strong>: owncloud (cualquiera valdría)</li>
 <li><strong>Database host</strong>: mysql (el <em>container_name</em>)</li>
 </ul>
-
 <p>Si le damos a &ldquo;Finalizar&rdquo;, no hay mas pasos a seguir; finalmente ya lo tenemos funcional.</p>
-
-<p><img src="/images/owncloud_panel.jpg" alt="Owncloud setup" /></p>
-
+<p><img src="/images/owncloud_panel.jpg" alt="Owncloud setup"></p>
 <p>Ahora podemos descargarnos cualquier cliente para sincronizar nuestros datos desde cualquier dispositivo, sea para escritorio, <em>android</em> o <em>iphone</em>. Solamente necesitamos la precaución de crear usuarios para garantizar la privacidad entre todos ellos.</p>
 
 <div id="disqus_thread"></div>

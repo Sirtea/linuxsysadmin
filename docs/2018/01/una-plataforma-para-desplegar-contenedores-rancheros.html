@@ -53,38 +53,22 @@
 </p>
 
 <p>Aquellos que seguís este <em>blog</em> de forma regular, habréis notado mi predilección por los contenedores <strong>docker</strong>, en gran parte porque es con lo que trabajo en mi día a día. Hartos de usar la plataforma <em>custom</em> que tenemos en la compañía buscamos una nueva, que simplifique el trabajo que hacemos.</p>
-
 <p>Lo que tenemos actualmente es una amalgama de <em>hosts</em> en donde desplegamos contenedores, en algunos servicios, y en otros los servicios que nos permiten hacer un <em>routing</em> adecuado, por ejemplo, <em>proxies</em> reversos, balanceadores y <em>firewalls</em>.</p>
-
 <p>Sin embargo, estos contenedores se ven entre sí, así como a los <em>hosts</em> que los levantan. A todo esto, el conjunto de servicios desplegados empezaba a impactar en la capacidad de mantenerla. En especial, la demanda de segregación de red de algún cliente nos hizo buscar alternativas de forma acelerada.</p>
-
 <p>Aunque no es nuestro futuro inmediato, salimos del paso con una solución completa que se llama <a href="http://rancher.com/">Rancher</a>. Su filosofía es muy simple: necesitamos un servidor de control que tenga una foto del <em>cluster</em> (por supuesto un contenedor <strong>docker</strong>, y un conjunto de servidores que añadan recursos al mismo (mediante otro servidor <strong>docker</strong> que corre un agente). De hecho, en el <em>deploy</em> más simple, basta con tener ambas cosas en la misma máquina.</p>
-
 <p>Para despliegues mas profesionales, disponen de un fichero <em>.iso</em> para instalar un sistema operativo para ejecutar solamente <strong>Rancher</strong>, que tiene lo básico para ejecutar <strong>Docker</strong> y levanta sus servicios como contenedores.</p>
-
-<h2 id="instalación-de-rancher">Instalación de Rancher</h2>
-
-<h3 id="servidor">Servidor</h3>
-
+<h2>Instalación de Rancher</h2>
+<h3>Servidor</h3>
 <p>Para levantar el servidor de <strong>Rancher</strong> vamos a seguir los pasos de <a href="http://docs.rancher.com/rancher/latest/en/installing-rancher/installing-server/">la instalación</a>. Tan simple como levantar un contenedor.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ docker run -d --restart=unless-stopped -p 8080:8080 rancher/server
 </code></pre>
-
 <p>Este contenedor nos ofrece la base de datos de control y una bonita interfaz de usuario en el puerto 8080 para administrar nuestro <em>cluster</em>.</p>
-
 <p>Solo nos queda ver la interfaz de administración para comprobar que funciona, en <code>http://localhost:8080/</code>.</p>
-
-<p><img src="/images/rancher-panel.png" alt="Rancher panel" /></p>
-
-<h3 id="hosts">Hosts</h3>
-
+<p><img src="/images/rancher-panel.png" alt="Rancher panel"></p>
+<h3>Hosts</h3>
 <p>En la interfaz de administración vemos una pestaña &ldquo;Infraestructure&rdquo; en donde podemos seleccionar &ldquo;Hosts&rdquo;. Si le damos al botón &ldquo;Add Host&rdquo;, veremos que añadir un <em>host</em> es trivial; a la larga todo se reduce en levantar otro contenedor <em>rancher/agent</em> en ese <em>host</em>, para que nuestro servidor lo reconozca y le pueda enviar órdenes.</p>
-
-<h2 id="conceptos-básicos-de-rancher">Conceptos básicos de Rancher</h2>
-
+<h2>Conceptos básicos de Rancher</h2>
 <p>Si jugamos un rato con la interfaz, vamos a ver varios conceptos, que aquí se resumen:</p>
-
 <ul>
 <li><strong>Entornos</strong>: Agrupaciones lógicas de recursos (<em>hosts</em>). Cada entorno tiene sus propios <em>hosts</em>. Solo hay conectividad de contenedores cuando están en el mismo entorno, dentro de <strong>Rancher</strong>.</li>
 <li><strong>Stacks</strong>: Agrupaciones lógicas de servicios, se despliegan en un entorno concreto.</li>
@@ -92,35 +76,25 @@
 <li><strong>Balanceadores</strong>: Básicamente se trata de contenedores <em>haproxy</em> que nos permiten poner un balanceador sin tener que crear nosotros un servicio especializado.</li>
 <li><strong>Catálogo</strong>: Es un conjunto de plantillas de servicios prefabricados que podemos usar para crear nuestras propias <em>stacks</em>. Podemos añadir nuestra <em>stack</em> para el fácil despliegue de <em>stacks</em> genéricas, por ejemplo bases de datos o herramientas de monitorización.</li>
 </ul>
-
 <p>La parte importante es que podemos declarar nuestros contenedores dentro de los servicios de la misma forma que lo hacemos en <strong>docker</strong>, pero con un bonito formulario web.</p>
-
 <p><strong>TRUCO</strong>: Los servicios se pueden actualizar usando nuevas versiones de nuestros contenedores. <strong>Rancher</strong> va a crear un nuevo conjunto de servicios sin eliminar los antiguos. A <em>posteriori</em> podemos hacer un &ldquo;Finish upgrade&rdquo;, que eliminaría los viejos contenedores asumiendo que nos gusta el resultado, o podemos hacer un &ldquo;Rollback&rdquo;, que eliminaría los contenedores nuevos para dejar los viejos, en caso de que la nueva versión no nos satisfaga.</p>
-
-<h2 id="un-caso-práctico">Un caso práctico</h2>
-
+<h2>Un caso práctico</h2>
 <p>Supongamos que tenemos una web con datos financieros, con acceso por parte de muchos visitantes y con un entrada de nuevos datos a la base de datos mediante carga de ficheros por SFTP.</p>
-
 <p>Vamos a suponer que trabajamos en un entorno de test, específico para este proyecto por aislamiento de red; eso nos simplifica las decisiones. En un futuro se podría crear otro entorno para producción o para otro proyecto, pero de momento nos vale. También es posible hacer entornos compartidos para varios proyectos.</p>
-
 <p>Algunas decisiones de diseño:</p>
-
 <ul>
 <li>Nuestra aplicación es un solo contenedor, que vamos a escalar para soportar la carga.</li>
 <li>Vamos a balancear la carga entre todos los contenedores de aplicación.</li>
 <li>La base de datos va a ir separada en otro contenedor, que todas las instancias de la aplicación puedan ver.</li>
 <li>El sistema de inyección de datos se va a componer de 3 contenedores: uno para el SFTP, uno para el volumen de datos y otro para el procesador de dichos datos.</li>
 </ul>
-
 <p>Y con este <em>setup</em>, podemos empezar a construir nuestro entorno. no importa cuantos <em>stacks</em> hagamos, pero seguramente, la base de datos tendrá su propio <em>stack</em> porque lo pondremos directamente del catálogo. Podemos poner todo el resto en un solo <em>stack</em> o separarlos por subsistemas (web balanceada, bases de datos, inyector de datos).</p>
-
 <ol>
 <li>La parte mas fácil es la base de datos. Creamos un servicio simple para que todos lo utilicen.</li>
 <li>Los contenedores de aplicación van a ser otro servicio. Que sean servicios individuales nos permite escalarlos individualmente del resto de componentes.</li>
 <li>Creamos un balanceador para el servicio de aplicación. En este punto ya deberíamos poder acceder al entorno, aunque sin la entrada de datos.</li>
 <li>Los contenedores del sistema de inyección de datos deben formar parte de un único servicio, porque es la única forma de que puedan montar los volúmenes del contenedor de datos. Dejaremos este servicio escalado a 1, que nos va a poner un contenedor de cada en una sola de las máquinas. No es importante que contenedor es el primario, pero vamos a poner el SFTP por un sencillo motivo: solo los contenedores primarios pueden ser el objetivo del balanceador, que de momento no pondremos, pero tal vez algún día lo queramos.</li>
 </ol>
-
 <p>Y con esto tendremos nuestro proyecto corriendo. Es el momento de guardar las <em>stacks</em> en el catálogo, ya que eso va a simplificar el <em>deploy</em> cuando creemos otro entorno.</p>
 
 <div id="disqus_thread"></div>

@@ -53,35 +53,24 @@
 </p>
 
 <p>Cuando nos encontramos delante de servidores únicos, es bastante fácil su gestión. Sin embargo, cuando tenemos 8 instancias de cada tipo de servidor, las tareas se vuelven lentas y repetitivas. Podemos incluso automatizar la gestión de una sola máquina para hacer su entorno fácilmente reproducible, en vistas a su reconstrucción.</p>
-
 <p>Para ello existen algunas herramientas capaces de modificar los servidores, sea mediante un protocolo de <strong>pull</strong> (<strong>puppet</strong>, <strong>chef</strong>) que tienen agentes capaces de pedir a un servidor central las reglas a aplicarse, o mediante un protocolo de <strong>push</strong> (<strong>fabric</strong>, <strong>ansible</strong>) que simplemente son formas de enviar esas órdenes desde el servidor central.</p>
-
 <p>Hoy vamos a instalar <strong>ansible</strong>, herramienta que considero muy interesante por su simplicidad; carece de agentes activos, funcionando como un conjunto de <em>scripts</em> en una máquina cualquiera que actúa de servidor y utilizando el protocolo <strong>SSH</strong> para empujar los <em>scripts</em>, que se ejecutan con un <strong>python</strong> en el servidor destino.</p>
-
 <p>Si estuviéramos en una máquina tipo <strong>Debian</strong>/<strong>Ubuntu</strong>, la instalación es tan fácil como lanzar <strong>apt-get</strong>:</p>
-
 <pre><code class="language-bash">root@server:~$ apt-get install ansible
 ...  
 root@server:~$ 
 </code></pre>
-
 <p>Sin embargo, instalarlo a nivel de sistema es un problema en algunos entornos, así que podemos instalarlo en una carpeta local, concretamente en un <strong>virtualenv</strong> dedicado en nuestra carpeta personal. Esta es la forma que se explica en este tutorial.</p>
-
 <p>Empezaremos con un servidor cualquiera; al no tener agentes activos y ser <em>scripts</em>, nos vale cualquiera. En este caso se ha usado una máquina tipo <strong>RedHat</strong>. Realmente no nos importa demasiado la versión de <strong>python</strong> que utilice.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ cat /etc/redhat-release
 Red Hat Enterprise Linux Server release 6.7 (Santiago)
 [gerard@toolbox ~]$ python -V
 Python 2.6.6
 [gerard@toolbox ~]$
 </code></pre>
-
-<h2 id="creación-del-virtualenv-con-ansible">Creación del virtualenv con ansible</h2>
-
+<h2>Creación del virtualenv con ansible</h2>
 <p>Vamos a construir el <strong>virtualenv</strong> desde cero. Si nos interesara hacerlo en otra máquina en la que tengamos permisos para instalar paquetes, bastaría con copiar la carpeta del <strong>virtualenv</strong> en el mismo sitio, y sin instalar nada mas.</p>
-
 <p>Las únicas dependencias que se necesitan para construir el <strong>virtualenv</strong> es <strong>python</strong>, <strong>gcc</strong> y <strong>python-devel</strong> (o <strong>python-dev</strong> si se tratara de una máquina tipo <strong>Debian</strong>/<strong>Ubuntu</strong>). Como ya tenemos <strong>gcc</strong> y <strong>python</strong>, instalamos solamente <strong>python-devel</strong>.</p>
-
 <pre><code class="language-bash">gerard@toolbox:~$ sudo yum install python-devel
 Loaded plugins: product-id, subscription-manager
 This system is not registered to Red Hat Subscription Management. You can use subscription-manager to register.
@@ -93,9 +82,7 @@ Installed:
 Complete!
 gerard@toolbox:~$
 </code></pre>
-
 <p>Para no instalar nada innecesario en la máquina, vamos a descargar el comando <em>virtualenv</em>, que va a cumplir su función y va a ser eliminado. Lo descargamos y lo descomprimimos, en cualquier carpeta.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ wget https://pypi.python.org/packages/source/v/virtualenv/virtualenv-15.0.1.tar.gz
 --2016-04-05 11:54:27--  https://pypi.python.org/packages/source/v/virtualenv/virtualenv-15.0.1.tar.gz
 Resolving pypi.python.org... 23.235.43.223
@@ -111,23 +98,17 @@ Saving to: “virtualenv-15.0.1.tar.gz”
 [gerard@toolbox ~]$ tar xzf virtualenv-15.0.1.tar.gz
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Utilizamos el comando <em>virtualenv</em> para generar la estructura contenedora, de la misma manera que otros <em>virtualenv</em>.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ ./virtualenv-15.0.1/virtualenv.py ansible
 New python executable in /home/gerard/ansible/bin/python
 Installing setuptools, pip, wheel...done.
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Hacemos limpieza de <strong>virtualenv</strong>, que ya no vamos a necesitar mas.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ rm -R virtualenv-15.0.1*
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>La instalación es la misma que haríamos con cualquier módulo de <strong>python</strong>, con la excepción que va a generar fichero <em>.so</em>, dependientes de la arquitectura del procesador que los genere. Si movéis el <strong>virtualenv</strong>, tened esto en cuenta.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ source ansible/bin/activate
 (ansible) [gerard@toolbox ~]$ pip install ansible
 DEPRECATION: Python 2.6 is no longer supported by the Python core team, please upgrade your Python. A future version of pip will drop support for Python 2.6
@@ -138,13 +119,9 @@ Successfully installed MarkupSafe-0.23 PyYAML-3.11 ansible-2.0.1.0 ecdsa-0.13 ji
 (ansible) [gerard@toolbox ~]$ deactivate
 [gerard@toolbox ~]$
 </code></pre>
-
-<h2 id="controlando-nuestro-primer-esclavo">Controlando nuestro primer esclavo</h2>
-
+<h2>Controlando nuestro primer esclavo</h2>
 <p>Vamos a habilitar una máquina cualquiera como receptora de <strong>ansible</strong>. Los puntos básicos a tener en cuenta es que vamos a habilitar <strong>SSH</strong> por claves (sin contraseña) y debemos asegurar que la máquina destino tiene un <strong>python</strong> instalado.</p>
-
 <p>Empezaremos generando las claves privada y pública en la máquina controladora. Esto se hace mediante el comando <em>ssh-keygen</em>.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ ssh-keygen
 Generating public/private rsa key pair.
 Enter file in which to save the key (/home/gerard/.ssh/id_rsa):
@@ -169,32 +146,23 @@ The key's randomart image is:
 +-----------------+
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Esto va a generar una carpeta <em>.ssh</em> en nuestra carpeta personal, con dos ficheros generados: <em>id_rsa</em> (clave privada) e <em>id_rsa.pub</em> (clave pública). La idea es que la clave privada se va a ofrecer automáticamente cuando se haga <strong>ssh</strong>, y si la parte pública esta en <em>~/.ssh/authorized_keys</em> del usuario remoto, el login se hace automático.</p>
-
 <p>La clave privada es sagrada, y no debe entregarse a nadie. Sin embargo, la parte pública es la que se va a poner en todas las máquinas controladas. Se trata de una línea que vamos a añadir al <em>authorized_keys</em> de todas las máquinas, así que la apuntamos en algún sitio.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ cat .ssh/id_rsa.pub
 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAo/hobjbaSNX4zP/wjke5FY910xk5VwW0WaAO10ILAbvhuswdghLbMBdgt+4tWIwFM4DgOwA62wQ04lPsxpQ7Ya4VVmVVZLN5oN2BGQ2ixV6ofB8PA51vNDO5p0xz4ExYebXu8qshrOi4ulcSsc1rEDhlT+zZkYApjVOcgmO7T7T6149XWWBH0YSFEOto8qF+YiyS2yMlVy5p6QruHNPwcr6kC0z13aYrNUnk5VXFwlOSRtUTYMZ+c0ysh49uTDm50AWoccuDUK0v0juNWnHfQw1PFYLaQZLmJEWIkIsND3pBACHdFTyJDGDOB2Kuw+DCaAxp5vqPt5zFuidVS0h5Mw== gerard@toolbox
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>En la máquina controlada, añadimos la línea de la clave pública en el fichero <em>authorized_keys</em>. Vamos a controlar login automático contra el usuario <em>root</em> en nuestra máquina de ejemplo misma.</p>
-
 <pre><code class="language-bash">[root@toolbox ~]# cat .ssh/authorized_keys
 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAo/hobjbaSNX4zP/wjke5FY910xk5VwW0WaAO10ILAbvhuswdghLbMBdgt+4tWIwFM4DgOwA62wQ04lPsxpQ7Ya4VVmVVZLN5oN2BGQ2ixV6ofB8PA51vNDO5p0xz4ExYebXu8qshrOi4ulcSsc1rEDhlT+zZkYApjVOcgmO7T7T6149XWWBH0YSFEOto8qF+YiyS2yMlVy5p6QruHNPwcr6kC0z13aYrNUnk5VXFwlOSRtUTYMZ+c0ysh49uTDm50AWoccuDUK0v0juNWnHfQw1PFYLaQZLmJEWIkIsND3pBACHdFTyJDGDOB2Kuw+DCaAxp5vqPt5zFuidVS0h5Mw== gerard@toolbox
 [root@toolbox ~]#
 </code></pre>
-
 <p>Una vez que tengamos las claves <strong>SSH</strong> distribuidas, y <strong>python</strong> instalado en las máquinas controladas, podemos probar. Para ello, vamos a añadir esta máquina en el fichero de <em>hosts</em>, sea por nombre o por dirección IP.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ cat hosts
 127.0.0.1
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Y lanzamos el módulo <strong>ping</strong> a todas las máquinas (que solo es la de test, de momento).</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ ./ansible/bin/ansible -u root -i hosts -m ping all
 127.0.0.1 | SUCCESS =&gt; {
     &quot;changed&quot;: false,
@@ -202,24 +170,17 @@ ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAo/hobjbaSNX4zP/wjke5FY910xk5VwW0WaAO10ILAbvh
 }
 [gerard@toolbox ~]$
 </code></pre>
-
-<h2 id="creando-un-fichero-de-configuración">Creando un fichero de configuración</h2>
-
+<h2>Creando un fichero de configuración</h2>
 <p>Las opciones por defecto de <strong>ansible</strong> son bastante correctas, pero hay algunos parámetros que se pueden poner por fichero de configuración; esto nos facilita bastante las cosas. Este fichero de configuración es el primero que se encuentre siguiendo este orden:</p>
-
 <ul>
 <li>ANSIBLE_CONFIG (lo que diga esta variable de entorno)</li>
 <li>ansible.cfg (en el directorio actual de trabajo)</li>
 <li>.ansible.cfg (en la carpeta personal de nuestro usuario)</li>
 <li>/etc/ansible/ansible.cfg</li>
 </ul>
-
 <p>De hecho, si os parece bien utilizar carpetas de sistema, la última opción es la normal. Sin embargo, me interesa restringirme a mi carpeta local, por falta de permisos habitualmente.</p>
-
 <p>De la misma manera, el fichero de <em>hosts</em> se busca en un sitio concreto, que con la configuración estándar es <em>/etc/ansible/hosts</em>, a menos que se indique explícitamente el flag <em>-i</em> en los comandos.</p>
-
 <p>Para evitar usar estos dos ficheros fuera de nuestra carpeta, vamos a crearlos en el <strong>virtualenv</strong> creado, añadiéndolos en una carpeta <em>etc</em>, que vamos a crear. Todos los parámetros se van a poner en el fichero de configuración y vamos a explicitar la localización del fichero de configuración.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ mkdir ansible/etc
 [gerard@toolbox ~]$ cat ansible/etc/ansible.cfg
 [defaults]
@@ -229,9 +190,7 @@ remote_user = root
 [gerard@toolbox ~]$ mv hosts ansible/etc/
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Tras crear la configuración, la probamos:</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ ANSIBLE_CONFIG=/home/gerard/ansible/etc/ansible.cfg ./ansible/bin/ansible -m ping all
 127.0.0.1 | SUCCESS =&gt; {
     &quot;changed&quot;: false,
@@ -239,18 +198,14 @@ remote_user = root
 }
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Para conseguir eliminar el <em>path</em> absoluto del binario de ansible, lo añadimos en la variable de entorno <em>PATH</em>. Para nuestra comodidadd, podemos definir ambas variables de entorno en el fichero <em>.bashrc</em>. Este fichero se va a activar cada vez que se inicie <strong>bash</strong>; para no cerrar y abrir sesión lo incluimos a mano.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ tail -2 .bashrc
 export ANSIBLE_CONFIG=~/ansible/etc/ansible.cfg
 export PATH=~/ansible/bin:$PATH
 [gerard@toolbox ~]$ source .bashrc
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Y finalmente obtenemos la versión mínima del comando a ejecutar.</p>
-
 <pre><code class="language-bash">[gerard@toolbox ~]$ ansible -m ping all
 127.0.0.1 | SUCCESS =&gt; {
     &quot;changed&quot;: false,
@@ -258,7 +213,6 @@ export PATH=~/ansible/bin:$PATH
 }
 [gerard@toolbox ~]$
 </code></pre>
-
 <p>Ahora solo queda poner mas servidores en el fichero de <em>hosts</em> y lanzar comandos y <em>playbooks</em> útiles contra los mismos.</p>
 
 <div id="disqus_thread"></div>

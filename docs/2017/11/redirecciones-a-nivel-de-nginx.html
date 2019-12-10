@@ -53,21 +53,15 @@
 </p>
 
 <p>No son pocas las veces que queremos hacer una redirección de algunos de nuestros dominios a otros. Puede que queramos añadir el clásico <code>www</code> delante del dominio, o tal vez queramos forzar el uso de <code>https</code>. Hacer copias de nuestro dominio no es viable, pero podemos usar redirecciones fijas 301.</p>
-
 <p>Vamos a suponer en este artículo que tenemos un servidor <strong>nginx</strong> configurado para servir <em>virtualhosts</em>. En este ejemplo, vamos a poner uno por defecto y otro de ejemplo.</p>
-
 <p>Las reglas son simples:</p>
-
 <ul>
 <li>Serviremos la web de ejemplo para el dominio <em>www.example.com</em></li>
 <li>Queremos ver la misma web para el dominio <em>example.com</em> y no queremos duplicar contenido</li>
 <li>Serviremos una web por defecto en cualquier otro caso, para ver si lo hemos hecho bien</li>
 </ul>
-
-<h2 id="preparación-del-ejemplo">Preparación del ejemplo</h2>
-
+<h2>Preparación del ejemplo</h2>
 <p>Para que se pueda seguir el artículo, se proporciona el contexto necesario para construir una imagen <strong>docker</strong> en donde probarlo. Empezamos por el <em>Dockerfile</em>:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nginx_redirects$ cat Dockerfile 
 FROM alpine:3.5
 RUN apk add --no-cache nginx &amp;&amp; \
@@ -81,9 +75,7 @@ COPY conf.d/* /etc/nginx/conf.d/
 COPY www/ /srv/www/
 gerard@aldebaran:~/docker/nginx_redirects$ 
 </code></pre>
-
 <p>Y añadimos las configuraciones que <strong>nginx</strong> necesita:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nginx_redirects$ cat nginx.conf 
 worker_processes 1;
 events {
@@ -112,9 +104,7 @@ server {
 }
 gerard@aldebaran:~/docker/nginx_redirects$ 
 </code></pre>
-
 <p>A modo de ejemplo, adjuntamos dos sitios de juguete que nos permitirnán probar nuestros <em>virtualhosts</em>:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nginx_redirects$ tree www/
 www/
 ├── default
@@ -129,21 +119,15 @@ gerard@aldebaran:~/docker/nginx_redirects$ cat www/www.example.com/index.html
 example site
 gerard@aldebaran:~/docker/nginx_redirects$ 
 </code></pre>
-
 <p>Construid la imagen y ponedla a correr, con los comandos habituales.</p>
-
 <p><strong>TRUCO</strong>: Como queremos probar <em>virtualhosts</em> y no queremos marear con servidores DNS, podemos tirar del fichero <em>/etc/hosts</em>, para que todos los dominios apunten a nuestro contenedor.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ cat /etc/hosts
 ...  
 172.17.0.2	example.com www.example.com www.otherdomain.com
 gerard@aldebaran:~$ 
 </code></pre>
-
-<h2 id="problema-y-solución">Problema y solución</h2>
-
+<h2>Problema y solución</h2>
 <p>Lanzamos una batería de peticiones con <strong>curl</strong> o alguna herramienta similar.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl http://www.example.com/
 example site
 gerard@aldebaran:~$ curl http://www.otherdomain.com/
@@ -152,21 +136,15 @@ gerard@aldebaran:~$ curl http://example.com/
 default site
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Todos los dominios apuntan a la dirección IP del mismo contenedor, y de ello sacamos algunas conclusiones:</p>
-
 <ul>
 <li>El dominio <em>www.example.com</em> funciona según lo esperado</li>
 <li>El dominio por defecto salta ante las peticiones que no pertenecen al dominio <em>www.example.com</em></li>
 <li>Las peticiones al dominio <em>example.com</em> caen en el <em>virtualhost</em> por defecto</li>
 </ul>
-
 <p>Podríamos haber creado otro <em>virtualhost</em> que sirviera una copia (o la misma carpeta) del dominio de ejemplo, pero no es elegante y en el caso de querer HTTPS no serviría. En estos casos, el estándar <em>de facto</em> es hacer una redirección al dominio correcto, mediante un código HTTP 301. Esto le indicará al navegador que la redirección es permanente y hará que este &ldquo;se acuerde&rdquo; de la redirección.</p>
-
 <p>Para ello necesitamos un nuevo <em>virtualhost</em>, o adaptar el que tenemos para que acepte expresiones regulares; no vamos a seguir este camino por simplicidad.</p>
-
 <p>Solo necesitaríamos utilizar el <a href="http://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return">rewrite module</a> de <strong>nginx</strong> para forzar un código de retorno a la URL correcta. Exponemos este ejemplo a continuación:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/nginx_redirects$ cat conf.d/www 
 server {
 	listen 80 default;
@@ -189,9 +167,7 @@ server {
 }
 gerard@aldebaran:~/docker/nginx_redirects$ 
 </code></pre>
-
 <p>Si recreamos la imagen y la ejecutamos de nuevo, vemos que nuestra web se comporta de la forma especificada al principio del artículo.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl -I http://example.com/
 HTTP/1.1 301 Moved Permanently
 Server: nginx/1.10.3
@@ -203,9 +179,7 @@ Location: http://www.example.com/
 
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>De esta forma, el navegador buscará la nueva página, de acuerdo a esta respuesta. Se fuerza la opción &ldquo;follow redirects&rdquo; en la salida del <strong>curl</strong> para poder observar este comportamiento:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~$ curl http://www.example.com/
 example site
 gerard@aldebaran:~$ curl http://www.otherdomain.com/
@@ -214,7 +188,6 @@ gerard@aldebaran:~$ curl -L http://example.com/
 example site
 gerard@aldebaran:~$ 
 </code></pre>
-
 <p>Y lo mismo sería válido para forzar una redirección a HTTPS, aunque se deja como ejercicio al lector.</p>
 
 <div id="disqus_thread"></div>

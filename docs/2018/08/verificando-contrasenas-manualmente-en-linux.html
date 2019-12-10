@@ -53,52 +53,36 @@
 </p>
 
 <p>El otro día recibí una petición inusual; un usuario no se acordaba de su contraseña y quería que se la descifrara de los ficheros de sistema. Como eso no es factible, y tras mi negativa, él me dijo que no sabía si era una de una lista, lo que comprobé.</p>
-
 <p>Las contraseñas en <strong>Linux</strong> no se guardan; lo que se guarda es un <em>hash</em> de las mismas en el fichero <code>/etc/shadow</code>, y para verificarlas solo hay que hacer el mismo procedimiento de <em>hash</em>, para luego comparar los resultados.</p>
-
-<h2 id="un-ejemplo">Un ejemplo</h2>
-
+<h2>Un ejemplo</h2>
 <p>El usuario <strong>zeus</strong> ha perdido su contraseña y por lo tanto no puede acceder a <strong>olympus</strong>. Como administrador, puedo ver lo que hay en <code>/etc/shadow</code>:</p>
-
 <pre><code class="language-bash">root@olympus:~# grep zeus /etc/shadow
 zeus:$6$jq62gTbU$kYZgWuKLuNTX0Ur.UWiuBJuIYltW3hc7EdI2/4RpldwUoLlRl9IdXgJb6B3kxEoAxWolDwXDCqOnz8SN0CKkJ1:17739:0:99999:7:::
 root@olympus:~#
 </code></pre>
-
 <p>Los campos se separan por <code>:</code>; el primer campo es el usuario y el segundo, el <em>hash</em> de su password. Este <em>hash</em> tiene la forma <code>$id$salt$hashed</code>, y cada parte significa algo:</p>
-
 <ul>
-<li><code>6</code> &rarr; es algoritmo usado para el <em>hash</em>, donde &ldquo;6&rdquo; significa <strong>SHA-512</strong>.</li>
-<li><code>jq62gTbU</code> &rarr; el algoritmo <strong>SHA-512</strong> requiere de un <em>salt</em> para combinar con la contraseña antes del <em>hash</em>, por seguridad.</li>
-<li><code>kYZgWuKLuNTX0Ur.UWiuBJuIYltW3hc7EdI2/4RpldwUoLlRl9IdXgJb6B3kxEoAxWolDwXDCqOnz8SN0CKkJ1</code> &rarr; este es el <em>hash</em> propiamente dicho.</li>
+<li><code>6</code> → es algoritmo usado para el <em>hash</em>, donde &ldquo;6&rdquo; significa <strong>SHA-512</strong>.</li>
+<li><code>jq62gTbU</code> → el algoritmo <strong>SHA-512</strong> requiere de un <em>salt</em> para combinar con la contraseña antes del <em>hash</em>, por seguridad.</li>
+<li><code>kYZgWuKLuNTX0Ur.UWiuBJuIYltW3hc7EdI2/4RpldwUoLlRl9IdXgJb6B3kxEoAxWolDwXDCqOnz8SN0CKkJ1</code> → este es el <em>hash</em> propiamente dicho.</li>
 </ul>
-
 <p><strong>NOTA</strong>: Más información <a href="https://www.cyberciti.biz/faq/understanding-etcshadow-file/">aquí</a>.</p>
-
 <p>Sabiendo el algoritmo y el <em>salt</em>, podemos hacer el <em>hash</em> de cualquier contraseña. En caso de que el <em>hash</em> sea el mismo que tenemos guardado, <strong>Linux</strong> asume la contraseña como válida. Es importante recalcar que dos <em>salt</em> distintos darían dos <em>hash</em> distintos.</p>
-
 <p>Podemos probar con la contraseña <code>temporal</code>:</p>
-
 <pre><code class="language-python">&gt;&gt;&gt; import crypt
 &gt;&gt;&gt; crypt.crypt('temporal', '$6$jq62gTbU')
 '$6$jq62gTbU$Zr/CBQAIKhWu1wCIE/jP0okICiaCQrw.eUBl4f9fQjgyCcLzkGB0dqfE8sM4tB1YG/DtLtaompXqvIrpPlErn1'
 &gt;&gt;&gt;
 </code></pre>
-
 <p>No nos cuadra con el ejemplo, con lo que contraseña sería rechazada. Probemos ahora con <code>supersecret</code>:</p>
-
 <pre><code class="language-python">&gt;&gt;&gt; import crypt
 &gt;&gt;&gt; crypt.crypt('supersecret', '$6$jq62gTbU')
 '$6$jq62gTbU$kYZgWuKLuNTX0Ur.UWiuBJuIYltW3hc7EdI2/4RpldwUoLlRl9IdXgJb6B3kxEoAxWolDwXDCqOnz8SN0CKkJ1'
 &gt;&gt;&gt;
 </code></pre>
-
 <p>Esto es exactamente lo mismo que sacamos del fichero <code>/etc/shadow</code>, con lo que la contraseña sería aceptada. Ahora le podemos comunicar a <strong>zeus</strong> que puede entrar a <strong>olympus</strong> usando la contraseña <code>supersecret</code>.</p>
-
-<h2 id="probando-contraseñas-por-fuerza-bruta">Probando contraseñas por fuerza bruta</h2>
-
+<h2>Probando contraseñas por fuerza bruta</h2>
 <p>Si podemos hacer una función que nos permita validar una contraseña dada, podemos enchufar un montón de entradas. Tirando de <strong>python</strong>, esto no tiene mucha dificultad:</p>
-
 <pre><code class="language-bash">root@olympus:~# cat test_passwords.py
 #!/usr/bin/env python3
 
@@ -120,14 +104,11 @@ for password in possible:
         print('Password &quot;%s&quot; is valid' % password)
 root@olympus:~#
 </code></pre>
-
 <p>Y una ejecución nos probaría toda la lista:</p>
-
 <pre><code class="language-bash">root@olympus:~# ./test_passwords.py
 Password &quot;supersecret&quot; is valid
 root@olympus:~#
 </code></pre>
-
 <p><strong>AVISO</strong>: Probar varias contraseñas no lleva mucho tiempo, pero si intentáis un generador de contraseñas posibles, puede ser muy costoso en tiempo.</p>
 
 <div id="disqus_thread"></div>

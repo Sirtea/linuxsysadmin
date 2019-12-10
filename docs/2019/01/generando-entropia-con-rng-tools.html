@@ -53,15 +53,10 @@
 </p>
 
 <p>Cada vez que intento crear claves GPG me doy por vencido y paso de hacerlo. El motivo es que es un proceso que tarda una barbaridad, especialmente en los entornos virtuales por los que me suelo mover. Eso es porque el dispositivo <code>/dev/random</code> no recibe suficiente aleatoriedad sin ayuda.</p>
-
 <p>Pero esto ha cambiado últimamente; he descubierto un servicio capaz de generar entropía suficiente para que el generador del sistema <code>/dev/random</code> se llene rápidamente. Se trata de <strong>rng-tools</strong> y su existencia ha simplificado la mía notablemente.</p>
-
 <p>Normalmente utilizo el otro generador del sistema <code>/dev/urandom</code>, que genera números pseudoaleatorios en función de un algoritmo matemático. Esto es suficiente para mí, pero para algunas herramientas del sistema es insuficiente, y por ello utilizan números puramente aleatorios.</p>
-
-<h2 id="el-problema">El problema</h2>
-
+<h2>El problema</h2>
 <p>Vamos a generar una clave GPG para un uso cualquiera; esto es ahora irrelevante. Lanzamos el comando adecuado y vemos la sugerencia:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace$ gpg --gen-key
 gpg (GnuPG) 2.1.18; Copyright (C) 2017 Free Software Foundation, Inc.
 This is free software: you are free to change and redistribute it.
@@ -83,26 +78,17 @@ disks) during the prime generation; this gives the random number
 generator a better chance to gain enough entropy.
 ...
 </code></pre>
-
 <p>Al final, tras más de 1 hora esperando, nos cansamos de esperar y cancelamos la generación de la clave.</p>
-
-<h2 id="la-solución">La solución</h2>
-
+<h2>La solución</h2>
 <p>Por defecto, <code>/dev/random</code> es muy lento, porque recoge entropía de los <em>drivers</em> de los dispositivos y de otras fuentes lentas. El binario <strong>rngd</strong> permite usar fuentes de entropía más rápidas, principalmente generadores de números aleatorios por <em>hardware</em>, presentes en los procesadores modernos, por ejemplo, los procesadores AMD, los Intel, e incluso los ARM de las <em>Raspberry pi</em>.</p>
-
 <p>Aunque nuestro servidor virtual no tenga acceso a tales dispositivos, no son las únicas fuentes; nos vamos a beneficiar de una generación de números aleatorios mayor aunque nos los tengamos. Para ello, solo necesitamos tener instalado el paquete <strong>rng-tools</strong> y el binario <code>rngd</code> ejecutando.</p>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace$ sudo apt install rng-tools
 ...
 gerard@shangrila:~/workspace$
 </code></pre>
-
 <p>Si no queréis ensuciar el sistema operativo, podéis ejecutarlo en un contenedor <strong>docker</strong>; como comparten <em>kernel</em>, el contenedor generará entropía para todo el que comparta el mismo <em>kernel</em>, incluído el sistema <em>host</em>.</p>
-
 <p>En el caso de <strong>docker</strong>, solo hace falta recordar que el binario debe correr en <em>foreground</em> y que necesita ejecutar con el <em>flag</em> <code>--privileged</code>, para poder acceder a los recursos del <em>kernel</em> compartido con el resto de contenedores.</p>
-
 <p>Aquí os dejo mi receta:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace/rngtools$ cat Dockerfile
 FROM alpine:3.8
 RUN apk add --no-cache tini rng-tools
@@ -110,7 +96,6 @@ ENTRYPOINT [&quot;/sbin/tini&quot;, &quot;--&quot;]
 CMD [&quot;/usr/sbin/rngd&quot;, &quot;-f&quot;]
 gerard@shangrila:~/workspace/rngtools$
 </code></pre>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace/rngtools$ docker build -t rngtools .
 Sending build context to Docker daemon  2.048kB
 ...
@@ -118,17 +103,13 @@ Successfully built 0b89a6d118ca
 Successfully tagged rngtools:latest
 gerard@shangrila:~/workspace/rngtools$
 </code></pre>
-
 <p>Y lo ejecutamos cada vez que necesitemos más entropía:</p>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace/rngtools$ docker run -ti --rm --privileged rngtools
 Failed to init entropy source 0: Hardware RNG Device
 
 Failed to init entropy source 1: TPM RNG Device
 </code></pre>
-
 <p>Esto es normal, porque no tenemos dispositivos <em>hardware</em> especiales, pero aún así, nos podemos beneficiar de la entropía generada.</p>
-
 <pre><code class="language-bash">gerard@shangrila:~/workspace$ gpg --gen-key
 gpg (GnuPG) 2.1.18; Copyright (C) 2017 Free Software Foundation, Inc.
 This is free software: you are free to change and redistribute it.
@@ -165,7 +146,6 @@ sub   rsa3072 2019-01-10 [E] [expires: 2021-01-09]
 
 gerard@shangrila:~/workspace$
 </code></pre>
-
 <p>Y con esto tenemos nuestra clave generada de forma rápida.</p>
 
 <div id="disqus_thread"></div>

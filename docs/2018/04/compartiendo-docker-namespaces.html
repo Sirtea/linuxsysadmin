@@ -53,28 +53,18 @@
 </p>
 
 <p>Como ya sabéis, la tecnología <strong>docker</strong> me encanta; seguía con mi cruzada para <em>dockerizar</em> todos mis sistemas, cuando me topé con <a href="/2017/02/alta-disponibilidad-con-keepalived.html">un artículo antiguo</a>. En este artículo os contaré los problemas con los que me enfrenté en esta tarea y como los pude superar, explicando lo aprendido en el proceso.</p>
-
 <p>No soy fan de meter varios procesos en el mismo contenedor, así que quise intentar una aproximación de varios contenedores, uno por proceso, levantados mediante <strong>docker-compose</strong>.</p>
-
 <p>El proceso <em>keepalived</em> en si mismo no tiene mucha complicación, solo hay que tener en cuenta dos cosas:</p>
-
 <ul>
 <li>Al gestionar una IP flotante del <em>host</em> el contenedor debe estar en su misma red, con la que vamos a necesitar el <em>flag</em> <code>--net=host</code></li>
 <li>El otro asunto peliagudo es que un contenedor no puede manejar la parte de redes por permisos, y por lo tanto debe lanzarse con el <em>flag</em> <code>--privileged</code> o con la <em>capability</em> <code>NET_ADMIN</code>, que es lo mínimo necesario.</li>
 </ul>
-
 <p>El problema lo tenemos cuando queremos ejecutar el <em>check</em> de <em>keepalived</em> referente al proceso hermano <strong>nginx</strong> o <strong>haproxy</strong>. Solamente la idea de tener que hacer un <strong>kill</strong> a un proceso de otro contenedor era suficiente para desistir, ya que los procesos de un contenedor no se ven con los de otro. <strong>¿O si?</strong></p>
-
 <p>El truco está en el <em>flag</em> <code>--pid</code> que como indica la página de ayuda, gestiona el &ldquo;PID namespace to use&rdquo;. Esto nos permite ejecutar un contenedor en el espacio de PIDs de otro, de forma que los procesos de ambos contenedores se ven entre sí, aunque solo uno de ellos puede ser el proceso 1 inicial, y la caída de este ocasiona la parada de ambos contenedores.</p>
-
-<h2 id="un-ejemplo-práctico-keepalived-y-haproxy">Un ejemplo práctico: keepalived y haproxy</h2>
-
+<h2>Un ejemplo práctico: keepalived y haproxy</h2>
 <p>Vamos a hacer un par de instancias de <strong>keepalived</strong> en dos <em>hosts</em> distintos, y cada uno de ellos también va a tener un <strong>haproxy</strong>.</p>
-
-<h3 id="las-imágenes">Las imágenes</h3>
-
+<h3>Las imágenes</h3>
 <p>La imagen de <strong>keepalived</strong> no tiene misterios; cualquier sistema operativo con <strong>keepalived</strong> instalado nos vale. Adicionalmente, lo vamos a iniciar mediante un <em>script</em> que va a generar la configuración, en base a unas variables de entorno, que nos van a servir para discernir entre las configuraciones del <em>master</em> y del <em>slave</em>.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/ha-loadbalancer$ cat keepalived/Dockerfile
 FROM alpine:3.7
 RUN apk add --no-cache keepalived
@@ -106,19 +96,12 @@ vrrp_instance VI_1 {
 exec /usr/sbin/keepalived -l -n
 gerard@atlantis:~/projects/ha-loadbalancer$
 </code></pre>
-
 <p>Construiremos la imagen bajo el <em>tag</em> <code>sirrtea/keepalived:alpine</code> para su uso futuro.</p>
-
 <p>La imagen de <strong>haproxy</strong> no es especial, y podemos utilizar cualquiera que ya tengamos, por ejemplo, <a href="https://hub.docker.com/r/sirrtea/haproxy/">esta</a>.</p>
-
-<h3 id="desplegando-las-imágenes">Desplegando las imágenes</h3>
-
+<h3>Desplegando las imágenes</h3>
 <p>Por comodidad, vamos a utilizar <strong>docker-compose</strong> que levante el conjunto de <strong>kepalived</strong> y <strong>haproxy</strong>, uno en cada <em>host</em>. Es importante recalcar que la directiva <code>pid</code> solo funciona con la versión 2.1 o superior de <strong>docker-compose</strong>.</p>
-
 <p><strong>TRUCO</strong>: Vamos a levantar el <strong>nginx</strong> en el <em>namespace</em> de <strong>keepalived</strong>. esto se hace así porque <strong>keepalived</strong> no se va a caer y puede comprobar si el <strong>haproxy</strong> está corriendo o no. De hacerlo al revés, la caída del <strong>haproxy</strong> (que sería el PID 1), causaría el fin del contenedor, y la parada de todos los procesos del <em>namespace</em>, incluyendo <strong>keepalived</strong>. Esto que haría que el <em>check</em> del servicio <strong>haproxy</strong> no sirviera de nada.</p>
-
-<h4 id="el-host-master">El host master</h4>
-
+<h4>El host master</h4>
 <pre><code class="language-bash">gerard@atlantis:~/projects/ha-loadbalancer$ cat master/docker-compose.yml
 version: '2.1'
 services:
@@ -149,29 +132,24 @@ services:
       - keepalived
 gerard@atlantis:~/projects/ha-loadbalancer$
 </code></pre>
-
 <p>En este <em>docker-compose.yml</em> podemos ver varias cosas interesantes:</p>
-
 <ul>
 <li>En el servicio <em>keepalived</em>:
-
 <ul>
 <li>Unas variables de entorno que solo sirven para generar la configuración de <strong>keepalived</strong>, tal como se hace en el <em>script</em> <code>start.sh</code></li>
 <li>La directiva <code>network_mode: host</code> que sirve para que el contenedor use la red del <em>host</em>, pudiendo manejar sus direcciones IP</li>
 <li>La directiva <code>cap_add: NET_ADMIN</code>, que es la <em>capability</em> mínima y necesaria para que el contenedor pueda modificar las configuraciones de red</li>
-</ul></li>
+</ul>
+</li>
 <li>En el servicio <em>haproxy</em>:
-
 <ul>
 <li>La directiva <code>pid</code> que nos permite estar en el <em>namespace</em> de <em>keepalived</em>, para que sus procesos se vean entre sí</li>
 <li>La directiva <code>depends_on</code>, de forma que se tenga que levantar primero <em>keepalived</em>; de lo contrario, no podríamos estar en su <em>namespace</em>&hellip;</li>
-</ul></li>
 </ul>
-
-<h4 id="el-host-slave">El host slave</h4>
-
+</li>
+</ul>
+<h4>El host slave</h4>
 <p>El truco es el mismo, pero teniendo en cuenta que la configuración de <strong>keepalived</strong> es un poco distinta. Eso lo conseguimos cambiando las variables de entorno que la genera.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/ha-loadbalancer$ cat slave/docker-compose.yml
 version: '2.1'
 services:
@@ -202,9 +180,7 @@ services:
       - keepalived
 gerard@atlantis:~/projects/ha-loadbalancer$
 </code></pre>
-
 <p>Los cambios son las variables de entorno <code>STATE</code> y <code>PRIORITY</code> en el servicio <em>keepalived</em>; el resto se mantiene igual.</p>
-
 <pre><code class="language-bash">gerard@atlantis:~/projects/ha-loadbalancer$ diff master/docker-compose.yml slave/docker-compose.yml
 12c12
 &lt;       STATE: MASTER
@@ -216,7 +192,6 @@ gerard@atlantis:~/projects/ha-loadbalancer$
 &gt;       PRIORITY: 10
 gerard@atlantis:~/projects/ha-loadbalancer$
 </code></pre>
-
 <p>Solo nos faltaría desplegar ambos <em>docker-compose.yml</em> cada uno en un <em>host</em> distinto y ver que funciona como debe.</p>
 
 <div id="disqus_thread"></div>

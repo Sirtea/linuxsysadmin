@@ -53,20 +53,14 @@
 </p>
 
 <p>Una petición muy habitual que recibo es la de algún usuario que quiere ejecutar &ldquo;algo&rdquo; en un servidor. Como no puede ser de otra manera dadas las restricciones de seguridad de la compañía, solo le puedo dar acceso por SSH; pero poner una jaula para restringir sus acciones es tedioso.</p>
-
 <p>Por suerte para nosotros, SSH incluye un mecanismo para que un usuario autorizado a entrar por un par de claves SSH solo pueda ejecutar un comando concreto, y es extremadamente fácil de conseguir&hellip;</p>
-
-<h2 id="situación-inicial">Situación inicial</h2>
-
+<h2>Situación inicial</h2>
 <p>Supongamos que el usuario <em>arthur</em> quiere entrar en el servidor <em>avalon</em> para ejecutar algún comando de sistema o <em>script</em> propio, que le devuelva la información que necesita. Para ello, le vamos a crear un usuario con acceso por par de claves SSH; esto no resulta nada complicado y <a href="/2016/05/autenticacion-ssh-por-claves.html">ya lo hemos hecho antes</a>.</p>
-
 <pre><code class="language-bash">root@avalon:/home/arthur/.ssh# cat authorized_keys 
 ssh-rsa AAA... arthur@camelot
 root@avalon:/home/arthur/.ssh# 
 </code></pre>
-
 <p>El problema en este punto es que el usuario puede entrar por SSH y hacer lo que sea, dentro de sus permisos habituales. Incluso puede hacer uso de una sesión interactiva y chafardear el sistema a voluntad.</p>
-
 <pre><code class="language-bash">arthur@camelot:~$ ssh -i id_avalon arthur@avalon
 Linux avalon 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u2 (2019-05-13) x86_64
 
@@ -79,58 +73,41 @@ permitted by applicable law.
 Last login: Mon Jun  3 10:37:47 2019 from 10.0.2.2
 arthur@avalon:~$ 
 </code></pre>
-
 <p>Lo que queremos es que solo pueda ejecutar un solo <em>script</em>, pero no queremos entrar en las complejidades de montar una jaula para ello.</p>
-
-<h2 id="ssh-al-rescate">SSH al rescate</h2>
-
+<h2>SSH al rescate</h2>
 <p>El protocolo SSH nos permite añadir un comando prefijado a la clave en el fichero <code>authorized_keys</code>. Esto provocará que toda sesión SSH, interactiva o no, ejecute este comando o <em>script</em>. De esta forma no vamos a dar control al usuario para moverse a sus anchas por el sistema.</p>
-
 <pre><code class="language-bash">root@avalon:/home/arthur/.ssh# cat authorized_keys 
 command=&quot;~/.ssh/restrict.sh&quot; ssh-rsa AAA... arthur@camelot
 root@avalon:/home/arthur/.ssh# 
 </code></pre>
-
 <p>El comando especificado debe estar disponible en el sistema, y si se trata de un <em>script</em> este debe estar disponible para que el usuario pueda ejecutarlo. Por poner un ejemplo podemos poner un saludo.</p>
-
 <pre><code class="language-bash">root@avalon:/home/arthur/.ssh# cat restrict.sh 
 #!/bin/bash
 
 echo &quot;Hello ${USER}&quot;
 root@avalon:/home/arthur/.ssh# 
 </code></pre>
-
 <p>Todas las sesiones de SSH del usuario van a ejecutar este <em>script</em>, que hará lo que nos parezca más adecuado en cada caso. Al acabar el <em>script</em>, la sesión SSH se cierra y nos quedamos sin fisgones dando vueltas por el sistema.</p>
-
 <pre><code class="language-bash">arthur@camelot:~$ ssh -i id_avalon arthur@avalon
 Hello arthur
 Connection to localhost closed.
 arthur@camelot:~$ 
 </code></pre>
-
 <p>Si pasamos otro comando, es ignorado en favor del que hemos indicado:</p>
-
 <pre><code class="language-bash">arthur@camelot:~$ ssh -i id_avalon arthur@avalon ls
 Hello arthur
 arthur@camelot:~$ 
 </code></pre>
-
 <p><strong>PROBLEMA</strong>: Esta aproximación nos deja ejecutar <strong>un solo comando</strong>.</p>
-
-<h2 id="permitiendo-varios-comandos-para-una-sola-clave">Permitiendo varios comandos para una sola clave</h2>
-
+<h2>Permitiendo varios comandos para una sola clave</h2>
 <p>Como hemos indicado, solo se puede lanzar un comando o <em>script</em> por clave SSH. sin embargo hay varias formas de ejecutar más de uno:</p>
-
 <ul>
 <li>Poner varias claves SSH por usuario, cada una con un comando permitido. Es un opción, aunque creo que la peor.</li>
 <li>Hacer que el <em>script</em> sea interactivo y se pueda elegir qué ejecutar.</li>
 <li>Permitir al <em>script</em> actuar según lo pida el usuario, de forma transparente y controlada.</li>
 </ul>
-
-<h3 id="un-script-interactivo">Un script interactivo</h3>
-
+<h3>Un script interactivo</h3>
 <p>Nuestro <em>script</em> puede solicitar de forma interactiva lo que queramos ejecutar, simplemente aceptando entrada del usuario. luego podemos acabar el <em>script</em> (y por lo tanto, la sesión SSH) o podemos optar por iterar hasta que nos pidan acabar.</p>
-
 <pre><code class="language-bash">root@avalon:/home/arthur/.ssh# cat restrict.sh
 #!/bin/bash
 
@@ -163,9 +140,7 @@ do
 done
 root@avalon:/home/arthur/.ssh# 
 </code></pre>
-
 <p>Ahora el usuario dispone de un menú en el que puede elegir lo que quiere ejecutar, y por decisión de diseño, iremos repitiendo el menú de elección hasta la opción de salir:</p>
-
 <pre><code class="language-bash">arthur@camelot:~$ ssh -i id_avalon arthur@avalon
 Hello arthur. Your choices are:
 Your choices are:
@@ -191,11 +166,8 @@ Your choice: q
 Connection to localhost closed.
 arthur@camelot:~$ 
 </code></pre>
-
-<h3 id="un-script-transparente">Un script transparente</h3>
-
+<h3>Un script transparente</h3>
 <p>Cuando utilizamos esta técnica de limitación por comando, el comando original se pasa al <em>script</em> como la variable de entorno <code>SSH_ORIGINAL_COMMAND</code>. Podemos sacar provecho de esto y decidir lo que hacemos y lo que prohibimos mediante la inspección de lo que el usuario quería originalmente.</p>
-
 <pre><code class="language-bash">root@avalon:/home/arthur/.ssh# cat restrict.sh
 #!/bin/bash
 
@@ -206,9 +178,7 @@ case &quot;${SSH_ORIGINAL_COMMAND}&quot; in
 esac
 root@avalon:/home/arthur/.ssh# 
 </code></pre>
-
 <p>De esta manera, podemos evaluar el comando solicitado por el usuario y permitir ejecutarlo o denegarlo según nos parezca conveniente:</p>
-
 <pre><code class="language-bash">arthur@camelot:~$ ssh -i id_avalon arthur@avalon
 Can only execute 'pwd' and 'whoami', sorry
 Connection to localhost closed.
@@ -220,11 +190,8 @@ arthur@camelot:~$ ssh -i id_avalon arthur@avalon ls
 Can only execute 'pwd' and 'whoami', sorry
 arthur@camelot:~$ 
 </code></pre>
-
-<h2 id="conclusión">Conclusión</h2>
-
+<h2>Conclusión</h2>
 <p>Estos ejemplos no son demasiado representativos del uso que le suelo dar en situaciones reales. Las peticiones suelen ser más complejas, sacando la información de una base de datos o del sistema operativo, cambiando su formato y usando otros lenguajes para conseguir lo que se necesita en cada momento.</p>
-
 <p>Utilizando este método nos ahorramos las jaulas de forma fácil y sin renunciar a las facilidades que el sistema operativo original nos provee, como por ejemplo las librerías, intérpretes u otros binarios.</p>
 
 <div id="disqus_thread"></div>

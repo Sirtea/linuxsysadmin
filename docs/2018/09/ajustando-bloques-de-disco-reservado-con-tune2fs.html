@@ -53,9 +53,7 @@
 </p>
 
 <p>Llega el momento que tantas veces hemos repetido: montamos un servidor para una función concreta, y le asignamos un disco o partición a la carpeta que va a alojar la cantidad creciente de datos necesarios. De repente nos fijamos en que la capacidad del disco se ha perdido tras formatear.</p>
-
 <p>No, no es una broma; solo tenemos que ver un ejemplo. Supongamos que asignamos un disco de 1 terabyte (no son difíciles ni caros de comprar hoy en día) a una máquina que lo va a necesitar para alojar todo lo referente a un entorno con <strong>docker</strong>.</p>
-
 <pre><code class="language-bash">gerard@docker:~$ df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
 ...
@@ -63,41 +61,30 @@ S.ficheros     Tamaño Usados  Disp Uso% Montado en
 /dev/sdb1       1007G    77M  956G   1% /var/lib/docker
 gerard@docker:~$
 </code></pre>
-
 <p><strong>¿Véis en <code>/dev/sdb1</code> que el tamaño usado y el disponible no coinciden con el tamaño del disco? Hay 50 gigabytes desaparecidos!</strong></p>
-
 <p>Este es un fenómeno que se da al formatear un disco con formato ext2, ext3 o ext4. Esto es así porque, muchas veces, este tipo de particiones sirven para alojar ficheros de sistema. Cuando estas particiones se llenan, el sistema deja de funcionar como es debido.</p>
-
 <p>La solución que los desarrolladores de los sistemas de ficheros extX encontraron fue la de reservar un bloque del disco (un 5% por defecto) al que solo puede acceder <strong>root</strong> o algún servicio que ejecute como <strong>root</strong>. Esto es fácil de comprobar:</p>
-
 <pre><code class="language-bash">gerard@docker:~$ sudo tune2fs -l /dev/sdb1 | egrep -i &quot;block (count|size)&quot;
 Block count:              268435200
 Reserved block count:     13421760
 Block size:               4096
 gerard@docker:~$
 </code></pre>
-
 <p>Vemos que se han reservado 13421760 bloques de 4096 bytes (un 5% de todos los bloques). Usando la calculadora, nos salen 51,2 gigabytes, que es la cantidad en la que difiere el comando <code>df</code>.</p>
-
 <p>Como esta partición no necesita un trato especial si se llena, podemos reducir el porcentaje de bloques reservados, exactamente a 0:</p>
-
 <pre><code class="language-bash">gerard@docker:~$ sudo tune2fs -m 0 /dev/sdb1
 tune2fs 1.43.4 (31-Jan-2017)
 Se pone el porcentaje de bloques reservados a 0% (0 bloques)
 gerard@docker:~$
 </code></pre>
-
 <p>Si volvemos a mirar con <code>tune2fs</code> los bloques reservados, veremos que ya no se reserva ninguno, que es el 0% solicitado.</p>
-
 <pre><code class="language-bash">gerard@docker:~$ sudo tune2fs -l /dev/sdb1 | egrep -i &quot;block (count|size)&quot;
 Block count:              268435200
 Reserved block count:     0
 Block size:               4096
 gerard@docker:~$
 </code></pre>
-
 <p>Un nuevo vistazo con el comando <code>df</code> nos mostrará que ya no hay 50gb desaparecidos:</p>
-
 <pre><code class="language-bash">gerard@docker:~$ df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
 ...
@@ -105,28 +92,21 @@ S.ficheros     Tamaño Usados  Disp Uso% Montado en
 /dev/sdb1       1007G    77M 1007G   1% /var/lib/docker
 gerard@docker:~$
 </code></pre>
-
 <p>Puestos a revisar el tamaño de la reserva, podemos mirar la partición <code>/dev/sda1</code>. En esta partición reside el sistema operativo, y necesita algunos bloques reservados, por si acaso. Sin embargo, el tamaño de los discos crece y el tamaño reservado de forma porcentual, también; no es lo mismo reservar el 5% de 4gb que de 400gb&hellip;</p>
-
 <p>Personalmente creo que hay que dejar algún bloque reservado, pero con una partición de 8gb, el 5% son 400mb. Esto me parece una barbaridad, y creo que sobra espacio de emergencia. Si bajamos ese porcentaje al 1%, estaríamos hablando de 80mb de reserva, que son más que suficientes para acceder a liberar espacio si se llenara.</p>
-
 <pre><code class="language-bash">gerard@docker:~$ sudo tune2fs -m 1 /dev/sda1
 tune2fs 1.43.4 (31-Jan-2017)
 Se pone el porcentaje de bloques reservados a 1% (20966 bloques)
 gerard@docker:~$
 </code></pre>
-
 <p>Ahora podemos verificar que los bloques reservados bajan al 1%, lo que nos deja con 20966 bloques de 4096 bytes (unos 82mb).</p>
-
 <pre><code class="language-bash">gerard@docker:~$ sudo tune2fs -l /dev/sda1 | egrep -i &quot;block (count|size)&quot;
 Block count:              2096640
 Reserved block count:     20966
 Block size:               4096
 gerard@docker:~$
 </code></pre>
-
 <p>Así pues, liberamos unos 320mb, lo que nos deja algo más de espacio para lo que podamos necesitar.</p>
-
 <pre><code class="language-bash">gerard@docker:~$ df -h
 S.ficheros     Tamaño Usados  Disp Uso% Montado en
 ...

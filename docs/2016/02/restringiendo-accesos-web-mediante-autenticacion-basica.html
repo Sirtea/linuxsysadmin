@@ -53,11 +53,8 @@
 </p>
 
 <p>Algunas veces nos encontramos con la necesidad de restringir el acceso a algunos recursos web. Normalmente se suele implementar algún sistema de <em>login</em>, <em>cookies</em> o <em>sesiones</em>; no obstante, esta opción no siempre nos es posible, y tenemos que proteger esos recursos usando los mecanismos que nos ofrezca el servidor web.</p>
-
 <p><strong>ATENCIÓN</strong>: Este método es bastante simple, y se puede descodificar lo que manda el cliente; por eso se recomienda encarecidamente usar <strong>SSL</strong>, mediante el uso de <strong>HTTPS</strong>.</p>
-
 <p>Empezaremos instalando el servidor web y la herramienta de generación de certificados para usar con <strong>SSL</strong>.</p>
-
 <pre><code class="language-bash">root@server:~# apt-get install nginx-light openssl
 Leyendo lista de paquetes... Hecho
 Creando árbol de dependencias
@@ -75,11 +72,8 @@ Se utilizarán 2.148 kB de espacio de disco adicional después de esta operació
 ...
 root@server:~#
 </code></pre>
-
-<h2 id="generar-el-certificado-y-la-clave-de-la-ca">Generar el certificado y la clave de la CA</h2>
-
+<h2>Generar el certificado y la clave de la CA</h2>
 <p>Empezaremos por generar la clave de la CA, que va a servir para firmar el certificado que pondremos en el servidor.</p>
-
 <pre><code class="language-bash">root@server:~# openssl genrsa -des3 -out ca.key 4096
 Generating RSA private key, 4096 bit long modulus
 ..................................++
@@ -89,18 +83,13 @@ Enter pass phrase for ca.key:
 Verifying - Enter pass phrase for ca.key:
 root@server:~#
 </code></pre>
-
 <p>Ahora generamos el certificado de la CA. Lo generamos directamente firmado en un solo paso.</p>
-
 <pre><code class="language-bash">root@server:~# openssl req -new -x509 -days 365 -key ca.key -out ca.crt -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin&quot;
 Enter pass phrase for ca.key:
 root@server:~#
 </code></pre>
-
-<h2 id="generar-el-certificado-para-el-servidor-web">Generar el certificado para el servidor web</h2>
-
+<h2>Generar el certificado para el servidor web</h2>
 <p>Generamos la clave para el certificado del servidor web.</p>
-
 <pre><code class="language-bash">root@server:~# openssl genrsa -des3 -out server.key 4096
 Generating RSA private key, 4096 bit long modulus
 .....................................................................++
@@ -110,16 +99,12 @@ Enter pass phrase for server.key:
 Verifying - Enter pass phrase for server.key:
 root@server:~#
 </code></pre>
-
 <p>Ahora creamos un certificado para el servidor web.</p>
-
 <pre><code class="language-bash">root@server:~# openssl req -new -key server.key -out server.csr -subj &quot;/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=private.linuxsysadmin.tk&quot;
 Enter pass phrase for server.key:
 root@server:~#
 </code></pre>
-
 <p>Y lo firmamos con la clave y el certificado de la CA.</p>
-
 <pre><code class="language-bash">root@server:~# openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
 Signature ok
 subject=/C=ES/ST=Spain/L=Barcelona/O=LinuxSysadmin/CN=private.linuxsysadmin.tk
@@ -127,27 +112,20 @@ Getting CA Private Key
 Enter pass phrase for ca.key:
 root@server:~#
 </code></pre>
-
 <p><strong>TRUCO</strong>: Si la clave está protegida por una <em>passphrase</em>, se va a necesitar introducirla cada vez que se quiera levantar el servidor web. Nos lo podemos ahorrar con unos simples comandos, que dejará la clave como insegura.</p>
-
 <pre><code class="language-bash">root@server:~# mv server.key server.key.secure
 root@server:~# openssl rsa -in server.key.secure -out server.key
 Enter pass phrase for server.key.secure:
 writing RSA key
 root@server:~#
 </code></pre>
-
-<h2 id="montando-el-dominio-web">Montando el dominio web</h2>
-
+<h2>Montando el dominio web</h2>
 <p>Para habilitar <strong>SSL</strong> en un dominio, necesitamos la clave y el certificado del servidor, así que vamos a ponerlos en una carpeta pensado para tal efecto.</p>
-
 <pre><code class="language-bash">root@server:~# cp server.key /etc/ssl/private/
 root@server:~# cp server.crt /etc/ssl/certs/
 root@server:~#
 </code></pre>
-
 <p>Así quedarían los certificados una vez en su sitio.</p>
-
 <pre><code class="language-bash">root@server:~# tree /etc/ssl/
 /etc/ssl/
 ├── certs
@@ -159,9 +137,7 @@ root@server:~#
 2 directories, 3 files
 root@server:~#
 </code></pre>
-
 <p>Vamos a poner un fichero de configuración en <strong>nginx</strong>, que va a escuchar por el puerto 443 y con <strong>SSL</strong> habilitado. Indicamos también donde están los ficheros que servirá el <strong>nginx</strong>, la localización de los certificados y activamos la autenticación básica.</p>
-
 <pre><code class="language-bash">root@server:~# cat /etc/nginx/sites-enabled/private.linuxsysadmin.tk
 server {
         listen 443 ssl;
@@ -176,40 +152,28 @@ server {
 }
 root@server:~#
 </code></pre>
-
 <p>Ahora tenemos que crear un fichero tipo <em>.htpasswd</em> como los de <strong>apache</strong>. Crearemos primero la carpeta en donde lo vamos a dejar.</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /etc/nginx/auth
 root@server:~#
 </code></pre>
-
 <p>En la carpeta creada pondremos un fichero llamado <em>private</em> con un formato idéntico a los <em>.htpasswd</em> de <strong>apache</strong>. Aquí podríamos usar las herramientas de <strong>apache-utils</strong>, pero de momento nos conformaremos con crearlo con <strong>openssl</strong>.</p>
-
 <pre><code class="language-bash">root@server:~# echo &quot;admin:$(openssl passwd -crypt s3cr3t)&quot; &gt;&gt; /etc/nginx/auth/private
 root@server:~# cat /etc/nginx/auth/private
 admin:y6xasR0LI8mbg
 root@server:~#
 </code></pre>
-
 <p>Finalmente reiniciamos el servidor web para que aplique los cambios en la configuración.</p>
-
 <pre><code class="language-bash">root@server:~# service nginx restart
 root@server:~#
 </code></pre>
-
-<h2 id="comprobación-de-funcionamiento">Comprobación de funcionamiento</h2>
-
+<h2>Comprobación de funcionamiento</h2>
 <p>Es importante que nos acordemos de crear nuestro <em>document root</em> con algún contenido.</p>
-
 <pre><code class="language-bash">root@server:~# mkdir /www
 root@server:~# echo &quot;Private area&quot; &gt; /www/index.html
 root@server:~#
 </code></pre>
-
 <p>Si apuntamos un navegador al dominio configurado, y tras aceptar nuestro certificado autofirmado como excepción, deberíamos ver que se nos piden las credenciales en una ventana emergente.</p>
-
-<p><img src="/images/autenticacion-basica-credenciales.png" alt="Autenticación básica: credenciales" /></p>
-
+<p><img src="/images/autenticacion-basica-credenciales.png" alt="Autenticación básica: credenciales"></p>
 <p>Y con eso tenemos nuestro contenido protegido de los curiosos.</p>
 
 <div id="disqus_thread"></div>

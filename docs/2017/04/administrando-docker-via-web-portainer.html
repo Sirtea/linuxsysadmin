@@ -53,42 +53,30 @@
 </p>
 
 <p>El otro día me topé con un desarrollador que quiere desplegar sus contenedores <strong>Docker</strong> en el servidor de integración, pero no conoce la sintaxis del comando <em>docker</em> y prefiere una interfaz gráfica. Eso me llevó a investigar, buscando una opción bonita, funcional y ligera; al final, me topé con <strong>Portainer</strong>.</p>
-
 <p>Podemos encontrar la imagen en <strong>DockerHub</strong> en <a href="https://hub.docker.com/r/portainer/portainer/">este link</a>, así como una ligera descripción.</p>
-
 <blockquote>
 <p>Portainer is a lightweight management UI which allows you to easily manage your Docker host or Swarm cluster.
 Portainer is meant to be as simple to deploy as it is to use. It consists of a single container that can run on any Docker engine (Docker for Linux and Docker for Windows are supported).
 Portainer allows you to manage your Docker containers, images, volumes, networks and more ! It is compatible with the standalone Docker engine and with Docker Swarm.</p>
 </blockquote>
-
-<h2 id="instalación-de-portainer">Instalación de portainer</h2>
-
+<h2>Instalación de portainer</h2>
 <p>Levantar el contenedor no tiene ningún misterio; basta con seguir las instrucciones de <strong>DockerHub</strong> y las que nos pueda ofrecer la aplicación. Empezaremos haciendo un <code>docker pull portainer/portainer</code>, para tener la imagen en local y maravillarnos de su ligereza: se trata solo de 10mb.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker$ docker images
 REPOSITORY            TAG                 IMAGE ID            CREATED             SIZE
 portainer/portainer   latest              1ad990af4145        5 hours ago         9.96 MB
 gerard@aldebaran:~/docker$ 
 </code></pre>
-
 <p>Mirando <a href="http://portainer.io/install.html">la página web</a>, vemos que levantar el contenedor no tiene ninguna dificultad; se trata de ejecutar la imagen tal cual, exponiendo el puerto 9000 a nuestra máquina <em>host</em> de <strong>docker</strong>, para su fácil acceso vía web. También le voy a dar un nombre de contenedor para su fácil administración.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker$ docker run -d -p 9000:9000 --name portainer portainer/portainer
 afcc57cfb1d0002d7e43cbdd5e6fcd0c6ada594eeac62132722e25cbb4569270
 gerard@aldebaran:~/docker$ 
 </code></pre>
-
 <p>Apuntando el navegador a la dirección IP del <em>host</em>, con HTTP en el puerto 9000, vemos que ha levantado. La primera vez nos va a pedir una contraseña para el usuario <em>admin</em>, así que la rellenamos. Lo siguiente es declarar el <strong>Docker Engine</strong> o el <strong>Docker Swarm</strong> que queramos controlar. Como yo quiero controlar mi <strong>Docker Engine</strong> local, lo indico; y me salta una advertencia de que necesita el <em>unix socket</em> de <strong>docker</strong> mapeado en el contenedor.</p>
-
 <blockquote>
 <p>On Linux and when using Docker for Mac or Docker for Windows or Docker Toolbox, ensure that you have started Portainer container with the following Docker flag -v &ldquo;/var/run/docker.sock:/var/run/docker.sock&rdquo;</p>
 </blockquote>
-
 <p>Esto significa parar el contenedor y levantarlo de nuevo con el nuevo volumen. También significa que vamos a tener que introducir la contraseña para el usuario <em>admin</em>. Mirando <a href="https://portainer.readthedocs.io/en/stable/deployment.html#persist-portainer-data">la documentación</a>, vemos que nos basta con poner la carpeta <em>/data/</em> en un volumen del <em>host</em> para persistir las configuraciones.</p>
-
 <p>Esto nos alarga la línea de comandos a ejecutar y empieza a ser tedioso de poner. Como siempre, <strong>docker-compose</strong> al poder.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/portainer$ cat docker-compose.yml
 version: '2'
 services:
@@ -106,27 +94,16 @@ Creating network &quot;portainer_default&quot; with the default driver
 Creating portainer
 gerard@aldebaran:~/docker/portainer$ 
 </code></pre>
-
 <p>Tras poner por última vez la contraseña del usuario <em>admin</em> e indicar que queremos controlar la instancia local, ya tenemos la interfaz ejecutando.</p>
-
-<p><img src="/images/portainer-dashboard.jpg" alt="Portainer dashboard" /></p>
-
+<p><img src="/images/portainer-dashboard.jpg" alt="Portainer dashboard"></p>
 <p>En esta interfaz podremos lanzar todas las operaciones habituales cómodamente desde la web. Con ella podemos administrar las imágenes, los contenedores, las redes y los volúmenes.</p>
-
 <p><strong>AVISO</strong>: <strong>Portainer</strong> no tiene ningún sistema de persistencia y los comandos son enviados desde el formulario directamente al demonio de <strong>Docker</strong>; no se puede editar un contenedor creado, solo se puede recrearlo, de cero. Si os equivocáis, por ejemplo en una variable de entorno, no os queda más opción que recrear el contenedor entero.</p>
-
-<h2 id="plantillas">Plantillas</h2>
-
+<h2>Plantillas</h2>
 <p>Las plantillas son formas bonitas de levantar imágenes. Nos permiten elegir las plantillas con botones y luego nos dan un formulario prefabricado para rellenar variables de entorno. Nada más.</p>
-
 <p>Si usamos variables de entorno para configurar nuestros contenedores, son de gran ayuda. El conjunto básico de plantillas es muy limitado, pero se puede ampliar; nuevamente la respuesta está en <a href="https://portainer.readthedocs.io/en/stable/templates.html">la documentación</a>.</p>
-
 <p>Muy a <em>grosso</em> modo, las plantillas disponibles se declaran en un fichero <em>templates.json</em>, que se descarga remotamente y se indica su localización con el <em>docker command</em> <code>--templates http://portainer-templates/templates.json</code>.</p>
-
 <p>Este fichero se puede servir con cualquier servidor web del que dispongamos, o si no tenemos uno, podemos construir una imagen con <strong>nginx</strong>, por ejemplo. La documentación da detalles de como hacerlo.</p>
-
 <p>Yo mismo he creado mi propio contenedor <strong>nginx</strong> para servir mi fichero de plantillas, con <strong>Alpine Linux</strong>. No voy a poner como porque no es el <em>scope</em> de este artículo, pero si voy a actualizar el fichero <em>docker-compose.yml</em> para ver el resultado final.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/portainer$ cat docker-compose.yml 
 version: '2'
 services:
@@ -151,9 +128,7 @@ Creating portainer-templates
 Creating portainer
 gerard@aldebaran:~/docker/portainer$ 
 </code></pre>
-
 <p>Ahora solo queda crear un fichero con contenido adecuado de acuerdo a la documentación, que iremos actualizando a lo largo de la vida de nuestro proyecto. Solo voy a poner un <em>snippet</em> del fichero para que os hagáis una idea de como es:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/portainer$ cat volumes/templates/templates.json 
 [
     {
@@ -181,7 +156,6 @@ gerard@aldebaran:~/docker/portainer$
 ]
 gerard@aldebaran:~/docker/portainer$ 
 </code></pre>
-
 <p>En este caso dispondríamos de dos plantillas. La primera utiliza la imagen <em>acme/kittens</em> y necesita dos variables de entorno. La segunda utiliza la imagen <em>acme/mongo</em> y no necesita variables de entorno.</p>
 
 <div id="disqus_thread"></div>

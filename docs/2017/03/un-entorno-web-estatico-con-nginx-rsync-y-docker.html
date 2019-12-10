@@ -53,25 +53,17 @@
 </p>
 
 <p>Hemos hablado de generar nuestro contenido HTML estático con otras herramientas, y finalmente ha llegado la hora de servirlo. Normalmente, los ficheros que cambian tal y como vamos generando páginas son pocos y nos interesa copiarlo de forma remota, pero no podemos hacerlo con <strong>docker</strong> porque hacen falta dos servicios.</p>
-
 <p>Si has asentido con la cabeza, mal. Es verdad que se necesitan dos servicios, pero hay maneras de ejecutar dos procesos en un mismo contenedor, por ejemplo <a href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">con un gestor de procesos</a>. Sin embargo, esa no es la filosofía de <strong>docker</strong>. Un contenedor solo debería ejecutar un proceso, simplificando su contenido y siendo necesarios varios contenedores para hacer nuestro sistema modular.</p>
-
 <p>Así que solo nos queda pensar las partes que tiene nuestro pequeño entorno, para luego levantar contenedores que ejecuten todos los servicios necesarios, posiblemente con <strong>docker-compose</strong>:</p>
-
 <ul>
 <li>Un servidor web</li>
 <li>Un servicio de transferencia de archivos</li>
 <li>Algún sitio compartido para dejar los ficheros</li>
 </ul>
-
 <p><strong>TRUCO</strong>: Puesto que ambos servicios van a necesitar acceder al mismo sitio, necesitamos volúmenes. Sin embargo, no queremos mezclar los datos con ninguno de los otros contenedores, ya que en caso de actualizarlos, perderíamos el volumen. Eso nos deja dos opciones: un <em>host volume</em> o un <em>data container</em>, que usaremos por portabilidad.</p>
-
-<h2 id="el-servidor-web">El servidor web</h2>
-
+<h2>El servidor web</h2>
 <p>Vamos a utilizar <strong>nginx</strong> por su eficiencia y velocidad. Consume poco, ocupa poco, y es simple de configurar. Como ligereza adicional, vamos a partir de una imagen de <em>Alpine Linux</em>.</p>
-
 <p>La imagen no tiene misterio: un <em>Dockerfile</em>, un fichero de arranque ejecutable y dos ficheros de configuración.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb/web$ cat Dockerfile 
 FROM alpine:3.5
 RUN apk add --no-cache nginx tini &amp;&amp; \
@@ -110,15 +102,10 @@ server {
 }
 gerard@aldebaran:~/docker/syncweb/web$ 
 </code></pre>
-
 <p>Vamos a asumir que la carpeta <code>/srv/www/</code> existe, puesto que la montaremos como un volumen.</p>
-
-<h2 id="transfiriendo-ficheros">Transfiriendo ficheros</h2>
-
+<h2>Transfiriendo ficheros</h2>
 <p>Dada la naturaleza incremental de nuestro contenido HTML, nos viene muy bien utilizar <strong>rsync</strong>, que funciona sobre <strong>ssh</strong> y nos aporta encriptación, compresión y copia diferencial. Vamos a restringir el uso del <strong>ssh</strong> mediante <strong>rssh</strong>, permitiendo solamente usar <strong>rsync</strong>.</p>
-
 <p>Nuevamente vamos a partir de una imagen <em>Alpine Linux</em>, que es pequeña, segura y en este caso nos sirve de maravilla. Creamos la imagen con un simple <em>Dockerfile</em> y un fichero de arranque, con permiso de ejecución.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb/rsync$ cat Dockerfile 
 FROM alpine:3.5
 RUN apk add --no-cache openssh rsync rssh tini &amp;&amp; \
@@ -136,15 +123,10 @@ ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
 exec /usr/sbin/sshd -D -e
 gerard@aldebaran:~/docker/syncweb/rsync$ 
 </code></pre>
-
 <p>Lo más interesante de decir es que la carpeta <code>/srv/www/</code> va a ser montada como volumen. Como no podemos asegurar que los permisos sean correctos, los forzamos al usuario <em>web</em>, que es el que va a poder entrar por <strong>rsync</strong>. Otro punto a tener en cuenta es que se ha movido la creación de la clave de <em>host</em> al fichero <em>start.sh</em> para evitar duplicarla a base de crear contenedores a partir de la clave de la imagen.</p>
-
-<h2 id="el-contenedor-de-datos">El contenedor de datos</h2>
-
+<h2>El contenedor de datos</h2>
 <p>Se trata de un contenedor que va a acabar tras levantar. Su única función es albergar un volumen de datos para exportarlo a otros contenedores.</p>
-
 <p>Lo crearemos usando una imagen mínima, que solo tiene el comando <em>true</em>, así podemos ejecutar un comando que no hace nada y no cargamos nada adicional. Le ponemos un contenido básico, que nos permite ver que todo funciona y que luego será sustituido mediante <strong>rsync</strong>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb/data$ cat Dockerfile 
 FROM tianon/true
 COPY index.html /srv/www/
@@ -153,13 +135,9 @@ gerard@aldebaran:~/docker/syncweb/data$ cat index.html
 &lt;p&gt;This is a placeholder file&lt;/p&gt;
 gerard@aldebaran:~/docker/syncweb/data$ 
 </code></pre>
-
 <p>Este contenedor solamente ejecuta <em>true</em> y acaba. Sin embargo, su volumen sigue siendo accesible por aquellos contenedores que lo exporten.</p>
-
-<h2 id="todo-junto">Todo junto</h2>
-
+<h2>Todo junto</h2>
 <p>Antes que nada creamos las imágenes, según los comandos habituales:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ docker build -t data data/
 ...  
 gerard@aldebaran:~/docker/syncweb$ docker build -t web web/
@@ -168,9 +146,7 @@ gerard@aldebaran:~/docker/syncweb$ docker build -t rsync rsync/
 ...  
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Comprobamos las imágenes que hemos creado, viendo que se han hecho bien y que ocupan una cantidad de espacio razonable.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED              SIZE
 rsync               latest              cb33669eb5f6        54 seconds ago       8.77 MB
@@ -178,9 +154,7 @@ web                 latest              1ae71f497ae0        About a minute ago  
 data                latest              cc6555822fd9        About a minute ago   180 B
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Y ya solo nos queda levantar el entorno con <strong>docker-compose</strong>, por ejemplo con un <em>docker-compose.yml</em> como el que sigue:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ cat docker-compose.yml 
 version: '2'
 services:
@@ -213,30 +187,22 @@ Creating rsync
 Creating web
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>De esta forma, todos importan el contenedor de datos, y podemos copiar ficheros por <strong>rsync</strong> al puerto 22, y ver la web en el puerto 8000. Cambiad estos valores según vuestras necesidades.</p>
-
-<h2 id="comprobaciones">Comprobaciones</h2>
-
+<h2>Comprobaciones</h2>
 <p>Vemos que si hacemos una petición normal, nos devuelve el contenido inicial.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ curl http://localhost:8000/
 &lt;h1&gt;Hello world&lt;/h1&gt;
 &lt;p&gt;This is a placeholder file&lt;/p&gt;
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Eso significa que el servidor web funciona y está sirviendo el contenido del contenedor de datos. Ahora vamos a probar que el contenedor <strong>rsync</strong> puede actualizar este contenido. Para comodidad lo he puesto en un <em>script</em>.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ cat sync.sh 
 #!/bin/bash
 
 rsync -rvzc --delete content/ web@localhost:/srv/www/
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Asumimos que tenemos la carpeta <code>content/</code> con otro fichero <em>index.html</em>. Lo he creado a mano para la prueba, pero esto podría aparecer generado por un <a href="/2017/03/generadores-de-contenido-web-estaticos.html">generador de contenido estático</a>. Lanzamos el <em>script</em> por primera vez:</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ ./sync.sh 
 Warning: Permanently added 'localhost' (RSA) to the list of known hosts.
 web@localhost's password: 
@@ -248,17 +214,13 @@ sent 182 bytes  received 41 bytes  63.71 bytes/sec
 total size is 60  speedup is 0.27
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>El fichero <em>index.html</em> ha cambiado, así que lo vuelve a enviar, y por supuesto, es lo que el servidor web va a servir, cosa que demuestra que también hace uso del contenedor de datos.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ curl http://localhost:8000/
 &lt;h1&gt;My autogenerated blog&lt;/h1&gt;
 &lt;p&gt;This is the home page&lt;/p&gt;
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Para comprobar el carácter incremental de <strong>rsync</strong>, vamos a añadir un nuevo fichero <em>.html</em> y a ejecutar de nuevo. En caso de un generador estático, veremos que solo se enviarían las nuevas páginas y aquellos índices que hayan cambiado, resultando en una ganancia alta, a nivel de tamaño enviado y tiempo invertido.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ ./sync.sh 
 Warning: Permanently added 'localhost' (RSA) to the list of known hosts.
 web@localhost's password: 
@@ -270,9 +232,7 @@ sent 179 bytes  received 35 bytes  47.56 bytes/sec
 total size is 71  speedup is 0.33
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Solo ha enviado el fichero nuevo, puesto que es un cambio con respecto a lo que ya tiene. De hecho, de no haber cambios, no se enviaría nada.</p>
-
 <pre><code class="language-bash">gerard@aldebaran:~/docker/syncweb$ ./sync.sh 
 Warning: Permanently added 'localhost' (RSA) to the list of known hosts.
 web@localhost's password: 
@@ -283,7 +243,6 @@ sent 128 bytes  received 12 bytes  56.00 bytes/sec
 total size is 71  speedup is 0.51
 gerard@aldebaran:~/docker/syncweb$ 
 </code></pre>
-
 <p>Y con esto tenemos nuestro pequeño entorno funcional.</p>
 
 <div id="disqus_thread"></div>

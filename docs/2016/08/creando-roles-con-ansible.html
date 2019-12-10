@@ -53,17 +53,11 @@
 </p>
 
 <p>Ya vimos que es muy fácil crear varias máquinas iguales con <strong>ansible</strong>. A veces nos puede interesar disponer de recetas y decidir en un <em>playbook</em> general cuales de ellas ponemos en cada servidor. Una receta podría añadir un servidor de aplicaciones mientras que otra podría habilitarnos una bases de datos.</p>
-
 <p>Esto nos permite combinar las recetas para desplegar toda la funcionalidad de nuestro servicio, distribuyéndolas entre nuestros servidores de acuerdo a las necesidades. Como ejemplo, podríamos poner el servidor de <em>PHP</em> y el de <em>MySQL</em> en recetas distintas; pondríamos las 2 en el mismo servidor para un entorno de test, y podríamos separar los servicios entre servidores (incluso replicando) en entornos mas profesionales.</p>
-
 <p>Para esta demostración, vamos a crear <em>roles</em> para un entorno de un balanceador y dos servidores web normales. En ambos casos, el servicio estándar va a ser <strong>nginx</strong>, lo que nos abre a la posibilidad de reusar partes comunes, usando dependencias entre ellos.</p>
-
 <p>También podemos encontrar roles prefabricados y listos para usarse en <a href="https://galaxy.ansible.com/">Ansible Galaxy</a>.</p>
-
-<h2 id="el-entorno">El entorno</h2>
-
+<h2>El entorno</h2>
 <p>Disponemos de 3 máquinas en el entorno, y de otra máquina desde la que lanzaremos los <em>playbooks</em>. Hemos utilizado los contenedores <strong>Docker</strong> de <a href="/2016/06/controlando-contenedores-docker-con-ansible.html">otro artículo</a> por comodidad.</p>
-
 <pre><code class="language-bash">~ # cat inventory/hosts 
 [balancer]
 slave1
@@ -87,13 +81,9 @@ slave3 | SUCCESS =&gt; {
 }
 ~ # 
 </code></pre>
-
-<h2 id="como-crear-un-rol">Como crear un rol</h2>
-
+<h2>Como crear un rol</h2>
 <p>Lo primero para entender que es un rol y como funcionan es mirar en <a href="http://docs.ansible.com/ansible/playbooks_roles.html#roles">la documentación</a>. Es especialmente interesante saber que tiene cada carpeta y para que sirve; solo voy a explicar las que usemos.</p>
-
 <p>Lanzamos el comando <strong>ansible-galaxy</strong> para crear un rol vacío:</p>
-
 <pre><code class="language-bash">~ # ansible-galaxy init --offline roles/test
 - roles/test was created successfully
 ~ # tree roles/test/
@@ -118,25 +108,17 @@ roles/test/
 8 directories, 8 files
 ~ # 
 </code></pre>
-
 <p>Las carpetas mas interesantes son la de <em>tasks</em> la de <em>meta</em>, la de <em>files</em> y la de <em>templates</em>.</p>
-
 <ul>
-<li><strong>tasks</strong> &rarr; es donde se ponen los pasos a ejecutar en el <em>playbook</em>.</li>
-<li><strong>meta</strong> &rarr; es donde se especifican las dependencias con otros roles.</li>
-<li><strong>files</strong> y <strong>templates</strong> &rarr; aquí se ponen los ficheros que se utilizan en los módulos de ficheros y de plantillas, respectivamente.</li>
+<li><strong>tasks</strong> → es donde se ponen los pasos a ejecutar en el <em>playbook</em>.</li>
+<li><strong>meta</strong> → es donde se especifican las dependencias con otros roles.</li>
+<li><strong>files</strong> y <strong>templates</strong> → aquí se ponen los ficheros que se utilizan en los módulos de ficheros y de plantillas, respectivamente.</li>
 </ul>
-
 <p>A partir de aquí se trata de eliminar las que no usemos y rellenar las que sí vayamos a usar.</p>
-
-<h2 id="diseño-de-roles">Diseño de roles</h2>
-
+<h2>Diseño de roles</h2>
 <p>Queremos preparar 2 tipos distintos de máquinas: el balanceador y los servidores web. En ambos casos se trata de instalar <strong>nginx</strong>, poner una configuración para la tarea que desempeñen, y en caso de los servidores web, poner el contenido estático.</p>
-
-<p>Vamos a crear un <em>role</em> para el balanceador, y otro para los servidores web. Siguiendo la filosofía <a href="https://es.wikipedia.org/wiki/No_te_repitas">DRY (Don&rsquo;t repeat yourself)</a>, vamos a delegar la instalación de <strong>nginx</strong> a un tercer <em>role</em>, que a su vez será una dependencia para los otros dos.</p>
-
+<p>Vamos a crear un <em>role</em> para el balanceador, y otro para los servidores web. Siguiendo la filosofía <a href="https://es.wikipedia.org/wiki/No_te_repitas">DRY (Don't repeat yourself)</a>, vamos a delegar la instalación de <strong>nginx</strong> a un tercer <em>role</em>, que a su vez será una dependencia para los otros dos.</p>
 <p>Eso nos da 3 roles, con una estructura de ficheros simple; un rol para el <strong>nginx</strong> que solo ejecuta tareas, otro para el balanceador (con la dependencia y los ficheros auxiliares) y otro rol para el servidor web (con la dependencia y sus ficheros).</p>
-
 <pre><code class="language-bash">~ # tree roles/
 roles/
 ├── balancer
@@ -161,11 +143,8 @@ roles/
 10 directories, 8 files
 ~ # 
 </code></pre>
-
-<h3 id="el-rol-de-nginx">El rol de nginx</h3>
-
+<h3>El rol de nginx</h3>
 <p>El único propósito de este rol es instalar <strong>nginx</strong>, retirar el <em>site</em> que viene por defecto, y asegurar que esté corriendo el servicio (en contenedores <strong>docker</strong> no se levantan tras instalarse). La idea es que el resto de roles van a poner una configuración y a recargar el <strong>nginx</strong> para aplicarla; así que de momento, nos vale.</p>
-
 <pre><code class="language-bash">~ # cat roles/nginx/tasks/main.yml 
 ---
 - name: Install nginx
@@ -176,25 +155,17 @@ roles/
   service: name=nginx state=started
 ~ # 
 </code></pre>
-
 <p>El resto de carpetas son innecesarias, así que las borramos.</p>
-
-<h3 id="el-rol-web">El rol web</h3>
-
+<h3>El rol web</h3>
 <p>Este rol espera tener <strong>nginx</strong> instalado y se limita a poner la configuración del mismo, así como el contenido web.</p>
-
 <p>El primer paso es declarar que tenemos una dependencia con el rol <em>nginx</em>. Esto se hace en la carpeta <em>meta</em>, y nos asegura que se habrá ejecutado antes el rol <em>nginx</em>.</p>
-
 <pre><code class="language-bash">~ # cat roles/web/meta/main.yml 
 dependencies:
   - nginx
 ~ # 
 </code></pre>
-
 <p>Ahora podemos especificar los pasos para tener nuestro rol completo, partiendo de un rol <em>nginx</em> aplicado. Básicamente se trata de poner la directiva <em>server</em> que nos interese, el contenido web en <em>/var/www/html</em> y hacer un <em>reload</em> del <strong>nginx</strong>.</p>
-
 <p>Como punto interesante, se han usado plantillas para crear los ficheros destino. Esto nos permite crear las configuraciones basándonos en variables, que vendrán del <em>playbook</em> general. En el caso concreto de la configuración del <strong>nginx</strong> no era necesario usar plantillas porque no usa variables; se podría haber puesto el fichero en la carpeta <em>files</em> y usar el módulo <em>copy</em>.</p>
-
 <pre><code class="language-bash">~ # cat roles/web/tasks/main.yml 
 ---
 - name: Put content virtualhost
@@ -205,9 +176,7 @@ dependencies:
   service: name=nginx state=reloaded
 ~ # 
 </code></pre>
-
 <p>Finalmente, necesitamos poner las plantillas en <em>templates</em>, siguiendo la sintaxis adecuada.</p>
-
 <pre><code class="language-bash">~ # cat roles/web/templates/web.j2 
 server {
 	root /var/www/html;
@@ -217,23 +186,16 @@ server {
 Hello from {{ name }}
 ~ # 
 </code></pre>
-
 <p>Eliminamos todas las carpetas que no nos sirven, y hemos acabado.</p>
-
-<h3 id="el-rol-balancer">El rol balancer</h3>
-
+<h3>El rol balancer</h3>
 <p>Partiendo de que tenemos <strong>nginx</strong> instalado, solo hay que poner una configuración concreta para que se haga balanceo, tras lo que haremos un <em>reload</em> del <strong>nginx</strong>.</p>
-
 <p>Como en el caso anterior, tenemos que declarar la dependencia con el rol <em>nginx</em>.</p>
-
 <pre><code class="language-bash">~ # cat roles/balancer/meta/main.yml 
 dependencies:
   - nginx
 ~ # 
 </code></pre>
-
 <p>Los pasos, de forma análoga al caso anterior, se ponen en la carpeta <em>tasks</em>.</p>
-
 <pre><code class="language-bash">~ # cat roles/balancer/tasks/main.yml 
 ---
 - name: Put balancer virtualhost
@@ -242,9 +204,7 @@ dependencies:
   service: name=nginx state=reloaded
 ~ # 
 </code></pre>
-
 <p>Y finalmente ponemos la plantilla para la configuración en <em>templates</em>. Nuevamente esperamos la variable <em>backends</em> desde el <em>playbook</em> principal, que es una lista de servidores de <em>backend</em>.</p>
-
 <pre><code class="language-bash">~ # cat roles/balancer/templates/balancer.j2 
 upstream backends {
 {% for backend in backends %}
@@ -260,15 +220,10 @@ server {
 }
 ~ # 
 </code></pre>
-
 <p>Y limpiamos el resto de carpetas.</p>
-
-<h2 id="usando-los-roles">Usando los roles</h2>
-
+<h2>Usando los roles</h2>
 <p>Disponemos de tres máquinas, accesibles desde la red, con los nombres <em>slave1</em>, <em>slave2</em> y <em>slave3</em>. Como hemos visto en el fichero de inventario, el <em>slave1</em> va a ejercer de balanceador, mientras que los otros dos harán de servidores web.</p>
-
 <p>Para ello solo hay que asignarles el rol que les toca, con las variables que estos roles necesitan. Teniendo los roles preparados, es tan fácil como indicar que servidor hace cada rol, indicando las variables que nos interesan en este entorno concreto.</p>
-
 <pre><code class="language-bash">~ # cat myenv.yml 
 - name: Install balancer
   hosts: balancer
@@ -284,9 +239,7 @@ server {
       name: &quot;web_{{ ansible_hostname }}&quot;
 ~ # 
 </code></pre>
-
 <p>Lanzamos el <em>playbook</em>, para que nos monte nuestro entorno:</p>
-
 <pre><code class="language-bash">~ # ansible-playbook -i inventory/ myenv.yml 
 
 PLAY [Install balancer] ********************************************************
@@ -346,9 +299,7 @@ slave3                     : ok=7    changed=6    unreachable=0    failed=0
 
 ~ # 
 </code></pre>
-
 <p>Y verificamos que todo funciona como debe:</p>
-
 <pre><code class="language-bash">~ # for i in `seq 1 8`; do wget -qO- http://slave2:80/; done
 Hello from web_slave2
 Hello from web_slave2
@@ -378,10 +329,8 @@ Hello from web_slave2
 Hello from web_slave3
 ~ # 
 </code></pre>
-
 <p>En caso de cambiar a un entorno con 8 servidores web, podemos usar los roles que tenemos y solamente cambiar <em>myenv.yml</em>.</p>
-
-<p><strong><em>Fácil, ¿no?</em></strong></p>
+<p><em><strong>Fácil, ¿no?</strong></em></p>
 
 <div id="disqus_thread"></div>
 <script type="application/javascript">

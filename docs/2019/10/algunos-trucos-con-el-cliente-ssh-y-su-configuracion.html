@@ -56,37 +56,28 @@
 SSH. Sin embargo, tanta funcionalidad tiene un precio, que es la dificultad de
 descubrirlos todos y, a la larga, nos quedamos con solo unos pocos. Otro problema
 es la creciente longitud de nuestras líneas de comandos.</p>
-
 <p>Por suerte, disponemos de dos herramientas muy útiles que nos permiten ir descubriendo
 y utilizando este servicio tan imprescindible como omnipresente:</p>
-
 <ul>
 <li>Una magnífica documentación, sea el <strong>man</strong>, el <em>flag</em> <code>--help</code> o páginas de internet.</li>
 <li>Una configuración cliente, tanto a nivel de sistema como a nivel de usuario.</li>
 </ul>
-
 <p>En este artículo pretendo dejar constancia de algunas configuraciones interesantes
 que suelo utilizar en mi día a día, utilizando la configuración cliente en <code>~/.ssh/config</code>
 para limitar bastante la longitud de mis líneas de comandos.</p>
-
-<h2 id="las-host-keys-y-los-cierres-de-sesión">Las <em>host keys</em> y los cierres de sesión</h2>
-
+<h2>Las <em>host keys</em> y los cierres de sesión</h2>
 <p>No hay nada más molesto que regenerar un servidor y tener a SSH quejándose porque
 han canviado las <em>host keys</em>, lo que interpreta como una suplantación de identidad
 del servidor &ldquo;conocido&rdquo;, aunque es exactamente lo que queríamos&hellip;</p>
-
 <p><strong>TRUCO</strong>: Utilizamos la directiva <code>StrictHostKeyChecking no</code> para que no lo verifique.
 Adicionalmente, podemos hacer que no se guarde la relación entre la IP del servidor y su
 <em>host key</em>, indicando que lo &ldquo;guarde&rdquo; en <code>/dev/null</code> utilizando la directiva <code>UserKnownHostsFile</code></p>
-
 <p>Otro problema que se me presenta a menudo es el de sesiones SSH que se han cerrado de forma
 automática tras un periodo de inactividad, tal como un descanso o una reunión. En estos casos,
 podemos hacer que el mismo SSH cliente mande <em>keepalives</em> para mantener la sesión abierta.
 Basta indicarle los segundos entre <em>keepalive</em> con la directiva <code>ServerAliveInterval</code>.</p>
-
 <p>Aplicando estas directivas en todas las conexiones por defecto, se consigue poniendo una
 configuración como la siguiente en nuestra configuración cliente:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ cat .ssh/config
 ...
 Host *
@@ -96,30 +87,23 @@ Host *
 ...
 gerard@debian:~$ 
 </code></pre>
-
-<h2 id="parámetros-de-conexión-por-servidor">Parámetros de conexión por servidor</h2>
-
+<h2>Parámetros de conexión por servidor</h2>
 <p>Otro de los problemas habituales trabajando con SSH son las líneas de comandos infinitamente
 largas por necesitar una cantidad considerable de parámetros. Por poner un ejemplo:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ ssh -i .ssh/id_ec2  -p 2222 ec2-user@ec2-xxx-xxx-xxx-xxx.compute-x.amazonaws.com
 ...
 gerard@debian:~$ 
 </code></pre>
-
 <p>Esto no es fácil de recordar ni agradable de escribir. Por suerte, SSH nos permite
 declarar un nombre arbitrario con la directiva <code>Host</code> y aplicar otras directivas
 que aplican para esa conexión:</p>
-
 <ul>
-<li><code>Hostname</code> &rarr; Para indicar el nombre real o la dirección del servidor.</li>
-<li><code>Port</code> &rarr; Para indicar el puerto que debe usar SSH para hacer la conexión.</li>
-<li><code>User</code> &rarr; Para indicar el usuario con el que queremos entrar en el servidor.</li>
-<li><code>IdentityFile</code> &rarr; Ruta de la clave SSH cliente que hay que utilizar para la conexión.</li>
+<li><code>Hostname</code> → Para indicar el nombre real o la dirección del servidor.</li>
+<li><code>Port</code> → Para indicar el puerto que debe usar SSH para hacer la conexión.</li>
+<li><code>User</code> → Para indicar el usuario con el que queremos entrar en el servidor.</li>
+<li><code>IdentityFile</code> → Ruta de la clave SSH cliente que hay que utilizar para la conexión.</li>
 </ul>
-
 <p>Con estas opciones podemos declarar la conexión anterior en <code>~/.ssh/config</code> de la siguiente forma:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ cat .ssh/config
 ...
 Host webserver
@@ -130,26 +114,20 @@ Host webserver
 ...
 gerard@debian:~$ 
 </code></pre>
-
 <p>El resultado es la capacidad de usar el nombre <code>webserver</code> para aglutinar las opciones;
 en caso de tener instalado el paquete <strong>bash-completion</strong> dispondremos de la función de
 autocompletar con la tecla TAB&hellip;</p>
-
 <pre><code class="language-bash">gerard@debian:~$ ssh webserver
 ...
 gerard@debian:~$ 
 </code></pre>
-
-<h2 id="aplicar-opciones-comunes-a-varios-servidores">Aplicar opciones comunes a varios servidores</h2>
-
+<h2>Aplicar opciones comunes a varios servidores</h2>
 <p>Muchas veces trabajamos con varios servidores que comparten nombre de usuario, puertos
 u otros parámetros SSH. En estos casos, podemos declarar la lista de servidores en la
 directiva <code>Host</code>, separados por espacios. Es posible también especificar patrones con
 los carácteres <code>*</code> (0 o más carácteres), <code>?</code> (exactamente un carácter) o <code>!</code> (negación).</p>
-
 <p>Para complementar esta declaración global, es posible que un <em>host</em> esté referenciado
 en varios bloques tipo <code>Host</code>, aplicando en caso de duda el bloque más específico.</p>
-
 <pre><code class="language-bash">gerard@debian:~$ cat .ssh/config
 ...
 Host appserver* database
@@ -170,31 +148,24 @@ Host database
 ...
 gerard@debian:~$ 
 </code></pre>
-
 <p>En este caso haríamos SSH utilizando los nombres <strong>appserver01</strong>, <strong>appserver02</strong> y
 <strong>database</strong>. El puerto por defecto sería el 2222 y el usuario sería <code>gerard</code>, aunque
 en el caso de <strong>appserver02</strong> cambiamos el puerto por el 2223 y en el caso de <strong>database</strong>
 cambiamos el usuario por <code>mongo</code>.</p>
-
-<h2 id="usando-máquinas-de-salto-intermedias">Usando máquinas de salto intermedias</h2>
-
+<h2>Usando máquinas de salto intermedias</h2>
 <p>Un patrón muy usado es el de entrar en un sistema a través de un solo <em>host</em> altamente
 auditado, a través del que obtenemos visibilidad del resto de servidores. Como ejecutar
 dos veces el comando <code>ssh</code> no era cómodo, se inventó una forma de suprimir ese salto
 utilizando la directiva <code>ProxyCommand</code> como escribí en <a href="/2018/01/usando-un-bastion-ssh.html">un artículo anterior</a>.</p>
-
 <p>Tan frecuente era esta forma de trabajar que el cliente OpenSSH acabó haciéndolo oficial
 a través de la directiva <code>ProxyJump</code> (o el parámetro <code>-J</code> de <code>ssh</code>). Eso simplifica la
 línea de comandos hasta el punto de indicar el salto en el propio comando:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ ssh -J gateway hiddenserver
 ...
 gerard@debian:~$ 
 </code></pre>
-
 <p>Podemos hacerlo más simple todavía escondiendo ese parámetro en la configuración SSH
 cliente, para dejar el comando en un solo <code>ssh hiddenserver</code>:</p>
-
 <pre><code class="language-bash">gerard@debian:~$ cat .ssh/config
 ...
 Host hiddenserver
@@ -202,7 +173,6 @@ Host hiddenserver
 ...
 gerard@debian:~$ 
 </code></pre>
-
 <p><strong>TRUCO</strong>: Podemos indicar un <em>host</em> <code>gateway</code> para esconder sus parámetros de conexión.
 Si optamos por usar claves SSH, van individualmente para <code>gateway</code> y para <code>hiddenserver</code>,
 pero en ambos casos se utilizan las claves privadas locales y no hay que poner nada en <code>gateway</code>.</p>

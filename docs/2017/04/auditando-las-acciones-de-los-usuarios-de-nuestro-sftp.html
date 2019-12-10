@@ -53,39 +53,28 @@
 </p>
 
 <p>Algunas veces me he encontrado con usuarios de alguno de mis servidores SFTP que se quejan porque &ldquo;les desaparecen archivos&rdquo;. Si estamos seguros que esas desapariciones no tienen nada que ver con nosotros, lo mas probable es que lo hayan hecho los mismos usuarios, sea manualmente o de forma automática.</p>
-
 <p>En casos así, no podemos hacer nada para demostrar cuando y porqué ha pasado, pero podemos pillar al usuario <em>in fraganti</em> en casos posteriores. Para eso solo es necesario habilitar un nivel de trazas que nos permita capturar la actividad de un usuario.</p>
-
 <p>El mismo servidor SFTP nos enviará esta actividad al <em>rsyslog</em> de forma automática si habilitamos el <em>loglevel</em> adecuado a nuestro comando SFTP. A partir de aquí se asume que el servicio <em>rsyslog</em> está instalado en nuestro sistema.</p>
-
 <pre><code class="language-bash">admin@sftpserver:~$ cat /etc/ssh/ssh_config 
 ...
 ForceCommand internal-sftp -l VERBOSE
 ...
 admin@sftpserver:~$ 
 </code></pre>
-
 <p>Esta directiva nos va a enviar las trazas al <em>rsyslog</em> escribiendo los mensajes en <em>/dev/log</em>, <strong>siempre desde el punto de vista de la sesión activa</strong>. Eso significa que si hemos enjaulado a nuestros usuarios, la posición del dispositivo no será la de siempre; un usuario enjaulado en <em>/srv/jails/guest/</em> debería tener el dispositivo en <em>/srv/jails/guest/dev/log</em>.</p>
-
 <p>La parte buena es que el mismo <em>rsyslog</em> se encarga de crear ese dispositivo para nosotros, con la configuración adecuada. Solo necesitamos crear la carpeta <em>dev/</em> en la jaula de nuestro usuario y añadir la directiva correcta.</p>
-
 <pre><code class="language-bash">admin@sftpserver:~$ mkdir /srv/jails/guest/dev
 admin@sftpserver:~$ 
 </code></pre>
-
 <p>El otro punto espinoso es que la configuración del <em>rsyslog</em> no lleva ninguna regla por defecto para guardar esos <em>logs</em> en ningún fichero. Con añadir una nueva línea a la configuración de nuestro <em>rsyslog</em> será suficiente.</p>
-
 <p>Podemos añadir ambas directivas mediante un fichero de configuración nuevo, utilizando la carpeta <em>/etc/rsyslog.d/</em>, como sigue:</p>
-
 <pre><code class="language-bash">admin@sftpserver:~$ cat /etc/rsyslog.d/jails.conf 
 $AddUnixListenSocket /srv/jails/guest/dev/log
 
 :programname, isequal, &quot;internal-sftp&quot; -/var/log/sftp.log
 admin@sftpserver:~$ 
 </code></pre>
-
 <p>Y tras recargar la configuración de los servicios SFTP y <em>rsyslog</em>, habremos acabado y podremos ver el resultado funcionando, asumiendo que haya entrado alguna sesión desde la recarga de los servicios.</p>
-
 <pre><code class="language-bash">admin@sftpserver:~$ cat /var/log/sftp.log
 Nov 24 11:02:31 sftpserver internal-sftp[32]: session opened for local user guest from [172.17.0.1]
 Nov 24 11:02:31 sftpserver internal-sftp[32]: received client version 3
@@ -105,9 +94,7 @@ Nov 24 11:03:12 sftpserver internal-sftp[32]: remove name &quot;/archives/testfi
 Nov 24 11:03:16 sftpserver internal-sftp[32]: session closed for local user guest from [172.17.0.1]
 admin@sftpserver:~$ 
 </code></pre>
-
 <p>La lectura de estos <em>logs</em> es todo un arte; solo quiero recalcar que las sesiones se indican mediante el PID del <em>internal-sftp</em> y que las acciones son bastante descriptivas. En este caso solo hay una sesión que es la número 32.</p>
-
 <p>Si intentamos entender lo que se ha hecho en esta sesión, vemos que las acciones mas importantes son el <em>open/close</em> de <em>testfile</em>, en modo de escritura y tras escribir 12 <em>bytes</em>. Poco después, en la misma sesión, se ha borrado el fichero. El resto de acciones se disparan cuando nos movemos por las carpetas.</p>
 
 <div id="disqus_thread"></div>
