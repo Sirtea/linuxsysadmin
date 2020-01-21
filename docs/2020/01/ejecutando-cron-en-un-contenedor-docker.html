@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Ejecutando cron en un contenedor Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Ejecutando cron en un contenedor Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2020-01-21
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/cron.html">cron</a>
+</p>
+
+<p>A veces nos conviene ejecutar tareas de forma periodica en nuestro servidor,
+y para ello disponemos de <strong>cron</strong> y de <strong>anacron</strong>. Sin embargo, en un entorno
+clusterizado de <strong>Docker</strong> no es fácil decidir en qué máquina lo ponemos o
+simplemente necesitamos que pueda acceder a alguna red <em>overlay</em>.</p>
+<p>En estos casos es necesario que el servicio <strong>cron</strong> ejecute en un contenedor
+dentro de nuestra infraestructura <strong>Docker</strong> y para ello se necesitan algunas
+modificaciones en el servicio, ya que la forma en la que está hecho <strong>cron</strong>
+no permite el uso correcto en un contenedor de forma correcta.</p>
+<ul>
+<li>La salida de nuestros comandos no se ve en un <code>docker logs</code></li>
+<li>Las variables de entorno no aparecen en los <em>jobs</em> de nuestro <strong>cron</strong></li>
+</ul>
+<p>Afortunadamente, ambas tienen solución, pero hay que entender qué es lo que
+pasa, y porqué <strong>cron</strong> y <strong>Docker</strong> no colaboran todo lo bien que se desearía.</p>
+<h2>Estado inicial</h2>
+<p>Creamos una imagen de <strong>docker</strong> con el único entendido que debe ejecutar
+<strong>cron</strong> en <em>foreground</em> (para que el contenedor no acabe inmediatamente), y
+le suministramos el fichero <code>crontab</code> con un comando cualquiera.</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat Dockerfile 
+FROM debian:buster-slim
+RUN apt update &amp;&amp; apt install -y --no-install-recommends cron &amp;&amp; rm -rf /var/lib/apt/lists/*
+CMD [&quot;/usr/sbin/cron&quot;, &quot;-f&quot;]
+COPY job.sh /
+COPY crontab /etc/
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat crontab 
+* * * * * root /job.sh
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat job.sh 
+#!/bin/bash
+
+echo &quot;Hello ${NAME}&quot;!
+echo &quot;.&quot; &gt;&gt; /tmp/job.log
+gerard@atlantis:~/dockercron$ chmod 755 job.sh 
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<p>Solo nos queda construir la imagen, de la manera habitual:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ docker build -t dockercron .
+...
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<p>Y ejecutamos nuestro contenedor:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ docker run --rm -e NAME=gerard --name myjob dockercron
+...
+</code></pre>
+<p>Se supone que esto ejecuta cada minuto, pero no vemos salida estándar. Podemos
+comprobar que se está ejecutando nuestro <em>script</em> si miramos el número de líneas
+del fichero de <em>log</em>, que con el tiempo debería incrementar:</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker exec myjob wc -l /tmp/job.log
+1 /tmp/job.log
+gerard@atlantis:~$ docker exec myjob wc -l /tmp/job.log
+2 /tmp/job.log
+gerard@atlantis:~$ 
+</code></pre>
+<h2>Recogiendo la salida de nuestros <em>jobs</em></h2>
+<p><strong>IMPORTANTE</strong>: La salida que vemos en <code>docker logs</code> y en el <code>docker run</code>,
+<strong>es la salida del proceso con PID 1</strong>, y no veremos ninguna otra salida.</p>
+<p>En este caso, <strong>cron</strong> ejecuta como proceso con PID 1, y cada vez que ejecuta
+un <em>job</em> crea un subproceso (digamos que tiene PID 2). Este ejecuta nuestro
+comando (digamos PID 3). La salida estándar del proceso con PID 3 se corresponde
+con la del proceso con PID 2, y es por esto que podemos recogerla en el <em>crontab</em>.</p>
+<p>Esta salida podemos escribirla en <code>/dev/null</code> o en un fichero, según nuestras
+necesidades, pero <strong>jamás llegará a la salida del PID 1</strong>. Eso es algo que
+tenemos que hacer nosotros explícitamente.</p>
+<p>Para ello necesitamos saber algunas cosas referentes a los <em>file descriptors</em>:</p>
+<ul>
+<li>Los <em>file descriptors</em> de un proceso con PID 123 estan en <code>/proc/123/fd/</code>
+<ul>
+<li>El <em>file descriptor</em> 0 es la entrada estándar</li>
+<li>El <em>file descriptor</em> 1 es la salida estándar</li>
+<li>El <em>file descriptor</em> 2 es la salida de error</li>
+</ul>
+</li>
+<li>El proceso en ejecución (por ejemplo 123) se puede encontrar en <code>/proc/self</code> (es un <em>soft link</em> a <code>/proc/123</code>)</li>
+<li>Los dispositivos <code>/dev/std*</code> son <em>soft links</em> a <code>/proc/self/fd/</code>
+<ul>
+<li><code>/dev/stdin</code> es un <em>soft link</em> a <code>/proc/self/fd/0</code></li>
+<li><code>/dev/stdout</code> es un <em>soft link</em> a <code>/proc/self/fd/1</code></li>
+<li><code>/dev/stderr</code> es un <em>soft link</em> a <code>/proc/self/fd/2</code></li>
+</ul>
+</li>
+</ul>
+<p>Sabiendo esto, vemos que el <em>cron job</em> del ejemplo estaría escribiendo su salida
+en <code>/dev/stdout</code>, que siguiendo la cadena de <em>links</em> sería <code>/proc/self/fd/1</code> que
+finalmente sería <code>/proc/2/fd/1</code>. Si quisiéramos escribir en la salida del proceso
+con PID 1, deberíamos escribir en <code>/proc/1/fd/1</code>.</p>
+<p>En el único sitio que podemos hacer esto en el proceso con PID 2 (que es el que
+puede escribir la salida y sabemos seguro que ejecuta como <strong>root</strong>; nuestro
+<em>script</em> podría ejecutar con otro usuario). Llegados a este punto, solo tenemos
+que modificar nuestro fichero <code>/etc/crontab</code>:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat crontab 
+* * * * * root /job.sh &gt;/proc/1/fd/1 2&gt;/proc/1/fd/2
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<p>Reconstruimos la imagen y ejecutamos de nuevo:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ docker run --rm -e NAME=gerard --name myjob dockercron
+Hello !
+Hello !
+...
+</code></pre>
+<h2>Accediendo a las variables de entorno</h2>
+<p>La salida anterior nos muestra que la variable de entorno NAME no llega al <em>script</em>.
+Esto es porque <strong>cron</strong> crea un entorno de ejecución vacío de dichas variables y
+no traspasa las que pusimos en el contenedor.</p>
+<p>Esto no tiene solución; la única opción que nos queda es la de hacer un <code>source</code>
+de un fichero con las variables de entorno que nos convengan. Este fichero se puede
+generar en un <em>script</em> inicial que acabe invocando a <strong>cron</strong>, pero por simplicidad
+voy a ponerlo a mano, solamente para exponer la solución.</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat envvars 
+export NAME=gerard
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<p>Por supuesto, hay que copiarlo en la imagen (o usar secretos y configuraciones),
+y hay que indicar al <em>cron job</em> que se haga el <code>source</code> antes de lanzar nuestro
+<em>script</em>, para que éste pueda encontrar las variables adecuadamente rellenadas.</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat Dockerfile 
+FROM debian:buster-slim
+RUN apt update &amp;&amp; apt install -y --no-install-recommends cron &amp;&amp; rm -rf /var/lib/apt/lists/*
+CMD [&quot;/usr/sbin/cron&quot;, &quot;-f&quot;]
+COPY job.sh /
+COPY crontab /etc/
+COPY envvars /
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat crontab 
+* * * * * root . /envvars; /job.sh &gt;/proc/1/fd/1 2&gt;/proc/1/fd/2
+gerard@atlantis:~/dockercron$ 
+</code></pre>
+<p><strong>TRUCO</strong>: El comando <code>source</code> no parece funcionar en el <em>cron job</em>. Le he
+reemplazado por el comando <code>.</code> que funciona y, que en teoría, hace lo mismo.</p>
+<p>Y tras hacer el correspondiente <em>build</em>, todo debería funcionar según lo esperado:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ docker run --rm --name myjob dockercron
+Hello gerard!
+Hello gerard!
+...
+</code></pre>
+<p>Para una versión automatizada podéis mirar en <a href="https://github.com/Sirtea/dockerfiles/tree/master/cron/debian">GitHub</a> y su correspondiente
+en <a href="https://hub.docker.com/repository/docker/sirrtea/cron">DockerHub</a>, lo que nos simplificaría el caso anterior a lo siguiente:</p>
+<pre><code class="language-bash">gerard@atlantis:~/dockercron$ cat env.list 
+CRON_INTERVAL=* * * * *
+CRON_USER=root
+CRON_COMMAND=echo Hello ${NAME}
+CRONENV_NAME=gerard
+gerard@atlantis:~/dockercron$ docker run --rm --env-file env.list sirrtea/cron:debian
+Hello gerard
+Hello gerard
+...
+</code></pre>
+<p>Y gracias a estos trucos ya podemos crear contenedores para lanzar nuestras
+tareas automatizadas y periodicas; por ejemplo podríamos utilizarlo para lanzar
+un <em>backup</em> a un servidor o <em>cluster</em> de base de datos que solo fuera accesible
+desde una red <em>overlay</em>, beneficiándonos del nombre del servicio DNS.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
