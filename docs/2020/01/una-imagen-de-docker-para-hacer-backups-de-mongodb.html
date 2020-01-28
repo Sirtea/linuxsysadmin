@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Una imagen de Docker para hacer backups de MongoDB - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Una imagen de Docker para hacer backups de MongoDB</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2020-01-28
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/backup.html">backup</a>
+</p>
+
+<p>Uno de los aspectos que voy dejando de lado en mis artículos es el tema de los
+<em>backups</em>; suele bastar con ejecutar algún comando o <em>script</em> en una tarea tipo
+<strong>cron</strong>. Si el servicio <strong>mongodb</strong> se encuentra en <strong>docker</strong>, a veces queda
+inaccesible fuera de <strong>docker</strong> y hay que <em>dockerizar</em> el <em>backup</em>.</p>
+<p>De esta forma, el contenedor que ejecuta los <em>backups</em> tiene acceso a las redes
+definidas dentro del propio <strong>docker</strong> y puede acceder cómodamente por nombre
+de servicio. Ya de paso, este contenedor de <em>backup</em> queda declarado en nuestros
+<em>stacks</em> y no corremos el riesgo de perder las tareas <strong>cron</strong> si se nos cae el
+servidor o lo cambiamos en un futuro.</p>
+<p>Para hacer un contenedor de <em>backups</em>, solo necesitamos 2 cosas:</p>
+<ul>
+<li>Las herramientas para hacer el <em>backup</em></li>
+<li>Una forma de lanzar tareas cada cierto tiempo</li>
+</ul>
+<p>Ya vimos en otros artículos el <a href="/2020/01/ejecutando-cron-en-un-contenedor-docker.html">uso de <strong>cron</strong> en un contenedor</a> u otro caso
+de <a href="/2018/05/un-cron-alternativo-con-go-go-cron.html">uso de un <strong>cron</strong> alternativo</a>, pero seamos sinceros: en el mundo de
+<strong>docker</strong> la simplicidad cuenta, y un <em>script</em> puede ser una prueba de concepto
+fácil, de esas que suelen quedarse de forma permanente.</p>
+<p><strong>NOTA</strong>: Si se quiere reemplazar el contenedor en el futuro por uno con un
+<strong>cron</strong> decente, es posible; pero queda como tarea para el lector.</p>
+<h2>Decisiones de diseño</h2>
+<p>Para hacer una imagen parametrizable, vamos a tomar algunas decisiones de diseño:</p>
+<ul>
+<li>Vamos a configurar el <em>scheduler</em> con variables de entorno
+<ul>
+<li><code>DELAY</code> indica el tiempo de espera hasta la primera ejecución (opcional)</li>
+<li><code>INTERVAL</code> indica el intervalo entre ejecuciones</li>
+</ul>
+</li>
+<li>Vamos a configurar el comando de <em>backup</em> con otras variables de entorno
+<ul>
+<li><code>MONGODB_URI</code> es la cadena de conexión a nuestro objetivo (el segmento de base de datos se puede omitir, para hacerlas todas)</li>
+<li><code>FILENAME</code> es la plantilla del nombre de fichero que se va a generar, con el <em>path</em> completo a guardar</li>
+</ul>
+</li>
+</ul>
+<h2>Una posible implementación</h2>
+<p><strong>NOTA</strong>: Voy a poner los tiempos al comando <code>sleep</code> y el FILENAME al comando
+<code>date</code>; más información sobre su formato en la documentación de cada uno.</p>
+<p>Con estas especificaciones de configuración, el <em>scheduler</em> es un ejercicio
+de <em>scripting</em> simple. Solamente voy a acabar el comando <code>mongodump</code> con un <code>&amp;</code>
+para que el tiempo de ejecución del <em>backup</em> no retrase la espera del
+siguiente intervalo.</p>
+<pre><code class="language-bash">gerard@atlantis:~/Escritorio/mongobackup$ cat build/scheduler.sh 
+#!/bin/bash
+
+test -n &quot;${MONGODB_URI}&quot; || { echo &quot;MONGODB_URI not defined&quot; &gt;&amp;2; exit 1; }
+test -n &quot;${FILENAME}&quot; || { echo &quot;FILENAME not defined&quot; &gt;&amp;2; exit 1; }
+test -n &quot;${INTERVAL}&quot; || { echo &quot;INTERVAL not defined&quot; &gt;&amp;2; exit 1; }
+
+sleep ${DELAY:-0}
+while true; do
+	mongodump --uri=${MONGODB_URI} --archive=$(date +${FILENAME}) --gzip &amp;
+	sleep ${INTERVAL}
+done
+gerard@atlantis:~/Escritorio/mongobackup$ 
+</code></pre>
+<p><strong>TRUCO</strong>: Podemos mover el comando <code>mongodump</code> a un <em>script</em> propio, que puede
+hacer más comandos con el fichero resultado, como por ejemplo, subirlo o un (S)FTP
+o a un <em>storage</em> en la nube. Sed creativos en este punto.</p>
+<p>La construcción de la imagen tampoco entraña ninguna complejidad; basta con
+seguir el <a href="https://docs.mongodb.com/manual/administration/install-on-linux/">procedimiento de instalación</a> para la imagen base elegida, o
+utilizar <a href="https://hub.docker.com/_/mongo">una imagen que ya lo contenga</a>, añadir el <em>scheduler</em> y ejecutarlo
+como proceso del contenedor.</p>
+<pre><code class="language-bash">gerard@atlantis:~/Escritorio/mongobackup$ cat build/Dockerfile 
+FROM debian:buster-slim
+RUN apt update &amp;&amp; \
+    apt install -y wget gnupg &amp;&amp; \
+    wget -qO- https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add - &amp;&amp; \
+    echo &quot;deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main&quot; &gt; /etc/apt/sources.list.d/mongodb-org-4.2.list &amp;&amp; \
+    apt update &amp;&amp; \
+    apt install -y mongodb-org-tools &amp;&amp; \
+    rm -rf /var/lib/apt/lists/*
+COPY scheduler.sh /
+CMD [&quot;/scheduler.sh&quot;]
+gerard@atlantis:~/Escritorio/mongobackup$ 
+</code></pre>
+<p><strong>NOTA</strong>: Si partimos de la imagen oficial de <strong>mongodb</strong>, sería tan fácil
+como copiar el <em>script</em> y declarar el <code>CMD</code> (esto no lo he probado).</p>
+<h2>Probando la solución</h2>
+<p>Para ver que la solución funciona, solo necesitamos un servicio <strong>mongodb</strong>
+ejecutando en un entorno <strong>docker</strong>. Podemos hacer un único servicio de <em>backup</em>
+para todo el servicio de datos, pero soy de la opinión que esto es innecesario;
+hay bases de datos que no necesitan <em>backup</em> y cada aplicación es reponsable
+de los datos que quiera guardar. Voy a hacer un servicio por base de datos.</p>
+<p>Para simplificar, voy a tener una única base de datos y un servicio de <em>backup</em>
+para la misma, en un entorno <em>docker swarm</em> de un solo nodo. Si este <em>cluster</em>
+creciera o se modificara, sería el encargado de recolocar los servicios de datos
+y de <em>backup</em> necesarios, sin tener que modificar la URI de <strong>mongo</strong> o las
+tareas <strong>cron</strong> de los servidores.</p>
+<p>Esta podría ser una declaración posible de los servicios:</p>
+<pre><code class="language-bash">gerard@atlantis:~/Escritorio/mongobackup$ cat stack.yml 
+version: '3'
+services:
+  mongo:
+    image: sirrtea/mongo:debian
+  backup:
+    image: mongobackup
+    volumes:
+      - backups:/backup
+    environment:
+      DELAY: 10s
+      INTERVAL: 1m
+      MONGODB_URI: mongodb://mongo/shop
+      FILENAME: /backup/shop_%Y%m%d_%H%M%S.archive.gz
+volumes:
+  backups:
+gerard@atlantis:~/Escritorio/mongobackup$ 
+</code></pre>
+<p>Desplegamos el <em>stack</em> como solemos hacerlo:</p>
+<pre><code class="language-bash">gerard@atlantis:~/Escritorio/mongobackup$ docker stack deploy -c stack.yml database
+Creating network database_default
+Creating service database_mongo
+Creating service database_backup
+gerard@atlantis:~/Escritorio/mongobackup$ 
+</code></pre>
+<p><strong>WARNING</strong>: En este punto, nos damos cuenta de que los <em>backups</em> se guardan
+en un volumen; no es lo ideal y habría que moverlos fuera de la infraestructura
+habitual a un servicio de acumulación de datos de forma segura y redundada.</p>
+<p>Podemos ver que funciona mirando los <em>logs</em> del servicio o buscando el nodo
+del <em>swarm</em> en el que se ejecuta, en donde habrá un volumen local (por definición
+del <em>stack</em>). Como solo tenemos un nodo, este paso es trivial.</p>
+<pre><code class="language-bash">gerard@atlantis:~/Escritorio/mongobackup$ docker service logs database_backup
+database_backup.1.mea109mwyoo2@atlantis    | 2020-01-10T11:43:43.449+0000	writing shop.fruits to archive '/backup/shop_20200110_114343.archive.gz'
+database_backup.1.mea109mwyoo2@atlantis    | 2020-01-10T11:43:43.452+0000	done dumping shop.fruits (3 documents)
+gerard@atlantis:~/Escritorio/mongobackup$ 
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~$ sudo tree -h /var/lib/docker/volumes/database_backups
+/var/lib/docker/volumes/database_backups
+└── [4.0K]  _data
+    ├── [ 110]  shop_20200110_114143.archive.gz
+    ├── [ 110]  shop_20200110_114243.archive.gz
+    └── [ 371]  shop_20200110_114343.archive.gz
+
+1 directory, 3 files
+gerard@atlantis:~$ 
+</code></pre>
+<p>Podemos comprobar que han pasado tres intervalos de tiempo (definidos como 1 minuto),
+y que el tercero ha incorporado algunos documentos (que he añadido a mano). Como
+curiosidad, el comando <code>mongodump</code> no tiene salida en las dos primeras ejecuciones
+(que es cuando la base de datos no existía todavía).</p>
+<p><strong>WARNING</strong>: Hacer un <em>backup</em> cada minuto puede matar el rendimiento de vuestro servidor;
+como prueba de concepto nos sirve, pero <strong>no hagáis esto</strong> en un entorno real.</p>
+<h2>Conclusión</h2>
+<p>A partir de aquí, ya tenemos <em>backups</em>; cambiar el <em>script</em> de <em>backup</em> o el mecanismo
+de tareas recurrentes es una mejora que podemos hacer en un futuro. Lo importante
+es que se ejecute el comando <code>mongodump</code> y que el resultado esté a buen recaudo.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
