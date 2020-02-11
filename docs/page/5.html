@@ -46,6 +46,10 @@
 
 <h1>Linux Sysadmin</h1>
 
+<h2 class="article"><a href="/2019/01/generando-entropia-con-rng-tools.html">Generando entropía con rng-tools</a></h2>
+<p>Cada vez que intento crear claves GPG me doy por vencido y paso de hacerlo. El motivo es que es un proceso que tarda una barbaridad, especialmente en los entornos virtuales por los que me suelo mover. Eso es porque el dispositivo <code>/dev/random</code> no recibe suficiente aleatoriedad sin ayuda.</p>
+<p><a class="article" href="/2019/01/generando-entropia-con-rng-tools.html">Seguir leyendo</a></p>
+<hr />
 <h2 class="article"><a href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Protegiendo sistemas Linux con una autenticación de dos factores</a></h2>
 <p>El otro día tuve un auditor de seguridad imponiendo sus criterios arbitrarios; quería que cierto servidor seguro no fuera accesible si no era con una autenticación de 2 factores. Aunque personalmente no lo veo útil, me tocó ceder a sus exigencias y aquí he anotado como lo hice: con <strong>libpam-google-authenticator</strong>.</p>
 <p><a class="article" href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Seguir leyendo</a></p>
@@ -82,10 +86,6 @@
 <p>Estaba yo el otro día intentando montar un <strong>jenkins</strong> con acceso al binario de <strong>docker</strong> y <strong>python</strong>. Como no quería instalar <strong>jenkins</strong>, me limité a extender la imagen <a href="https://hub.docker.com/r/jenkins/jenkins/">jenkins/jenkins</a> para dotarlo de las herramientas necesarias, como <a href="/2016/09/lanzando-playbooks-de-ansible-desde-jenkins.html">ya hicimos con ansible</a> que, aunque funciona, no es ni elegante ni escalable.</p>
 <p><a class="article" href="/2018/11/un-entorno-de-jenkins-distribuido-en-contenedores.html">Seguir leyendo</a></p>
 <hr />
-<h2 class="article"><a href="/2018/11/verificando-peticiones-json-con-jsonschema.html">Verificando peticiones JSON con jsonschema</a></h2>
-<p>A medida que las empresas confían más y más en las APIs REST, los datos que viajan en formato JSON ha incrementado notablemente. Con este incremento, los errores por mensajes mal formados también se ha incrementado; esto nos obliga a validar los mensajes, no solamente de sintaxis, sino de semántica.</p>
-<p><a class="article" href="/2018/11/verificando-peticiones-json-con-jsonschema.html">Seguir leyendo</a></p>
-<hr />
 
 <p class="pagination">
 	<a href="/">&laquo;&laquo;</a>
@@ -111,8 +111,9 @@
 	<a href="/page/19.html">19</a>
 	<a href="/page/20.html">20</a>
 	<a href="/page/21.html">21</a>
+	<a href="/page/22.html">22</a>
 	<a href="/page/6.html">&raquo;</a>
-	<a href="/page/21.html">&raquo;&raquo;</a>
+	<a href="/page/22.html">&raquo;&raquo;</a>
 </p>
 <p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 

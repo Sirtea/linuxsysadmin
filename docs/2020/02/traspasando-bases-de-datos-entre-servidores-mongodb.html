@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Traspasando bases de datos entre servidores MongoDB - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Traspasando bases de datos entre servidores MongoDB</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2020-02-11
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/mongodb.html">mongodb</a> / <a href="/tag/mongodump.html">mongodump</a> / <a href="/tag/mongorestore.html">mongorestore</a>
+</p>
+
+<p>Cuando hacemos proyectos simples que requieren el uso de una base de datos <strong>mongodb</strong>
+es habitual poner un servidor simple y poco potente para salir del paso. A veces,
+estos proyectos empiezan a crecer en número y en importancia y necesitamos plantearnos
+su traspaso a <em>hardware</em> más potente o a una topología tipo <em>cluster</em>.</p>
+<p>En estos casos nos encontramos con la necesidad de juntar bases de datos provenientes
+de varios servidores menores, y no es una tarea simple; podemos utilizar las facilidades
+de las <em>replica sets</em> para clonar un servidor en caliente, pero no de varios, ya que
+la nueva sincronización desecharía las sincronizaciones anteriores.</p>
+<p>Antes podíamos utilizar <em>helper</em> <code>copydb</code> adecuado para la ocasión, pero según la
+documentación, esto va a dejar de ser una opción en un futuro próximo:</p>
+<blockquote>
+<p>Deprecated since version 4.0: MongoDB deprecates copydb and its helper db.copyDatabase().</p>
+</blockquote>
+<p>La recomendación por parte de los creadores es utilizar el combo <code>mongodump</code> / <code>mongorestore</code>,
+que se encadenarían utilizando <em>unix pipes</em> para no necesitar siquiera un fichero
+intermedio. Ambos comandos funcionan con la salida y la entrada estándar, haciendo
+este procedimiento fácil, y permitiendo incluso usar SSH como capa de transporte.</p>
+<h2>Situación inicial</h2>
+<p>Tenemos dos proyectos: un <em>blog</em> y una tienda. Cada uno utiliza un servidor de <strong>mongodb</strong>
+distinto, distribuido de esta forma:</p>
+<ul>
+<li><strong>server01</strong> → Es donde guardamos la base de datos del <em>blog</em></li>
+<li><strong>server02</strong> → Alberga los datos de nuestra tienda virtual</li>
+<li><strong>server03</strong> → Es el nuevo servidor, más potente, y debería agrupar ambas bases de datos</li>
+</ul>
+<p>Por simplicidad, cada uno de estos servidores es una instancia solitaria de <strong>mongodb</strong>
+que expone su puerto 27017 a otros servidores de la red interna (que es donde están
+los servidores de aplicación).</p>
+<h2>Procedimiento</h2>
+<p>Como sabemos, el comando <code>mongodump</code> y el comando <code>mongorestore</code> funcionan conectándose
+a un servidor <strong>mongodb</strong>, ya sea en local o en remoto. A veces estos remotos no están
+disponibles vía red por políticas de seguridad, o por formar parte de redes distintas.</p>
+<p>Así que disponemos de varias opciones:</p>
+<ol>
+<li>Sacar un <code>mongodump</code> en un fichero, moverlo de servidor y hacer el <code>mongorestore</code></li>
+<li>Levantar una VPN o un túnel SSH para que haya acceso directo al puerto origen y destino</li>
+<li>Utilizar <code>mongodump</code> y <code>mongorestore</code> a través de SSH directamente</li>
+</ol>
+<p><strong>TRUCO</strong>: Los comandos <code>mongodump</code> y <code>mongorestore</code> funcionan con parámetros de red
+individuales y con URIs con el <em>flag</em> <code>--uri</code>. Esto nos permite poner orígenes y destinos
+más complejos, como por ejemplo <em>replica sets</em>, autenticación o <em>read preferences</em>.</p>
+<p><strong>WARNING</strong>: Para que los comandos <code>mongodump</code> y <code>mongorestore</code> trabajen con la salida
+y la entrada estándar necesitan el <em>flag</em> <code>--archive</code>, sin especificar el destino; esto
+hará que asuman la lectura y la escritura desde la consola.</p>
+<h3>Si tenemos conectividad directa o indirecta</h3>
+<p>Supongamos que <strong>server01</strong> y <strong>server03</strong> están en la misma red y se pueden comunicar
+por el puerto 27017 si restricciones. Este es el caso más simple. Basta con ejecutar
+los dos comandos en una máquina cualquiera especificando correctamente los servidores
+origen y destino (que por defecto serían <em>localhost</em>).</p>
+<pre><code class="language-bash">gerard@server01:~$ mongodump -d blog --archive --gzip | mongorestore -h server03 --archive --gzip --drop
+...
+gerard@server01:~$ 
+</code></pre>
+<p>Alternativamente podemos lanzar desde cualquier servidor que tenga las <em>tools</em> instaladas:</p>
+<pre><code class="language-bash">gerard@server03:~$ mongodump -h server01 -d blog --archive --gzip | mongorestore --archive --gzip --drop
+...
+gerard@server03:~$ 
+</code></pre>
+<pre><code class="language-bash">gerard@adminserver:~$ mongodump -h server01 -d blog --archive --gzip | mongorestore -h server03 --archive --gzip --drop
+...
+gerard@adminserver:~$ 
+</code></pre>
+<h3>Si podemos llegar por SSH a alguno de los servidores</h3>
+<p>Supongamos que <strong>server02</strong> y <strong>server03</strong> no son accesibles por red. Sin embargo,
+como <em>sysadmins</em> tenemos acceso a ambos desde una máquina administrativa. El truco
+es simple: lanzamos el <code>mongodump</code> en la máquina origen por SSH y en la salida estándar;
+luego utilizamos una <em>unix pipe</em> para insertar esa salida en la entrada de un
+<code>mongorestore</code> lanzado por SSH contra el servidor destino.</p>
+<pre><code class="language-bash">gerard@sirius:~$ ssh server02 mongodump -d shop --archive --gzip | ssh server03 mongorestore --archive --gzip --drop
+...
+gerard@sirius:~$ 
+</code></pre>
+<p><strong>TRUCO</strong>: La máquina <strong>sirius</strong> no dispone de <code>mongodump</code> ni <code>mongorestore</code> instalados;
+se ejecutan dichos comandos en los servidores <strong>server02</strong> y <strong>server03</strong> respectivamente.</p>
+<h2>Conclusión</h2>
+<p>Tras mover cada base de datos a <strong>server03</strong>, nuestras aplicaciones pueden cambiar
+su fuente de datos fácilmente (suponiendo que ese parámetro sea configurable), y si
+lo hemos hecho bien, ganaremos los beneficios por los que pusimos el nuevo servidor,
+que puede ser por alguno de los siguientes motivos:</p>
+<ul>
+<li>Mejor <em>hardware</em> (más rápido, más memoria, más capacidad, &hellip;)</li>
+<li>Un <em>cluster</em> con alta disponibilidad y/o con alto rendimiento</li>
+<li>Un solo punto grande que administrar, en contra de varios pequeños</li>
+</ul>
+<p><strong>TRUCO</strong>: Este traspaso de bases de datos puede ser gradual; podemos ir desmantelando
+servidores y reconfigurando las aplicaciones a medida que podamos. No es necesario
+mover todas las bases de datos de golpe.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
