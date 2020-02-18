@@ -4,17 +4,62 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2020-02-11T00:00:00+00:00</lastmod>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/balanceador.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2020-02-11T00:00:00+00:00</lastmod>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/healthcheck.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/https.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2020-02-11T00:00:00+00:00</lastmod>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/nginx.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2020/02/usando-un-balanceador-nginx-en-un-entorno-docker-swarm.html</loc>
+    <lastmod>2020-02-18T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -38,27 +83,12 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
-    <lastmod>2020-02-11T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/2020/02/traspasando-bases-de-datos-entre-servidores-mongodb.html</loc>
     <lastmod>2020-02-11T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/backup.html</loc>
-    <lastmod>2020-01-28T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
-    <lastmod>2020-01-28T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
     <lastmod>2020-01-28T00:00:00+00:00</lastmod>
   </url>
   
@@ -74,11 +104,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/2020/01/ejecutando-cron-en-un-contenedor-docker.html</loc>
-    <lastmod>2020-01-21T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
     <lastmod>2020-01-21T00:00:00+00:00</lastmod>
   </url>
   
@@ -183,11 +208,6 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/https.html</loc>
-    <lastmod>2019-11-25T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/tag/openssl.html</loc>
     <lastmod>2019-11-25T00:00:00+00:00</lastmod>
   </url>
@@ -214,11 +234,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/2019/11/hosting-multiple-de-aplicaciones-python-con-uwsgi.html</loc>
-    <lastmod>2019-11-11T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/nginx.html</loc>
     <lastmod>2019-11-11T00:00:00+00:00</lastmod>
   </url>
   
@@ -535,11 +550,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2019/06/restringiendo-los-comandos-ejecutables-con-ssh-y-un-par-de-claves.html</loc>
     <lastmod>2019-06-10T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/healthcheck.html</loc>
-    <lastmod>2019-06-03T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -915,11 +925,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2018/09/un-contenedor-multiservicio-con-docker-y-s6.html</loc>
     <lastmod>2018-09-24T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/balanceador.html</loc>
-    <lastmod>2018-09-17T00:00:00+00:00</lastmod>
   </url>
   
   <url>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Usando un balanceador Nginx en un entorno Docker Swarm - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Usando un balanceador Nginx en un entorno Docker Swarm</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2020-02-18
+	<strong>Tiempo de lectura</strong>: 10 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/nginx.html">nginx</a> / <a href="/tag/balanceador.html">balanceador</a> / <a href="/tag/healthcheck.html">healthcheck</a> / <a href="/tag/https.html">https</a>
+</p>
+
+<p>Cuando trabajamos en un entorno de varias aplicaciones tipo web o API nos solemos
+encontrar con la necesidad casi absoluta de poner un balanceador o <em>proxy reverso</em>;
+a veces es para balancear, otras es para la terminación SSL, y otras es para forzar
+la redirección a HTTPS. Para todas ellas nos sirve <strong>nginx</strong>.</p>
+<p>Si tenemos la suerte de poder trabajar en un <em>cluster</em> basado en <strong>docker swarm</strong>,
+podemos utilizar balanceadores que ya saben que ejecutan en <strong>docker</strong> y pueden
+reconfigurarse según sea necesario; de hecho, en este <em>blog</em> se ha intentado utilizar
+<strong>traefik</strong> en varias ocasiones, como por ejemplo <a href="/2018/09/un-balanceador-dinamico-para-docker-traefik.html">esta</a>, <a href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">esta</a> o <a href="/2019/10/un-entorno-productivo-basado-en-docker-swarm-4.html">esta otra</a>.</p>
+<p><strong>Traefik</strong> es una gran herramienta una vez que ha sido configurada, pero su
+configuración es un poco difícil, con unas directivas cambiantes entre versiones,
+una documentación escasa y una cantidad de despliegues limitada. De hecho, sigo
+intentando hacer que <a href="https://letsencrypt.org/es/">Let’s Encrypt</a> funcione correctamente en el <em>swarm</em>.</p>
+<p>Al final, siempre me acabo decantando por soluciones más conocidas, siendo <strong>nginx</strong>
+mi favorita. Será por su configuración simple, la gran cantidad de recursos <em>online</em>
+con los que contamos, o simplemente por la gran familiaridad que le tengo; por eso
+decidí acabar usándolo en mis entorno <em>swarm</em>.</p>
+<p>El truco es simple: solo hay que tener en cuenta que la configuración del balanceador
+puede cambiar, los certificados también, y que necesitamos tener plena seguridad de
+que, en caso de un despliegue, haya alguna de las <em>replicas</em> del servicio funcional.
+Y todo esto ya lo sabemos hacer:</p>
+<ul>
+<li>Incluir una configuración y certificados, utilizando <a href="/2019/06/distribuyendo-contenido-en-docker-swarm-configuraciones-y-secretos.html">configuraciones y secretos</a></li>
+<li>Evitar tener que destruir el servicio cuando cambie la configuración, mediante las <a href="/2019/12/modificando-secretos-y-configuraciones-en-servicios-de-docker-swarm.html">configuraciones mutables</a></li>
+<li>Indicamos a <strong>docker</strong> como saber si un contenedor funciona bien con <a href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">healthchecks</a></li>
+<li>Aseguramos que haya siempre un contenedor como mínimo funcionando, usando replicas y orden de <em>update</em></li>
+</ul>
+<h2>Unos servicios de test en el <em>swarm</em></h2>
+<p>Vamos a suponer que tenemos dos aplicaciones web en nuestro <em>swarm</em>, que nos van
+a servir para ver como configurar los <em>virtualhosts</em>, los certificados individuales
+y nos servirán para probar que todo funciona como es debido.</p>
+<p><strong>NOTA</strong>: En este punto se asume que el <em>swarm</em> cuenta con una red tipo <em>overlay</em>,
+que llamaremos <code>frontend</code>, y que sirve para ser compartida entre el balanceador y
+los servicios (así tendrán conectividad de red y se podrán pasar las peticiones).</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ docker network create -d overlay frontend
+iv7yaa90pb755ygbkl1h2yyh0
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<h3>Un servicio <em>whoami</em></h3>
+<p>Ya hemos utilizado esta imagen antes, y no tiene complicación. Se trata de un
+servicio web que devuelve el nombre del servidor y sus direcciones IP (en <strong>docker</strong>
+las devuelve del contenedor que responda).</p>
+<p>El fichero tipo <em>compose</em> es relativamente simple, e incluso nos permitimos el
+lujo de automatizar el despliegue en un <em>script</em> (así evitaremos cambiar el
+nombre del <em>stack</em>, que puede darnos problemas en el futuro).</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/whoami$ cat whoami.yml 
+version: '3'
+services:
+  whoami:
+    image: emilevauge/whoami
+    networks:
+      - frontend
+networks:
+  frontend:
+    external: true
+gerard@shangrila:~/swarmbalancer/whoami$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/whoami$ cat deploy.sh 
+#!/bin/bash
+
+docker stack deploy -c whoami.yml whoami
+gerard@shangrila:~/swarmbalancer/whoami$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/whoami$ ./deploy.sh 
+Creating service whoami_whoami
+gerard@shangrila:~/swarmbalancer/whoami$ 
+</code></pre>
+<h3>Un servicio <em>echo</em></h3>
+<p>Otro servicio muy socorrido para hacer pruebas tipo HTTP es este; simplemente
+se limita a respondernos a cualquier petición con un texto especificado. Esto
+nos sirve para ver que las peticiones le llegan a través del balanceador.</p>
+<p>Siguiendo la anterior metodología, declararemos el servicio en un fichero tipo
+<em>compose</em>, le daremos un <em>script</em> de <em>deploy</em> y pondremos el servicio en marcha.</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/echo$ cat echo.yml 
+version: '3'
+services:
+  echo:
+    image: hashicorp/http-echo
+    command: -text=&quot;hello world&quot;
+    networks:
+      - frontend
+networks:
+  frontend:
+    external: true
+gerard@shangrila:~/swarmbalancer/echo$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/echo$ cat deploy.sh 
+#!/bin/bash
+
+docker stack deploy -c echo.yml echo
+gerard@shangrila:~/swarmbalancer/echo$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/echo$ ./deploy.sh 
+Creating service echo_echo
+gerard@shangrila:~/swarmbalancer/echo$ 
+</code></pre>
+<h2>El balanceador nginx</h2>
+<p><strong>ESTADO</strong>: En este momento tenemos una red <em>overlay</em> llamada <code>frontend</code>, en la
+que tenemos dos servicios ejecutando: el servicio <em>whoami</em> (puerto TCP 80) y el
+servicio <em>echo</em> (puerto TCP 5678).</p>
+<p>Vamos a exponer un servicio <strong>nginx</strong> en el <em>swarm</em>, pero también en la red
+<code>frontend</code>. De esta forma podremos lanzar las peticiones que correspondan desde
+cualquier nodo del <em>swarm</em>, y a su vez, pasarlas al servicio adecuado. Por
+supuesto, vamos a utilizar SSL para los mismos y vamos a forzar las peticiones
+HTTP a ir por las equivalentes en HTTPS.</p>
+<p>Vamos a utilizar un sistema similar a los anteriores: un fichero tipo <em>compose</em>
+para declarar el <em>stack</em>, y un <em>script</em> de deploy (en donde calcularemos las sumas
+MD5 de los ficheros auxiliares, como se explica <a href="/2019/12/modificando-secretos-y-configuraciones-en-servicios-de-docker-swarm.html">aquí</a>); sobre esta base solo
+nos quedará añadir la configuración del <strong>nginx</strong> y los certificados de los
+servicios que queramos proteger.</p>
+<h3>Los certificados SSL</h3>
+<p>Los certificados SSL se generan aparte del propio <em>swarm</em>; podemos generar
+certificados autofirmados, pagar por unos certificados válidos, o utilizar una
+aproximación como la que explicamos en <a href="/2019/11/con-confianza-una-autoridad-certificadora-propia.html">este artículo</a>. Para acortar, voy
+a poner unos certificados autofirmados.</p>
+<p>El servidor <strong>nginx</strong> nos permite trabajar con los certificados en 2 ficheros
+(clave y certificado), o especificar un único fichero que los contenga a ambos
+en las dos directivas relacionadas. Voy a optar por esta opción para reducir
+la cantidad de secretos en el fichero <em>compose</em> resultante.</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/balancer$ grep ^ certs/*
+certs/echo.local.pem:-----BEGIN RSA PRIVATE KEY-----
+...
+certs/echo.local.pem:-----END RSA PRIVATE KEY-----
+certs/echo.local.pem:-----BEGIN CERTIFICATE-----
+...
+certs/echo.local.pem:-----END CERTIFICATE-----
+certs/whoami.local.pem:-----BEGIN RSA PRIVATE KEY-----
+...
+certs/whoami.local.pem:-----END RSA PRIVATE KEY-----
+certs/whoami.local.pem:-----BEGIN CERTIFICATE-----
+...
+certs/whoami.local.pem:-----END CERTIFICATE-----
+gerard@shangrila:~/swarmbalancer/balancer$ 
+</code></pre>
+<h3>La configuración del nginx</h3>
+<p>Para configurar el <strong>nginx</strong> vamos a definir 3 <em>virtualhosts</em>:</p>
+<ul>
+<li>Uno para las peticiones que lleguen por HTTP, que redigiremos a HTTPS</li>
+<li>Uno para las peticiones HTTPS, con sus certificados SSL</li>
+<li>Uno para exponer el módulo <em>stub status</em>, que nos servirá a modo de <em>healthcheck</em></li>
+</ul>
+<p>Esta configuración quedará así:</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/balancer$ cat conf/balancer.conf 
+resolver 127.0.0.11 valid=5s;
+
+map $ssl_server_name $docker_service {
+	whoami.local whoami_whoami:80;
+	echo.local echo_echo:5678;
+}
+
+server {
+	listen 8080;
+	stub_status;
+}
+
+server {
+	listen 80;
+	return 308 https://$host$request_uri;
+}
+
+server {
+	listen 443 ssl;
+	ssl_certificate_key /run/secrets/$ssl_server_name.pem;
+	ssl_certificate /run/secrets/$ssl_server_name.pem;
+	location / { proxy_pass http://$docker_service; }
+}
+gerard@shangrila:~/swarmbalancer/balancer$ 
+</code></pre>
+<p>Hay que tener en cuenta algunos puntos para entender esta configuración:</p>
+<ul>
+<li>El <em>virtualhost</em> en el puerto 8080 sirve de <em>healthcheck</em>
+<ul>
+<li>Su información es poco útil, pero si responde, es que el <strong>nginx</strong> se ha levantado</li>
+<li>No vamos a publicar este puerto fuera del contenedor, pero se usará en el <em>healthcheck</em></li>
+</ul>
+</li>
+<li>El <em>virtualhost</em> en el puerto 80 es el de HTTP
+<ul>
+<li>Esperamos que redirija todo el tráfico a su equivalente HTTPS</li>
+<li>Será una redirección 308 (no 301); esto es porque esperamos recibir peticiones de API y el 308 respeta el verbo HTTP (POST, &hellip;)</li>
+</ul>
+</li>
+<li>El <em>virtualhost</em> en el puerto 443 es el de HTTPS
+<ul>
+<li>Esperamos que los certificados estén en <code>/run/secrets/&lt;dominio&gt;.pem</code>, sino dará un error</li>
+<li>Pasaremos la petición al servicio <code>$docker_service</code>
+<ul>
+<li>Esta variable se calcula con el <code>map</code> de <code>$ssl_server_name</code> y <code>$docker_service</code>
+<ul>
+<li><code>ssl_server_name = whoami.local</code> → <code>$docker_service = whoami_whoami:80</code></li>
+<li><code>ssl_server_name = echo.local</code> → <code>$docker_service = echo_echo:5678</code></li>
+</ul>
+</li>
+<li>La directiva <code>resolver</code> sirve para indicar el DNS del contenedor, de donde obtendremos la VIP del servicio</li>
+<li>La VIP del servicio es un balanceador entre todos los contenedores saludables del servicio</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>TRUCO</strong>: Todo contenedor en un <em>swarm</em> tiene un servidor DNS expuesto que sabe
+resolver los servicios que estén en sus mismas redes, así como de otros dominios;
+lo encontraremos en la IP 127.0.0.11 (esto no cambia nunca).</p>
+<p><strong>WARNING</strong>: Esta configuración es muy genérica, pero la petición fallará si llega
+una petición que no sea para <code>whoami.local</code> o <code>echo.local</code>. Si váis a poner más
+servicios, apuntad el registro DNS hacia el <em>swarm</em> cuando ya tengamos la configuración
+activa y los certificados en su sitio.</p>
+<h3>El <em>stack</em> y su <em>deploy</em></h3>
+<p>Vamos a hacer un <em>stack</em> relativamente simple; es un <strong>nginx</strong> genérico con una
+configuración propia y unos certificados puestos como secretos. La única complicación
+es que vamos a utilizar <a href="/2019/12/modificando-secretos-y-configuraciones-en-servicios-de-docker-swarm.html">este método</a> (concretamente con sumas MD5) para poder
+modificar la configuración y los certificados y no recibir un error durante el
+subsiguiente <em>redeploy</em>.</p>
+<p>Las otras dos curiosidades son el <em>healthcheck</em> y los parámetros de <em>deploy</em>;
+gracias al <em>healthcheck</em> podemos dar a conocer a <strong>docker</strong> si el contenedor está
+respondiendo (no vale con levantado solamente), y gracias al <em>deploy</em> tendremos 4
+contenedores funcionando y los reemplazaremos de 1 en 1 (momento en el que podremos
+tener 5 en marcha, hasta que este dé <em>healthcheck</em> correcto y se pueda reemplazar
+uno de los antiguos).</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/balancer$ cat balancer.yml 
+version: '3.5'
+services:
+  nginx:
+    image: sirrtea/nginx:alpine
+    configs:
+      - source: balancer.conf
+        target: /etc/nginx/conf.d/balancer.conf
+    secrets:
+      - source: whoami.local.pem
+      - source: echo.local.pem
+    networks:
+      - frontend
+    deploy:
+      replicas: 4
+      update_config:
+        parallelism: 1
+        order: start-first
+    healthcheck:
+      test: [&quot;CMD&quot;, &quot;wget&quot;, &quot;--spider&quot;, &quot;-q&quot;, &quot;http://localhost:8080/&quot;]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    ports:
+      - &quot;80:80&quot;
+      - &quot;443:443&quot;
+configs:
+  balancer.conf:
+    name: balancer_balancer.conf-${BALANCER_CONF_DIGEST}
+    file: conf/balancer.conf
+secrets:
+  whoami.local.pem:
+    name: balancer_whoami.local.pem-${WHOAMI_LOCAL_PEM_DIGEST}
+    file: certs/whoami.local.pem
+  echo.local.pem:
+    name: balancer_echo.local.pem-${ECHO_LOCAL_PEM_DIGEST}
+    file: certs/echo.local.pem
+networks:
+  frontend:
+    external: true
+gerard@shangrila:~/swarmbalancer/balancer$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/balancer$ cat deploy.sh 
+#!/bin/bash
+
+function md5 { md5sum ${1} | cut -b 1-32; }
+
+export BALANCER_CONF_DIGEST=$(md5 conf/balancer.conf)
+export WHOAMI_LOCAL_PEM_DIGEST=$(md5 certs/whoami.local.pem)
+export ECHO_LOCAL_PEM_DIGEST=$(md5 certs/echo.local.pem)
+
+docker stack deploy -c balancer.yml balancer
+gerard@shangrila:~/swarmbalancer/balancer$ 
+</code></pre>
+<p>Levantamos el <em>stack</em> de balanceador y esperamos a que sus servicios estén funcionando.
+Futuros <em>deploys</em> deberían hacerse sin <em>downtime</em>, reemplazándose los contenedores 1 a 1
+según las políticas declaradas. Esto nos permite cambiar las configuraciones y los
+certificados sin parada, de forma gradual.</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer/balancer$ ./deploy.sh 
+Creating secret balancer_echo.local.pem-7fefb7759833a6a0fedd1208b724a065
+Creating secret balancer_whoami.local.pem-3f3abec4ba2f29adc60c691f858c8f7f
+Creating config balancer_balancer.conf-38919a938105c010a25ca26b7bfc823e
+Creating service balancer_nginx
+gerard@shangrila:~/swarmbalancer/balancer$ 
+</code></pre>
+<p><strong>TRUCO</strong>: La VIP del servicio solo va a balancear las peticiones al <strong>nginx</strong> entre
+los contenedores que pasen el <em>healthcheck</em>, así que deberíamos tener respuesta desde
+el primer contenedor levantado, y nunca desde un <strong>nginx</strong> que se esté levantando
+(su <em>healthcheck</em> fallará hasta que esté listo para recibir peticiones).</p>
+<h2>Comprobaciones</h2>
+<p>Lo primero es ver que nuestros <strong>nginx</strong> están ejecutando y en estado <em>healthy</em>;
+podemos verificarlo con un <code>docker ps</code> o revisar que hay las replicas necesarias
+en el servicio (en este caso 4/4).</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE                        PORTS
+wq4cr5ya4air        balancer_nginx      replicated          4/4                 sirrtea/nginx:alpine         *:80-&gt;80/tcp, *:443-&gt;443/tcp
+u6cc79nd8nc8        echo_echo           replicated          1/1                 hashicorp/http-echo:latest   
+0dz5ad69e55h        whoami_whoami       replicated          1/1                 emilevauge/whoami:latest     
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<p>Solo nos queda ver que el comportamiento de la configuración del <strong>nginx</strong>:</p>
+<ul>
+<li>Redirige las peticiones HTTP de cada <em>virtualhost</em> a su HTTPS correspondiente</li>
+<li>Las peticiones HTTPS responden por virtualhost y con sus respectivos certificados</li>
+</ul>
+<p>Todas ellas son verificables con simples peticiones usando <code>curl</code>. Voy a poner
+la salida de los dos servicios configurados para probar, y un dominio no configurado
+para poder ver el error que nos daría un posible despiste.</p>
+<h3>Peticiones HTTP</h3>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -i http://whoami.local/
+HTTP/1.1 308 Permanent Redirect
+...
+Location: https://whoami.local/
+...
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -i http://echo.local/
+HTTP/1.1 308 Permanent Redirect
+...
+Location: https://echo.local/
+...
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -i http://server.local/
+HTTP/1.1 308 Permanent Redirect
+...
+Location: https://server.local/
+...
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<h3>Peticiones HTTPS</h3>
+<p><strong>NOTA</strong>: Añado el <em>flag</em> <code>-k</code> porque el certificado es autofirmado y falla verificación.</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -k https://whoami.local/
+Hostname: a1370d06574a
+IP: 127.0.0.1
+IP: 10.0.0.3
+IP: 172.17.0.3
+GET / HTTP/1.1
+Host: whoami_whoami
+User-Agent: curl/7.52.1
+Accept: */*
+Connection: close
+
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -k https://echo.local/
+hello world
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ curl -k https://server.local/
+curl: (35) error:14077438:SSL routines:SSL23_GET_SERVER_HELLO:tlsv1 alert internal error
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<p>Este último caso era esperable, porque el servicio no está configurado; de hecho,
+no llega siquiera a intentar pasar la petición a nadie, porque el error salta antes,
+concretamente cuando intenta obtener el certificado SSL, que debería estar en el
+fichero <code>/run/secrets/server.local.pem</code> (y no está):</p>
+<pre><code class="language-bash">gerard@shangrila:~/swarmbalancer$ docker service logs balancer_nginx
+...
+balancer_nginx.2.ezfu64cjr1dw@shangrila    | 2020/01/14 11:39:37 [error] 6#6: *130 cannot load certificate &quot;/run/secrets/server.local.pem&quot;: BIO_new_file() failed (SSL: error:02001002:system library:fopen:No such file or directory:fopen('/run/secrets/server.local.pem','r') error:2006D080:BIO routines:BIO_new_file:no such file) while SSL handshaking, client: 10.255.0.2, server: 0.0.0.0:443
+...
+gerard@shangrila:~/swarmbalancer$ 
+</code></pre>
+<p>Solo nos quedaría que las peticiones llegaran desde fuera del <em>swarm</em> a cualquier
+nodo del mismo; este sabría enrutar la peticiones a alguno de los 4 contenedores
+<strong>nginx</strong>. De hecho, podemos asegurar alta disponibilidad del servicio si balanceamos
+las peticiones entre los nodos saludables del <em>swarm</em>, o compartiendo una VIP con
+<em>keepalived</em> entre algunos de los nodos del <em>swarm</em>.</p>
+
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+<p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
