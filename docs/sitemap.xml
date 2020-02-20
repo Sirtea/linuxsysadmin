@@ -108,6 +108,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/deb.html</loc>
+    <lastmod>2020-01-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
     <lastmod>2020-01-13T00:00:00+00:00</lastmod>
   </url>
@@ -403,6 +408,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/tar.html</loc>
+    <lastmod>2019-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/target.html</loc>
     <lastmod>2019-09-02T00:00:00+00:00</lastmod>
   </url>
@@ -485,6 +495,11 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/marked.html</loc>
     <lastmod>2019-07-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/dns.html</loc>
+    <lastmod>2019-07-08T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -783,6 +798,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/media.html</loc>
+    <lastmod>2018-12-03T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/mediawiki.html</loc>
     <lastmod>2018-12-03T00:00:00+00:00</lastmod>
   </url>
@@ -874,11 +894,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/dig.html</loc>
-    <lastmod>2018-10-22T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/dns.html</loc>
     <lastmod>2018-10-22T00:00:00+00:00</lastmod>
   </url>
   
@@ -1308,6 +1323,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/vault.html</loc>
+    <lastmod>2018-02-05T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/vaultier.html</loc>
     <lastmod>2018-02-05T00:00:00+00:00</lastmod>
   </url>
@@ -1468,6 +1488,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/red.html</loc>
+    <lastmod>2017-11-13T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/redirecciones.html</loc>
     <lastmod>2017-11-13T00:00:00+00:00</lastmod>
   </url>
@@ -1499,11 +1524,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/gz.html</loc>
-    <lastmod>2017-10-23T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/tar.html</loc>
     <lastmod>2017-10-23T00:00:00+00:00</lastmod>
   </url>
   
@@ -1624,11 +1644,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/evidencias.html</loc>
-    <lastmod>2017-08-14T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/red.html</loc>
     <lastmod>2017-08-14T00:00:00+00:00</lastmod>
   </url>
   
@@ -1828,6 +1843,11 @@
   </url>
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/apache.html</loc>
+    <lastmod>2017-04-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/tag/apache-benchmark.html</loc>
     <lastmod>2017-04-10T00:00:00+00:00</lastmod>
   </url>
@@ -1905,11 +1925,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2017/03/generadores-de-contenido-web-estaticos.html</loc>
     <lastmod>2017-03-13T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/apache.html</loc>
-    <lastmod>2017-03-06T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -2148,11 +2163,6 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/media.html</loc>
-    <lastmod>2016-10-17T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/2016/10/python-como-una-calculadora-estadistica.html</loc>
     <lastmod>2016-10-17T00:00:00+00:00</lastmod>
   </url>
@@ -2249,11 +2259,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/inventario.html</loc>
-    <lastmod>2016-08-15T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/vault.html</loc>
     <lastmod>2016-08-15T00:00:00+00:00</lastmod>
   </url>
   
@@ -2590,11 +2595,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/ldd.html</loc>
     <lastmod>2016-01-04T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/deb.html</loc>
-    <lastmod>2015-12-28T00:00:00+00:00</lastmod>
   </url>
   
   <url>

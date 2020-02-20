@@ -117,7 +117,7 @@ roles/test/
 <p>A partir de aquí se trata de eliminar las que no usemos y rellenar las que sí vayamos a usar.</p>
 <h2>Diseño de roles</h2>
 <p>Queremos preparar 2 tipos distintos de máquinas: el balanceador y los servidores web. En ambos casos se trata de instalar <strong>nginx</strong>, poner una configuración para la tarea que desempeñen, y en caso de los servidores web, poner el contenido estático.</p>
-<p>Vamos a crear un <em>role</em> para el balanceador, y otro para los servidores web. Siguiendo la filosofía <a href="https://es.wikipedia.org/wiki/No_te_repitas">DRY (Don't repeat yourself)</a>, vamos a delegar la instalación de <strong>nginx</strong> a un tercer <em>role</em>, que a su vez será una dependencia para los otros dos.</p>
+<p>Vamos a crear un <em>role</em> para el balanceador, y otro para los servidores web. Siguiendo la filosofía <a href="https://es.wikipedia.org/wiki/No_te_repitas">DRY (Don&rsquo;t repeat yourself)</a>, vamos a delegar la instalación de <strong>nginx</strong> a un tercer <em>role</em>, que a su vez será una dependencia para los otros dos.</p>
 <p>Eso nos da 3 roles, con una estructura de ficheros simple; un rol para el <strong>nginx</strong> que solo ejecuta tareas, otro para el balanceador (con la dependencia y los ficheros auxiliares) y otro rol para el servidor web (con la dependencia y sus ficheros).</p>
 <pre><code class="language-bash">~ # tree roles/
 roles/
