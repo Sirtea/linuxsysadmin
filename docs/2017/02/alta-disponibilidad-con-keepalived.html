@@ -405,26 +405,6 @@ root@gemini:~/playbooks/keepalived#
 <p>En caso de haberse levantado antes <em>castor</em>, habría ejercido como <em>master</em> enseguida, y el levantamiento de <em>pollux</em> no habría provocado un <em>failover</em> nuevo (103 vs 100 y 103 vs 102, respectivamente).</p>
 <p>Y con esto ya podemos tener nuestros servicios y balanceadores tipo &ldquo;ventanilla única&rdquo; redundados y con alta disponibilidad. Cabe indicar que esto no es útil ni con los <em>backends</em> (el balanceador ya suele controlar si una de ellos está caído o no), ni con los <em>clusters</em> con tecnología de <em>clustering</em> propia (bases de datos, colas, &hellip;).</p>
 
-<div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
 <p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 

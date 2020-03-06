@@ -159,26 +159,6 @@ gerard@atlantis:~/squashtest$
 <p>Se trata del método que utiliza la distribución <a href="https://www.slax.org/es/">Slax</a>. La idea es que el sistema de ficheros &ldquo;final&rdquo; es una carpeta en la que se montan varias capas de sistema de ficheros. Esto se consigue con sistemas de ficheros tipo <em>UnionFS</em>, <em>AUFS</em> o <em>overlayfs</em>.</p>
 <p>De esta forma podemos tener la imagen base, posiblemente compartida por varios montajes distintos, y luego disponer de varias capas de diferencias respecto al original. Estas capas de diferencias suelen ser más pequeñas que la imagen base y se pueden descartar para volver a la versíon original de lo que teníamos en la carpeta.</p>
 
-<div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
 <p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 

@@ -119,26 +119,6 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 </code></pre>
 <p>Y con esto solo nos queda verificar el resultado en <code>http://localhost:8000/</code>. Si miráis el código fuente de la página, veréis que se ve el lenguaje de marcado tal cual; incluso puede que veáis la página antes de su <em>renderizado</em>, mientras se carga la librería <strong>javascript</strong>. Al menos, habré cumplido con mi objetivo, que era el de escribir contenido sin perder tiempo en la maquetación.</p>
 
-<div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
 <p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 

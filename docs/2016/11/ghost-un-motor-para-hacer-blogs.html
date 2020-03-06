@@ -111,26 +111,6 @@ gerard@telesto:~/docker/custom_ghost$
 <p><img src="/images/ghost_blog.jpg" alt="Ghost Blog"></p>
 <p>La parte &ldquo;mala&rdquo; es que cada instancia de <strong>Ghost</strong> es un proceso propio, que usa su propia dirección y su propio puerto. Si se quiere desplegar varios <em>blogs</em> en el mismo servidor, podemos usar un <strong>nginx</strong>, que los diferencie por el dominio solicitado mediante <em>virtualhosts</em>; luego hacemos un <em>proxy_pass</em> al puerto de verdad, y ya tenemos el servidor montado. Esto queda como material para otro artículo.</p>
 
-<div id="disqus_thread"></div>
-<script type="application/javascript">
-    var disqus_config = function () {
-    
-    
-    
-    };
-    (function() {
-        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
-            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
-            return;
-        }
-        var d = document, s = d.createElement('script'); s.async = true;
-        s.src = '//' + "linuxsysadmin-gmb" + '.disqus.com/embed.js';
-        s.setAttribute('data-timestamp', +new Date());
-        (d.head || d.body).appendChild(s);
-    })();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
 
 <p class="footer">Copyright &copy; 2015-2020 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
 
