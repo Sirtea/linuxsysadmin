@@ -36,6 +36,5 @@ En [LinuxSysadmin](https://www.linuxsysadmin.ml/) utilizamos algunas *cookies*, 
     * `cookie_consent_user_accepted` &rarr; Para saber si el usuario ha interactuado con el *popup* y no seguir molestando.
     * `cookie_consent_level` &rarr; Para saber cuales son las preferencias de *cookies* elegidas.
 * Google Analytics &rarr; Sirven para hacer un *tracking* de las páginas visitadas. Son *cookies* de un tercero que tiene [su propia política de privacidad](https://developers.google.com/analytics/devguides/collection/analyticsjs/cookie-usage?hl=es-419).
-* Disqus &rarr; El sistema de comentarios incrustado en las páginas web utiliza sus propias *cookies*. Como tercero tiene [su propia política de privacidad](https://help.disqus.com/en/articles/1717103-disqus-privacy-policy).
 
 **NOTA**: En el caso de las *cookies* de Google Analytics, la información está anonimizada y respeta la cabecera **doNotTrack** (más información en Google).
