@@ -161,7 +161,7 @@ gerard@firewall:~$ ip a
 gerard@firewall:~$ 
 ```
 
-Lo primero es no olvidarnos el `IP_FORWARD`; lo ponemos ahora y listo. Es una configuraciñon que posiblemente no tocaremos nunca más...
+Lo primero es no olvidarnos el `IP_FORWARD`; lo ponemos ahora y listo. Es una configuración que posiblemente no tocaremos nunca más...
 
 ```bash
 gerard@firewall:~$ grep IP_FORWARD /etc/shorewall/shorewall.conf 
