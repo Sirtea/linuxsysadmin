@@ -53,7 +53,7 @@
 </p>
 
 <p>He llegado a ese momento en el que el número de imágenes <strong>docker</strong> que he construido se me ha ido de las manos. Ya no pueden seguir ocupando espacio en mi local, así que me he decidido a montar mi propio registro de imágenes, para mi uso y disfrute privado.</p>
-<p>Si miramos en <a href="https://hub.docker.com/_/registry/">DockerHub</a> no nos va a costar demasiado encontrar una imagen que nos proporciones este servicio. Ejecutar esta imagen para uso local no tiene ninguna complicación, y basta con seguir las instrucciones. La cosa se complica si queremos sacarlo de nuestra infraestructura, pero no va a ser el caso de hoy.</p>
+<p>Si miramos en <a href="https://hub.docker.com/_/registry/">DockerHub</a> no nos va a costar demasiado encontrar una imagen que nos proporcione este servicio. Ejecutar esta imagen para uso local no tiene ninguna complicación, y basta con seguir las instrucciones. La cosa se complica si queremos sacarlo de nuestra infraestructura, pero no va a ser el caso de hoy.</p>
 <h2>Levantando un registro local</h2>
 <p>Siguiendo las instrucciones, lanzamos el comando indicado en la documentación:</p>
 <pre><code class="language-bash">gerard@aldebaran:~/docker/registry$ docker run -d -p 5000:5000 registry

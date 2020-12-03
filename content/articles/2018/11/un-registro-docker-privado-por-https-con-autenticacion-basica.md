@@ -260,7 +260,7 @@ Error response from daemon: Get https://registry.test/v2/alpine/manifests/latest
 gerard@node01:~$
 ```
 
-En el caso de la API, podemos usar el *flag* que **curl** nos ofrece, que ya gestiona la parte de la autenicación básica:
+En el caso de la API, podemos usar el *flag* que **curl** nos ofrece, que ya gestiona la parte de la autenticación básica:
 
 ```bash
 gerard@node01:~$ curl -k -u user:p4ssw0rd https://registry.test/v2/_catalog

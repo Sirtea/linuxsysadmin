@@ -8,7 +8,7 @@ tags: ['registro', 'docker']
 
 He llegado a ese momento en el que el número de imágenes **docker** que he construido se me ha ido de las manos. Ya no pueden seguir ocupando espacio en mi local, así que me he decidido a montar mi propio registro de imágenes, para mi uso y disfrute privado.<!--more-->
 
-Si miramos en [DockerHub](https://hub.docker.com/_/registry/) no nos va a costar demasiado encontrar una imagen que nos proporciones este servicio. Ejecutar esta imagen para uso local no tiene ninguna complicación, y basta con seguir las instrucciones. La cosa se complica si queremos sacarlo de nuestra infraestructura, pero no va a ser el caso de hoy.
+Si miramos en [DockerHub](https://hub.docker.com/_/registry/) no nos va a costar demasiado encontrar una imagen que nos proporcione este servicio. Ejecutar esta imagen para uso local no tiene ninguna complicación, y basta con seguir las instrucciones. La cosa se complica si queremos sacarlo de nuestra infraestructura, pero no va a ser el caso de hoy.
 
 ## Levantando un registro local
 

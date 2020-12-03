@@ -234,7 +234,7 @@ Using default tag: latest
 Error response from daemon: Get https://registry.test/v2/alpine/manifests/latest: no basic auth credentials
 gerard@node01:~$
 </code></pre>
-<p>En el caso de la API, podemos usar el <em>flag</em> que <strong>curl</strong> nos ofrece, que ya gestiona la parte de la autenicación básica:</p>
+<p>En el caso de la API, podemos usar el <em>flag</em> que <strong>curl</strong> nos ofrece, que ya gestiona la parte de la autenticación básica:</p>
 <pre><code class="language-bash">gerard@node01:~$ curl -k -u user:p4ssw0rd https://registry.test/v2/_catalog
 {&quot;repositories&quot;:[&quot;alpine&quot;]}
 gerard@node01:~$
