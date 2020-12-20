@@ -324,7 +324,7 @@ encargarnos personalmente de esta limpieza. La mala notícia es que no hay una f
 fácil de saber los que ya no necesitamos.
 
 Destruir el *stack* entero va a eliminar los secretos que creó, pero esta operación
-no es algo que queramos hacer con cierta periodicidad. sin embargo, podemos aprovechar
+no es algo que queramos hacer con cierta periodicidad. Sin embargo, podemos aprovechar
 que **docker** no elimina nada que esté en uso. Esto nos permite lanzar una operación
 de eliminación completa y dejar que **docker** salve aquellos que le son útiles:
 
