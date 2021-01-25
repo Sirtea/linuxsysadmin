@@ -52,7 +52,7 @@
 	<strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/pypi.html">PyPI</a> / <a href="/tag/wheel.html">wheel</a> / <a href="/tag/virtualenv.html">virtualenv</a> / <a href="/tag/uwsgi.html">uWSGI</a>
 </p>
 
-<p>Cuando trabajamos con <strong>python</strong>, muchas veces necesitamos instalar librerías con <em>pip</em> o <em>easy_install</em>. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar los mismos. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.</p>
+<p>Cuando trabajamos con <strong>python</strong>, muchas veces necesitamos instalar librerías con <em>pip</em> o <em>easy_install</em>. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar las mismas. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.</p>
 <p>Para estos casos podemos montar un servidor exactamente igual que el de <a href="https://pypi.python.org/pypi">PyPI</a>, que se distribuye como una librería <strong>python</strong> adicional, que nos ofrece una aplicación <strong>WSGI</strong>.</p>
 <p>Nuestro despliegue es bastante básico; con un solo servidor nos basta, y puede estar compartido con otros usos. El único servicio que vamos a poner es un servidor <strong>WSGI</strong> capaz de servir la aplicación. En nuestro caso vamos a usar <strong>uwsgi</strong>.</p>
 <p>Así pues, creamos dos máquinas, una va a ser el servidor y la otra, un cliente de ejemplo que necesite los paquetes locales.</p>

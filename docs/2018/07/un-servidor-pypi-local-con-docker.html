@@ -67,7 +67,7 @@ CMD [&quot;/usr/bin/pypi-server&quot;, &quot;/srv/packages&quot;]
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
 <p><strong>TRUCO</strong>: El binario <code>pypi-server</code> no cumple como un <em>init</em> correcto, y el contenedor no acaba hasta que <strong>docker</strong> lo mata. Para evitar ese problema, vamos a utilizar <strong>tini</strong>, tal y como explicamos en <a href="/2017/09/un-proceso-inicial-para-docker-tini-y-dumb-init.html">otro artículo</a>.</p>
-<p>Construimos la imagen con los comando habituales y le damos un <em>tag</em> para su fácil uso cuando lo queramos levantar.</p>
+<p>Construimos la imagen con los comandos habituales y le damos un <em>tag</em> para su fácil uso cuando lo queramos levantar.</p>
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ docker build -t pypiserver .
 ...
 Successfully tagged pypiserver:latest
@@ -106,7 +106,7 @@ services:
     restart: always
 gerard@sirius:~/workspace/pypiserver$ 
 </code></pre>
-<p>Ya no falta nada para levantarlo todo y lo hacemos sin más preámbulo.</p>
+<p>Ya no falta nada para levantarlo todo y lo hacemos sin más preámbulos.</p>
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ docker-compose up -d
 Creating network &quot;pypiserver_default&quot; with the default driver
 Creating pypiserver
@@ -120,7 +120,7 @@ gerard@sirius:~/workspace/pypiserver$
 <li>Pescarlos de nuestra caché local en <code>~/.cache/pip/</code></li>
 <li>Obtenerlos mediante <code>pip wheel</code></li>
 </ul>
-<p>En este caso vamos a utilizar el tercer método. Como no tengo <strong>pip</strong> instalado en mi servidor, y para demostrar que solo necesito los fichero <em>wheel</em>, voy a utilizar el <strong>pip</strong> de un <em>virtualenv</em> temporal, que destruiré al acabar. Otra opción sería crear un contenedor que los dejara en esa carpeta, que también montaría como un volumen.</p>
+<p>En este caso vamos a utilizar el tercer método. Como no tengo <strong>pip</strong> instalado en mi servidor, y para demostrar que solo necesito los ficheros <em>wheel</em>, voy a utilizar el <strong>pip</strong> de un <em>virtualenv</em> temporal, que destruiré al acabar. Otra opción sería crear un contenedor que los dejara en esa carpeta, que también montaría como un volumen.</p>
 <pre><code class="language-bash">gerard@sirius:~/workspace/pypiserver$ virtualenv env
 Running virtualenv with interpreter /usr/bin/python2
 New python executable in env/bin/python2
