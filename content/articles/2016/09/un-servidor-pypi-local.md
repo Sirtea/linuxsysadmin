@@ -6,7 +6,7 @@ categories: ['Sistemas']
 tags: ['python', 'PyPI', 'wheel', 'virtualenv', 'uWSGI']
 ---
 
-Cuando trabajamos con **python**, muchas veces necesitamos instalar librerías con *pip* o *easy_install*. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar los mismos. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.<!--more-->
+Cuando trabajamos con **python**, muchas veces necesitamos instalar librerías con *pip* o *easy_install*. Dependiendo de la naturaleza de nuestros proyectos, las librerías suelen variar, pero siempre solemos utilizar las mismas. En estos casos puede ser útil tenerlos cerca, cacheados en un servidor en nuestra red local, para su rápido acceso.<!--more-->
 
 Para estos casos podemos montar un servidor exactamente igual que el de [PyPI](https://pypi.python.org/pypi), que se distribuye como una librería **python** adicional, que nos ofrece una aplicación **WSGI**.
 

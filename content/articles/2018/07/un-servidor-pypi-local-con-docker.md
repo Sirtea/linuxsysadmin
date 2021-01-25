@@ -29,7 +29,7 @@ gerard@sirius:~/workspace/pypiserver$
 
 **TRUCO**: El binario `pypi-server` no cumple como un *init* correcto, y el contenedor no acaba hasta que **docker** lo mata. Para evitar ese problema, vamos a utilizar **tini**, tal y como explicamos en [otro artículo]({{< relref "/articles/2017/09/un-proceso-inicial-para-docker-tini-y-dumb-init.md" >}}).
 
-Construimos la imagen con los comando habituales y le damos un *tag* para su fácil uso cuando lo queramos levantar.
+Construimos la imagen con los comandos habituales y le damos un *tag* para su fácil uso cuando lo queramos levantar.
 
 ```bash
 gerard@sirius:~/workspace/pypiserver$ docker build -t pypiserver .
@@ -81,7 +81,7 @@ services:
 gerard@sirius:~/workspace/pypiserver$ 
 ```
 
-Ya no falta nada para levantarlo todo y lo hacemos sin más preámbulo.
+Ya no falta nada para levantarlo todo y lo hacemos sin más preámbulos.
 
 ```bash
 gerard@sirius:~/workspace/pypiserver$ docker-compose up -d
@@ -100,7 +100,7 @@ El único requisito para poder servir paquetes es dejarlos en la carpeta que a e
 * Pescarlos de nuestra caché local en `~/.cache/pip/`
 * Obtenerlos mediante `pip wheel`
 
-En este caso vamos a utilizar el tercer método. Como no tengo **pip** instalado en mi servidor, y para demostrar que solo necesito los fichero *wheel*, voy a utilizar el **pip** de un *virtualenv* temporal, que destruiré al acabar. Otra opción sería crear un contenedor que los dejara en esa carpeta, que también montaría como un volumen.
+En este caso vamos a utilizar el tercer método. Como no tengo **pip** instalado en mi servidor, y para demostrar que solo necesito los ficheros *wheel*, voy a utilizar el **pip** de un *virtualenv* temporal, que destruiré al acabar. Otra opción sería crear un contenedor que los dejara en esa carpeta, que también montaría como un volumen.
 
 ```bash
 gerard@sirius:~/workspace/pypiserver$ virtualenv env
