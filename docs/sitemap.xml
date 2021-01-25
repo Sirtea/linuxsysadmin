@@ -3,13 +3,53 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>https://www.linuxsysadmin.ml/tag/alpine.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/2021/01/contenedores-python-con-alpine-linux-y-sus-problemas.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/musl.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tag/python.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2021-01-25T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -18,27 +58,7 @@
   </url>
   
   <url>
-    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
     <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
-    <lastmod>2021-01-07T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2021-01-07T00:00:00+00:00</lastmod>
   </url>
   
@@ -164,11 +184,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/gunicorn.html</loc>
-    <lastmod>2019-12-30T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/python.html</loc>
     <lastmod>2019-12-30T00:00:00+00:00</lastmod>
   </url>
   
@@ -1035,11 +1050,6 @@
   <url>
     <loc>https://www.linuxsysadmin.ml/2018/08/servidores-pets-vs-cattle.html</loc>
     <lastmod>2018-08-06T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/alpine.html</loc>
-    <lastmod>2018-07-30T00:00:00+00:00</lastmod>
   </url>
   
   <url>
@@ -2404,11 +2414,6 @@
   
   <url>
     <loc>https://www.linuxsysadmin.ml/tag/libc.html</loc>
-    <lastmod>2016-05-16T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://www.linuxsysadmin.ml/tag/musl.html</loc>
     <lastmod>2016-05-16T00:00:00+00:00</lastmod>
   </url>
   

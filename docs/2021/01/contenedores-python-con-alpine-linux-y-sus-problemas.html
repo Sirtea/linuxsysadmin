@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Contenedores Python con Alpine Linux y sus problemas - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Contenedores Python con Alpine Linux y sus problemas</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2021-01-25
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/python.html">python</a> / <a href="/tag/alpine.html">alpine</a> / <a href="/tag/musl.html">musl</a>
+</p>
+
+<p>Los que leéis de vez en cuando este <em>blog</em> ya sabéis que tengo especial
+predilección por <strong>Python</strong> y <strong>Docker</strong>,  con el que utilizo la versión
+&ldquo;alpine&rdquo; de las imágenes siempre que puedo. Al menos eso es lo que pensaba
+hasta hace poco tiempo, cuando la librería <em>musl libc</em> me dejó tirado.</p>
+<p>Y es que algunas de las librerías de <strong>Python</strong> están escritas en lenguaje C;
+eso significa que <em>se compilan</em> en tiempo de instalación. Esto es un problema
+en un entorno mínimo, en donde no se tienen compiladores. Para echar más sal
+a la herida, no suelen disponer de una versión <em>pure python</em> para estos casos.</p>
+<h2>Una librería <em>pure python</em></h2>
+<p>Por suerte son la gran mayoría de ellas. Están escritas en <strong>Python</strong> y
+ejecutan como ficheros <code>.py</code>. Como no dependen de librerías del sistema, no
+tienen problemas en ejecutar en un contenedor normal o <em>alpine</em>.</p>
+<p>Veamos como ejemplo <strong>gunicorn</strong>:</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-alpine sh
+/ # pip install gunicorn
+...
+Successfully installed gunicorn-20.0.4
+...
+/ # find /usr/local/lib/python3.8/site-packages/gunicorn/ -type f -name &quot;*.so&quot;
+/ # 
+</code></pre>
+<p>Podemos ver que no hay problemas instalando y que no genera librerías
+compiladas (que generan un fichero <code>.so</code>). Eso significa que no necesitamos
+nada más que el intérprete de <strong>python</strong> para ejecutar este programa.</p>
+<h2>Una librería híbrida</h2>
+<p>Hay otras librerías que funcionan bien como <em>pure python</em>, pero aportan la
+capacidad de <em>compilarse</em> para acelerar el tiempo de ejecución. Si encuentran
+los compiladores necesarios, los utilizan; sino, utilizan una versión
+<em>pure python</em> de la misma (que se presupone algo más lenta).</p>
+<p>Como ejemplo podemos mencionar <strong>pymongo</strong>:</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-alpine sh
+/ # pip install pymongo
+...
+Successfully installed pymongo-3.11.2
+...
+/ # find /usr/local/lib/python3.8/site-packages/ -type f -name &quot;*.so&quot;
+/ # 
+</code></pre>
+<p>Estamos ante el mismo caso que antes; no se compila y funciona sin extensiones
+compiladas. Veamos ahora lo que pasa si se encuentra con un compilador y las
+cabeceras adecuadas:</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-alpine sh
+/ # apk add gcc musl-dev
+...
+/ # pip install pymongo
+Collecting pymongo
+  Downloading pymongo-3.11.2.tar.gz (770 kB)
+     |████████████████████████████████| 770 kB 2.9 MB/s 
+Building wheels for collected packages: pymongo
+  Building wheel for pymongo (setup.py) ... done
+  Created wheel for pymongo: filename=pymongo-3.11.2-cp38-cp38-linux_x86_64.whl size=383630 sha256=d292dac8e08458d340ee262831da57e188021ff875a9c8e024aa9512572fc9a7
+  Stored in directory: /root/.cache/pip/wheels/67/fc/93/cf33d1a4fc544841766e79597b093ddb4da4e6563b037cc5ab
+Successfully built pymongo
+Installing collected packages: pymongo
+Successfully installed pymongo-3.11.2
+...
+/ # find /usr/local/lib/python3.8/site-packages/ -type f -name &quot;*.so&quot;
+/usr/local/lib/python3.8/site-packages/pymongo/_cmessage.cpython-38-x86_64-linux-gnu.so
+/usr/local/lib/python3.8/site-packages/bson/_cbson.cpython-38-x86_64-linux-gnu.so
+/ # 
+</code></pre>
+<p>Ahora encontramos dos módulos (<em>cmessage</em> y <em>cbson</em>) que no se interpretan y
+ejecutan código directamente utilizando la librería C del sistema. Se supone que
+esto se traduce en una mejora de los tiempos de ejecución del módulo, pero tenemos
+el coste extra en tiempo de construcción del contenedor y en eliminar el
+compilador del contenedor resultante.</p>
+<h2>Una librería problemática</h2>
+<p>A veces nos encontramos una librería de <strong>python</strong> que no funciona si no tiene
+una versión compilada; esto es un problema porque la compilación depende de
+los compiladores locales y de la librería de C del sistema presente. Hay que
+compilar de cero <strong>sí o sí</strong>.</p>
+<p>Como apasionado de los <em>tokens</em> <strong>JWT</strong>, suelo utilizar las librerías <strong>pyjwt</strong>
+o <strong>python-jose</strong>. Las dos confían en segundas librerías para hacer los cálculos
+criptográficos necesarios para sus firmas.</p>
+<p>En el caso de <strong>pyjwt</strong>, esta segunda librería es <strong>cryptography</strong>; <strong>python-jose</strong>
+puede utilizar otras segundas librerías, incluso de la librería estándar de
+<strong>python</strong>. Lo que sí que es cierto es que si utiliza <strong>cryptography</strong>, el tiempo
+de firma y verificación se reduce drásticamente.</p>
+<p>Vamos pues a utilizar la librería <strong>cryptography</strong>:</p>
+<pre><code class="language-bash">/ # pip install cryptography
+Collecting cryptography
+  Downloading cryptography-3.3.1.tar.gz (539 kB)
+     |████████████████████████████████| 539 kB 3.7 MB/s 
+  Installing build dependencies ... error
+  ERROR: Command errored out with exit status 1:
+   command: /usr/local/bin/python /usr/local/lib/python3.8/site-packages/pip install --ignore-installed --no-user --prefix /tmp/pip-build-env-gni7fvxi/overlay --no-warn-script-location --no-binary :none: --only-binary :none: -i https://pypi.org/simple -- 'setuptools&gt;=40.6.0' wheel 'cffi&gt;=1.12; platform_python_implementation != '&quot;'&quot;'PyPy'&quot;'&quot;''
+       cwd: None
+...
+/ # 
+</code></pre>
+<p>Incluso con el compilador y las cabeceras de <em>musl</em> no llegamos a buen puerto&hellip;</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-alpine sh
+/ # apk add gcc musl-dev
+...
+/ # pip install cryptography
+Collecting cryptography
+  Downloading cryptography-3.3.1.tar.gz (539 kB)
+     |████████████████████████████████| 539 kB 2.9 MB/s 
+  Installing build dependencies ... error
+  ERROR: Command errored out with exit status 1:
+   command: /usr/local/bin/python /usr/local/lib/python3.8/site-packages/pip install --ignore-installed --no-user --prefix /tmp/pip-build-env-iynvp75u/overlay --no-warn-script-location --no-binary :none: --only-binary :none: -i https://pypi.org/simple -- 'setuptools&gt;=40.6.0' wheel 'cffi&gt;=1.12; platform_python_implementation != '&quot;'&quot;'PyPy'&quot;'&quot;''
+       cwd: None
+</code></pre>
+<p>Y es que esta librería necesita una lista de otras cabeceras de otras librerías
+del sistema; es factible encontrarlas todas, pero podemos pasar un mal rato
+para conseguirlo.</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-alpine sh
+/ # apk add gcc musl-dev libffi-dev openssl-dev
+...
+/ # pip install cryptography
+...
+Building wheels for collected packages: cryptography
+  Building wheel for cryptography (PEP 517) ... done
+  Created wheel for cryptography: filename=cryptography-3.3.1-cp38-cp38-linux_x86_64.whl size=362591 sha256=b83b2e23707f244014d3dff88edecc42695d3977d0dced4f82768043448dad20
+  Stored in directory: /root/.cache/pip/wheels/9b/bd/12/c040f2df6b28138b66b0361cd218180a278b95763fc2466951
+Successfully built cryptography
+Installing collected packages: pycparser, six, cffi, cryptography
+Successfully installed cffi-1.14.4 cryptography-3.3.1 pycparser-2.20 six-1.15.0
+...
+/ # 
+</code></pre>
+<h2>Y que pasa con otras distribuciones?</h2>
+<p>Pues pasa exactamente lo mismo; la única diferencia es que todas (menos
+<strong>Alpine Linux</strong>) utilizan la librería <strong>glibc</strong> (en vez de <strong>musl</strong>).</p>
+<p>Hay que recordar que <a href="https://pypi.org/">PyPI</a> distribuye las librerías, tanto en formato fuente
+(ficheros <code>.tar.gz</code> o similar) como en formato <em>wheel</em> (ficheros <code>.whl</code>). Este
+segundo formato es un formato binario, que básicamente es un fichero tipo <em>zip</em>
+con las librerías ya compiladas.</p>
+<p>Como la mayoría de distribuciones utilizan <strong>glibc</strong>, se suelen encontrar en
+<a href="https://pypi.org/">PyPI</a> los ficheros <em>wheel</em> correspondientes a esta librería, para su uso
+fácil y rápido en la mayoría de distribuciones sin necesitar una etapa de compilación.</p>
+<p>Veamos lo que pasa cuando utilizamos la imagen <code>python:3.8-slim</code> (basada en <strong>Debian</strong>):</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run -ti --rm python:3.8-slim bash
+root@85a9ba8d702b:/# pip wheel cryptography
+Collecting cryptography
+  Downloading cryptography-3.3.1-cp36-abi3-manylinux2010_x86_64.whl (2.6 MB)
+     |████████████████████████████████| 2.6 MB 2.4 MB/s 
+Collecting cffi&gt;=1.12
+  Downloading cffi-1.14.4-cp38-cp38-manylinux1_x86_64.whl (411 kB)
+     |████████████████████████████████| 411 kB 13.9 MB/s 
+Collecting six&gt;=1.4.1
+  Downloading six-1.15.0-py2.py3-none-any.whl (10 kB)
+Collecting pycparser
+  Downloading pycparser-2.20-py2.py3-none-any.whl (112 kB)
+     |████████████████████████████████| 112 kB 8.6 MB/s 
+Saved /cryptography-3.3.1-cp36-abi3-manylinux2010_x86_64.whl
+Saved /cffi-1.14.4-cp38-cp38-manylinux1_x86_64.whl
+Saved /six-1.15.0-py2.py3-none-any.whl
+Saved /pycparser-2.20-py2.py3-none-any.whl
+...
+root@85a9ba8d702b:/# python -m zipfile -l cryptography-3.3.1-cp36-abi3-manylinux2010_x86_64.whl 
+File Name                                             Modified             Size
+...
+cryptography/hazmat/bindings/_padding.abi3.so  2020-12-10 02:19:26        36240
+cryptography/hazmat/bindings/_openssl.abi3.so  2020-12-10 02:19:26      7084392
+...
+root@85a9ba8d702b:/# 
+</code></pre>
+<p>Se descarga los ficheros <em>wheel</em> directamente compilados y listos para desempaquetar,
+lo que reduce el tiempo de <em>build</em> del contenedor y la complejidad del mismo de
+una forma notable.</p>
+<h2>Conclusiones</h2>
+<p>Muchas veces nos obsesionamos con reducir el tamaño de nuestras imágenes
+con imágenes base más pequeñas. Sin embargo, esto tiene un coste en el que
+rara vez pensamos.</p>
+<p>La reducción &ldquo;grande&rdquo; se consigue con otras buenas prácticas, y no con la
+utilización de otras bases. Si miramos el tamaño de las imágenes base, en
+el caso de <strong>python</strong>, es una diferencia de tan solo 50 o 60 megabytes.</p>
+<p>¿Vale la pena sufrir tanto como para justificar esos 60mb? Si pretendemos
+construir la imagen y guardarla en un registro, puede valernos; si estamos
+recreando la imagen continuamente en la etapa de desarrollo, igual preferimos
+la simplicidad y la velocidad, en detrimento del tamaño final de la imagen.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2021 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
