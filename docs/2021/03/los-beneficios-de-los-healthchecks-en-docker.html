@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Los beneficios de los healthchecks en Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Los beneficios de los healthchecks en Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2021-03-04
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/healthcheck.html">healthcheck</a> / <a href="/tag/swarm.html">swarm</a>
+</p>
+
+<p>Ya hemos hablado de los <em>healthchecks</em> de <strong>Docker</strong> en <a href="/2019/06/verificando-la-salud-de-nuestros-contenedores-en-docker.html">otras ocasiones</a>. Sin
+embargo, aprecio en muchos de los servicios que administro que brillan por su ausencia;
+es algo que no puedo entender, por la multitud de beneficios que nos aporta desde un
+punto de vista de operaciones en los despliegues.</p>
+<p>Y es que no me canso de predicar sus virtudes, ya que nos permite saber:</p>
+<ul>
+<li>Que el puerto de escucha está abierto.</li>
+<li>Que el servidor de aplicaciones está levantado.</li>
+<li>Que la aplicación está inicializada, y su estado
+<ul>
+<li>La aplicación responde bien</li>
+<li>La aplicación responde mal</li>
+<li>La aplicación no responde</li>
+</ul>
+</li>
+</ul>
+<p>Es especialmente útil en el caso de un <em>cluster</em> de <strong>Docker Swarm</strong>, que nos permite
+hacer una actualización del servicio sin cortes, evitando ocasiones en las que se levanta
+un contenedor y se da por bueno antes de que realmente esté funcionando adecuadamente;
+esto es especialmente cierto para algunos servidores de aplicaciones que levantan rápido,
+pero luego tardan bastante en tener la aplicación inicializada.</p>
+<p>Con un poco de lógica adicional, podemos tener un <em>healthcheck</em> más complejo que nos
+indique si el servidor se ha quedado sin responder, si falta alguna configuración para
+el correcto funcionamiento de nuestra aplicación, o si algún elemento necesario no
+estuviera disponible (base de datos, API de terceros, &hellip;).</p>
+<p>Otro punto conflictivo es la forma de consultar esos <em>healthchecks</em>; hacerlo mirando a un
+<em>endpoint</em> concreto nos indica que la aplicación está respondiendo, pero se requiere un
+cliente HTTP para hacer la consulta correspondiente (y eso no siempre está en la imagen).</p>
+<p>Muchos autores en la red abogan por prescindir de herramientas externas (tipo <code>wget</code> o <code>curl</code>)
+porque no siempre están disponibles y reducen la portabilidad de la imagen a otras imágenes base.
+Por ejemplo, en <code>python:3-alpine</code> disponemos de <code>wget</code> (de <strong>Alpine Linux</strong>), mientras que
+en <code>python:3-slim</code> (es una <strong>Debian</strong> con <strong>Python</strong>) no disponemos de ella y habría que añadirla.</p>
+<p><strong>TRUCO</strong>: Es mucho más fácil añadir un cliente HTTP escrito en el mismo intérprete que
+nuestra aplicación. Se suele necesitar algún fichero adicional, pero obtenemos exactamente lo
+que necesitamos, con el mismo <em>runtime</em> que el resto del código.</p>
+<h2>Una aplicación con healthcheck</h2>
+<p>Supongamos que tenemos una API escrita en <strong>Python</strong>, utilizando el <em>framework</em> <strong>Falcon</strong>.
+También hemos tomado la decisión que el <em>healthcheck</em> va a devolver un estado HTTP 200 en el
+caso que todo vaya bien, y en el caso de que vaya mal, cualquier otro estado (por ejemplo un 503).</p>
+<p>Simplemente se trata de un nuevo <em>endpoint</em> que responderá en <code>/status</code> y se limitará a
+realizar algunos <em>checks</em> para decidir si el servicio funciona o no. El <em>healthcheck</em> deberá
+ser interpretado como correcto si este <em>endpoint</em> devuelve un estado 200, y como falso (tanto
+si responde con un estado 503 como si no responde en absoluto).</p>
+<p><strong>NOTA</strong>: La aplicación no hace nada más por ahora; no es relevante y solo añade complejidad
+innecesaria al artículo.</p>
+<pre><code class="language-bash">gerard@atlantis:~/projects/healthcheck_python_demo$ cat app.py 
+import falcon
+import time
+
+
+class StatusResource():
+    def arbitrary_check(self):
+        return int(time.time()) % 10 != 0
+
+    def on_get(self, req, resp):
+        if req.remote_addr != '127.0.0.1':
+            raise falcon.HTTPNotFound()
+        if not self.arbitrary_check():
+            resp.body = 'FAIL - Arbitrary check failed'
+            resp.status = falcon.HTTP_SERVICE_UNAVAILABLE
+        else:
+            resp.body = 'OK - Everything is OK'
+
+
+api = falcon.API()
+api.add_route('/status', StatusResource())
+gerard@atlantis:~/projects/healthcheck_python_demo$ 
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~/projects/healthcheck_python_demo$ cat requirements.txt 
+falcon==2.0.0
+gunicorn==20.0.4
+gerard@atlantis:~/projects/healthcheck_python_demo$ 
+</code></pre>
+<p>Este ejemplo ejecuta un <em>check</em> que falla 1 segundo de cada 10, para comprobar
+que el <em>healthcheck</em> realmente falla cuando debe fallar. Además, hemos puesto
+algo de código para limitar el acceso al <em>endpoint</em> solamente desde dentro del
+contenedor (los <em>healthchecks</em> se ejecutan <strong>dentro del contenedor</strong>).</p>
+<h2>El cliente HTTP para consultar el healthcheck</h2>
+<p>Ya hemos dicho que no queremos trabajar con herramientas del sistema operativo;
+esto nos ahorra el tener que instalar paquetes adicionales y nos evita problemas
+derivados de distintas implementaciones de la herramienta o de las librerías
+de las que estas dependen.</p>
+<p>Así pues, creamos un <em>script</em> en el mismo lenguaje que utiliza la aplicación,
+que en este caso es <strong>Python</strong> y ya nos ofrece lo que necesitamos para el mismo.</p>
+<pre><code class="language-bash">gerard@atlantis:~/projects/healthcheck_python_demo$ cat health.py 
+#!/usr/bin/env python
+
+import http.client
+import sys
+
+try:
+    c = http.client.HTTPConnection('localhost', 8080, timeout=5)
+    c.request('GET', '/status')
+    r = c.getresponse()
+    assert r.status == 200
+except AssertionError as e:
+    print(r.read().decode('utf-8'))
+    sys.exit(1)
+except Exception:
+    print('FAIL - Connection error')
+    sys.exit(1)
+
+print(r.read().decode('utf-8'))
+sys.exit(0)
+gerard@atlantis:~/projects/healthcheck_python_demo$ 
+</code></pre>
+<p>Básicamente se trata de hacer una petición al <em>endpoint</em> <code>/status</code> y verificar que
+devuelve un estado 200; este es el caso &ldquo;bueno&rdquo; y requiere que devolvamos un código
+de retorno &ldquo;0&rdquo; en el <em>script</em>, para que <strong>Docker</strong> pueda interpretar el <em>check</em> como
+correcto. Otras salidas esperadas son otro código de estado HTTP (la aplicación responde
+pero algo no va bien) o un <em>timeout</em> (la aplicación o el servidor no están listos).</p>
+<h2>Empaquetando la imagen para su uso en Docker</h2>
+<p>Para empaquetar la imagen para <strong>Docker</strong> escribimos un fichero <em>Dockerfile</em>. No es
+complicado, pero hay que tener en cuenta dos cosas nuevas: copiar el <em>script</em> de
+<em>healthcheck</em> y declarar el <em>healthcheck</em> (o ponerlo en el fichero tipo <em>compose</em>
+más adelante). Optamos por la segunda.</p>
+<pre><code class="language-bash">gerard@atlantis:~/projects/healthcheck_python_demo$ cat Dockerfile 
+FROM python:3.8-slim
+COPY requirements.txt app.py health.py /app/
+RUN pip install --no-cache-dir -r /app/requirements.txt
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;--chdir=/app&quot;, &quot;app:api&quot;]
+HEALTHCHECK --interval=5s --timeout=3s --start-period=10s CMD /app/health.py
+gerard@atlantis:~/projects/healthcheck_python_demo$ 
+</code></pre>
+<p>Solo falta por construir la imagen con los comandos habituales:</p>
+<pre><code class="language-bash">gerard@atlantis:~/projects/healthcheck_python_demo$ docker build -t healthdemo .
+...
+Successfully tagged healthdemo:latest
+gerard@atlantis:~/projects/healthcheck_python_demo$ 
+</code></pre>
+<h2>Verificando el funcionamiento</h2>
+<p>Para verificar que funciona, solo necesitamos ejecutar un contenedor basado en
+la imagen recién creada; podemos encontrar la salida de los <em>healthchecks</em> si
+inspeccionamos el contenedor <em>a posteriori</em>.</p>
+<pre><code class="language-bash">gerard@atlantis:~$ docker run --name healthdemo --rm healthdemo
+...
+</code></pre>
+<pre><code class="language-bash">gerard@atlantis:~$ docker inspect healthdemo
+...
+        &quot;State&quot;: {
+...
+            &quot;Health&quot;: {
+                &quot;Status&quot;: &quot;healthy&quot;,
+                &quot;FailingStreak&quot;: 0,
+                &quot;Log&quot;: [
+                    {
+...
+                        &quot;ExitCode&quot;: 0,
+                        &quot;Output&quot;: &quot;OK - Everything is OK\n&quot;
+                    },
+                    {
+...
+                        &quot;ExitCode&quot;: 1,
+                        &quot;Output&quot;: &quot;FAIL - Arbitrary check failed\n&quot;
+                    },
+...
+gerard@atlantis:~$ 
+</code></pre>
+<p>De acuerdo con la especificación del <em>healthcheck</em> en el fichero <code>Dockerfile</code>, se dará
+por malo un contenedor que falle el <em>healthcheck</em> 3 veces seguidas (valor por defecto),
+ejecutándose cada 5 segundos, teniendo en cuenta que los fallos no cuentan durante los
+10 primeros segundos.</p>
+<p>En el caso de tratarse de un servicio dentro de un <strong>Docker Swarm</strong>, el <em>healthcheck</em>
+cumple con dos grandes casos de uso:</p>
+<ol>
+<li>Desplegar un contenedor en sustitución de una que empiece a fallar por algún motivo en concreto.</li>
+<li>En caso de un <em>update</em>, no bastará con ejecutar el servidor de aplicaciones;
+habrá que esperar a que la aplicación responda correctamente antes de actualizar
+el siguiente contenedor del servicio, eliminando el <em>downtime</em> de la actualización.</li>
+</ol>
+<p>Ahora ya no deberá preocuparnos que la aplicación tarde minutos en levantar; <strong>Docker</strong>
+no seguirá parando contenedores hasta que se estabilice el que está actualizando, momento
+en el que continuará con el <em>update</em> (parando y recreando otro contenedor).</p>
+
+
+<p class="footer">Copyright &copy; 2015-2021 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
