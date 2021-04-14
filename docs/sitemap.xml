@@ -3,30 +3,36 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2021/04/creando-sidekick-containers-en-docker-swarm.html</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/sidekick.html</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/healthcheck.html</loc>
     <lastmod>2021-03-04T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/03/los-beneficios-de-los-healthchecks-en-docker.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
-    <lastmod>2021-03-04T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2021-03-04T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/02/poniendo-un-docker-registry-en-el-swarm.html</loc>
@@ -780,9 +786,6 @@
     <lastmod>2018-03-26T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/03/los-sidekick-containers-en-docker.html</loc>
-    <lastmod>2018-03-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/sidekick.html</loc>
     <lastmod>2018-03-19T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/03/un-gateway-con-debian-iptables-y-dnsmasq.html</loc>
