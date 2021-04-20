@@ -112,7 +112,7 @@ host    replication     all             ::1/128                 trust
 host    all             all             all                     md5
 gerard@database:~$ 
 </code></pre>
-<p>Básicamente indica que se deja entrar sin contraseña a todos los usuarios des del servidor
+<p>Básicamente indica que se deja entrar sin contraseña a todos los usuarios desde el servidor
 local (a través de IP o de <em>unix socket</em>) y requiere contraseña para todo el resto.</p>
 <p>Para aplicar los cambios, basta con enviar un <code>SIGHUP</code> al proceso principal de <strong>postgresql</strong>.
 Para ello, listaremos los procesos; el proceso principal es aquél cuyo padre es el PID 1,
@@ -182,7 +182,7 @@ GRANT
 postgres=# exit
 gerard@database:~$ 
 </code></pre>
-<p>Ahora ya deberíamos poder usar el nuevo usuario para acceder al la base de datos,
+<p>Ahora ya deberíamos poder usar el nuevo usuario para acceder a la base de datos,
 ya sea de forma remota (con contraseña) o local (sin ella), tal como indicamos
 en la configuración del control de acceso.</p>
 <pre><code class="language-bash">gerard@server:~$ psql -h database -U kittenuser -d kittendb
