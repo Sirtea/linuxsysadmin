@@ -88,7 +88,7 @@ host    all             all             all                     md5
 gerard@database:~$ 
 ```
 
-Básicamente indica que se deja entrar sin contraseña a todos los usuarios des del servidor
+Básicamente indica que se deja entrar sin contraseña a todos los usuarios desde el servidor
 local (a través de IP o de *unix socket*) y requiere contraseña para todo el resto.
 
 Para aplicar los cambios, basta con enviar un `SIGHUP` al proceso principal de **postgresql**.
@@ -179,7 +179,7 @@ postgres=# exit
 gerard@database:~$ 
 ```
 
-Ahora ya deberíamos poder usar el nuevo usuario para acceder al la base de datos,
+Ahora ya deberíamos poder usar el nuevo usuario para acceder a la base de datos,
 ya sea de forma remota (con contraseña) o local (sin ella), tal como indicamos
 en la configuración del control de acceso.
 
