@@ -41,8 +41,7 @@ a.article { background-color: #000000; color: #FFFFFF; font-size: small; padding
 #changePreferences > p:hover { background-color: #000000 }
 
 /* Solo aplica a /curriculum.html */
-dt { text-indent: 4rem; clear: left; float: left; width: 250px; font-weight: bold }
-table { width: 90%; margin: auto; border-collapse: collapse }
+table { width: 90%; margin: auto; border-collapse: collapse; table-layout: fixed }
 table + table { margin-top: 2em }
 td, th { text-align: center; border: 1px solid #AAAAAA }
 
