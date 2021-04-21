@@ -7,13 +7,11 @@ slug: "curriculum"
 
 ## Datos personales
 
-<dl>
-<dt>Nombre</dt><dd>Gerard Monells Bort</dd>
-<dt>Fecha de nacimiento</dt><dd>01/07/1982</dd>
-<dt>Lugar de residencia</dt><dd>Palma de Mallorca</dd>
-<dt>E-mail</dt><dd>gerard.monells@gmail.com</dd>
-<dt>Nacionalidad</dt><dd>Española</dd>
-</dl>
+* **Nombre**: Gerard Monells Bort  
+* **Fecha de nacimiento**: 01/07/1982  
+* **Lugar de residencia**: Palma de Mallorca  
+* **E-mail**: gerard.monells@gmail.com  
+* **Nacionalidad**: Española
 
 ---
 
@@ -36,78 +34,73 @@ slug: "curriculum"
 
 ## Experiencia
 
-<dl>
-<dt>Empresa:</dt><dd>Jumbo Tours / SII Concatel</dd>
-<dt>Periodo:</dt><dd>04/2019 - actualidad (consultor externo de SII Concatel)</dd>
-<dt>Actividades realizadas:</dt><dd>Administrador de sistemas Linux, Operaciones, DBA de MongoDB y de DB2</dd>
-<dt>Tecnologías utilizadas:</dt><dd>DB2, MongoDB, Docker, Centos</dd>
-</dl>
+* **Empresa**: Jumbo Tours / SII Concatel
+  * **Periodo**: 04/2019 - 12/2019 (consultor externo de SII Concatel) y 12/2019 - actualidad (interno)
+  * **Actividades realizadas**: Administrador de sistemas Linux, Operaciones, DBA de MongoDB y de DB2
+  * **Tecnologías utilizadas**: DB2, MongoDB, Docker Swarm, Centos
 
-<dl>
-<dt>Empresa:</dt><dd>Meliá Hoteles / Brújula</dd>
-<dt>Periodo:</dt><dd>05/2018 - 02/2019 (consultor externo de Brújula)</dd>
-<dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, migración a Amazon cloud, coordinación de equipos técnicos para resolución de incidencias y cambios</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Amazon, Redhat Linux, AIX, Ansible, Nginx, Tomcat, Git, Jenkins</dd>
-</dl>
+<!-- -->
 
-<dl>
-<dt>Empresa:</dt><dd>AXA Group Solutions / Amaris</dd>
-<dt>Periodo:</dt><dd>07/2016 - 05/2018 (consultor externo de Amaris)</dd>
-<dt>Actividades realizadas:</dt><dd>Operaciones, DevOps, automatización de tareas, deploys</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Ubuntu Linux, Docker, Ansible, HAproxy, Nginx, NodeJS, Jenkins</dd>
-</dl>
+* **Empresa**: Meliá Hoteles / Brújula
+  * **Periodo**: 05/2018 - 02/2019 (consultor externo de Brújula)
+  * **Actividades realizadas**: Operaciones, DevOps, migración a Amazon cloud, coordinación de equipos técnicos para resolución de incidencias y cambios
+  * **Tecnologías utilizadas**: AWS, Redhat Linux, AIX, Ansible, Nginx, Tomcat, Git, Jenkins
 
-<dl>
-<dt>Empresa:</dt><dd>Telefónica Digital / Amaris</dd>
-<dt>Periodo:</dt><dd>04/2011 - 07/2016 (consultor externo de Amaris)</dd>
-<dt>Actividades realizadas:</dt><dd>Operaciones 3er nivel, automatización, Advanced Service Manager y MongoDB DBA</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Redhat Linux, Apache, Nginx, Tomcat, Oracle, MySQL, MongoDB, Network troubleshooting</dd>
-</dl>
+<!-- -->
 
-<dl>
-<dt>Empresa:</dt><dd>Cercle d'Estudis Orientals (asociación cultural de la UPC)</dd>
-<dt>Periodo:</dt><dd>03/2009 - 11/2017 (dedicación ocasional como autónomo)</dd>
-<dt>Actividades realizadas:</dt><dd>Desarrollo y mantenimiento de herramientas web de gestión interna</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Debian Linux, Apache, PHP, MySQL, XHTML, CSS, JQuery, CodeIgniter y Smarty</dd>
-</dl>
+* **Empresa**: AXA Group Solutions / Amaris
+  * **Periodo**: 07/2016 - 05/2018 (consultor externo de Amaris)
+  * **Actividades realizadas**: Operaciones, DevOps, automatización de tareas, deploys
+  * **Tecnologías utilizadas**: Ubuntu Linux, Docker, Ansible, HAproxy, Nginx, NodeJS, Jenkins
 
-<dl>
-<dt>Empresa:</dt><dd>Tango/04 Computing Group</dd>
-<dt>Periodo:</dt><dd>01/2011 - 04/2011 (interno)</dd>
-<dt>Actividades realizadas:</dt><dd>Desarrollo de proyecto de monitorización</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Windows Server, HTML, JavaScript, C++, C#, ASP.NET y Python</dd>
-</dl>
+<!-- -->
 
-<dl>
-<dt>Empresa:</dt><dd>T-Systems / Desarrollos Informáticos Diusframi</dd>
-<dt>Periodo:</dt><dd>11/2008 - 06/2010 (becario de T-Systems)</dd>
-<dt>&nbsp;</dt><dd>07/2010 - 12/2010 (consultor externo de Desarrollos Informáticos Diusframi)</dd>
-<dt>Actividades realizadas:</dt><dd>Auditorías de seguridad, scripts de auditoría y herramienta de gestión de identidades</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Windows Server, Red Hat Linux, Solaris, AIX, HP-UX, Apache, Bash, Python y Java</dd>
-</dl>
+* **Empresa**: Telefónica Digital / Amaris
+  * **Periodo**: 04/2011 - 07/2016 (consultor externo de Amaris)
+  * **Actividades realizadas**: Operaciones 3er nivel, automatización, Advanced Service Manager y MongoDB DBA
+  * **Tecnologías utilizadas**: Redhat Linux, Apache, Nginx, Tomcat, Oracle, MySQL, MongoDB, Network troubleshooting
 
-<dl>
-<dt>Empresa:</dt><dd>Hogar Digital SL</dd>
-<dt>Periodo:</dt><dd>10/2007 - 08/2008 (becario de la UPC)</dd>
-<dt>Actividades realizadas:</dt><dd>Desarrollo de servlets, adaptadores de drivers y módulos OSGI para domótica</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Ubuntu Linux y Java</dd>
-</dl>
+<!-- -->
 
-<dl>
-<dt>Empresa:</dt><dd>La Vanguardia Ediciones</dd>
-<dt>Periodo:</dt><dd>09/2004 - 01/2005 (becario del departamento ESAII-UPC)</dd>
-<dt>&nbsp;</dt><dd>01/2005 - 07/2005 (becario de SICMA21)</dd>
-<dt>Actividades realizadas:</dt><dd>Desarrollo de sistema SCADA para control de producción y distribución</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Windows, Linux, Java y C++</dd>
-</dl>
+* **Empresa**: Cercle d'Estudis Orientals (asociación cultural de la UPC)
+  * **Periodo**: 03/2009 - 11/2017 (dedicación ocasional como autónomo)
+  * **Actividades realizadas**: Desarrollo y mantenimiento de herramientas web de gestión interna
+  * **Tecnologías utilizadas**: Debian Linux, Apache, PHP, MySQL, XHTML, CSS, JQuery, CodeIgniter y Smarty
 
-<dl>
-<dt>Empresa:</dt><dd>DÜRR Systems Spain</dd>
-<dt>Periodo:</dt><dd>07/2004 - 09/2004 (becario en proyecto de SEAT Martorell)</dd>
-<dt>&nbsp;</dt><dd>07/2006 - 09/2006 (becario en proyecto de PEUGEOT Madrid)</dd>
-<dt>Actividades realizadas:</dt><dd>Desarrollo de sistemas SCADA para líneas robotizadas de pintado de coches</dd>
-<dt>Tecnologías utilizadas:</dt><dd>Windows, C++ y C</dd>
-</dl>
+<!-- -->
+
+* **Empresa**: Tango/04 Computing Group
+  * **Periodo**: 01/2011 - 04/2011 (interno)
+  * **Actividades realizadas**: Desarrollo de proyecto de monitorización
+  * **Tecnologías utilizadas**: Windows Server, HTML, JavaScript, C++, C#, ASP.NET y Python
+
+<!-- -->
+
+* **Empresa**: T-Systems / Desarrollos Informáticos Diusframi
+  * **Periodo**: 11/2008 - 06/2010 (becario de T-Systems) y 07/2010 - 12/2010 (consultor externo de Desarrollos Informáticos Diusframi)
+  * **Actividades realizadas**: Auditorías de seguridad, scripts de auditoría y herramienta de gestión de identidades
+  * **Tecnologías utilizadas**: Windows Server, Red Hat Linux, Solaris, AIX, HP-UX, Apache, Bash, Python y Java
+
+<!-- -->
+
+* **Empresa**: Hogar Digital SL
+  * **Periodo**: 10/2007 - 08/2008 (becario de la UPC)
+  * **Actividades realizadas**: Desarrollo de servlets, adaptadores de drivers y módulos OSGI para domótica
+  * **Tecnologías utilizadas**: Ubuntu Linux y Java
+
+<!-- -->
+
+* **Empresa**: La Vanguardia Ediciones
+  * **Periodo**: 09/2004 - 01/2005 (becario del departamento ESAII-UPC) y 01/2005 - 07/2005 (becario de SICMA21)
+  * **Actividades realizadas**: Desarrollo de sistema SCADA para control de producción y distribución
+  * **Tecnologías utilizadas**: Windows, Linux, Java y C++
+
+<!-- -->
+
+* **Empresa**: DÜRR Systems Spain
+  * **Periodo**: 07/2004 - 09/2004 (becario en proyecto de SEAT Martorell) y 07/2006 - 09/2006 (becario en proyecto de PEUGEOT Madrid)
+  * **Actividades realizadas**: Desarrollo de sistemas SCADA para líneas robotizadas de pintado de coches
+  * **Tecnologías utilizadas**: Windows, C++ y C
 
 ---
 
@@ -123,11 +116,9 @@ slug: "curriculum"
 
 ## Otros datos
 
-<dl>
-<dt>Eventos</dt><dd>Seleccionado por el grupo Deutsche Telekom para participar en el evento TalentsInTouch2009</dd>
-<dt>Estado laboral</dt><dd>Trabajando a jornada completa</dd>
-<dt>Permiso de conducir</dt><dd>No tengo permiso de conducir</dd>
-</dl>
+* **Eventos**: Seleccionado por el grupo Deutsche Telekom para participar en el evento TalentsInTouch2009
+* **Estado laboral**: Trabajando a jornada completa
+* **Permiso de conducir**: No tengo permiso de conducir
 
 ---
 
