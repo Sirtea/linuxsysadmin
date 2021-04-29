@@ -246,7 +246,7 @@ root@8e7b4f301aa0:~#
 <p>Este proceso sigue necesitando de conexión a internet, porque consulta al índice del repositorio para saber que paquetes necesita. Sin embargo, estos paquetes ya los tenemos, con lo que es un proceso bastante mas rápido y menos estresante para nuestra red.</p>
 <h2>Construyendo una jaula para otra máquina</h2>
 <p>Supongamos ahora que tenemos una máquina que es de otra arquitectura y le descargamos el sistema de ficheros en nuestro local. Normalmente no sería posible ya que podemos descargar los ficheros <em>.deb</em> de la otra arquitectura, pero no podemos configurar los paquetes porque para esto se necesita ejecutar binarios que, por supuesto, no funcionan en nuestro local.</p>
-<p>El comando <strong>debootstrap</strong> también nos permite esto. La idea está en &ldquo;dejar listo&rdquo; una estructura, de forma que solo haga falta copiar en destino y configurar los paquetes. Esto es tan fácil como indicar el <em>flag &ndash;foreign</em>, y adicionalmente, indicar la arquitectura deseada con <em>&ndash;arch</em>.</p>
+<p>El comando <strong>debootstrap</strong> también nos permite esto. La idea está en &ldquo;dejar listo&rdquo; una estructura, de forma que solo haga falta copiar en destino y configurar los paquetes. Esto es tan fácil como indicar el <em>flag</em> <code>--foreign</code>, y adicionalmente, indicar la arquitectura deseada con <code>--arch</code>.</p>
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase --arch=armhf --foreign jessie rootfs
 I: Retrieving Release 
 I: Retrieving Release.gpg 
@@ -268,7 +268,7 @@ root@8e7b4f301aa0:~#
 arch  base  debootstrap  debootstrap.log  debpaths  devices.tar.gz  functions  required  suite	suite-script  variant
 root@8e7b4f301aa0:~# 
 </code></pre>
-<p>Para continuar el proceso en la nueva máquina, tenemos que copiar en ella toda la carpeta <em>rootfs/</em>. Solo nos quedará usar <em>chroot</em> para entrar en la jaula y ejecutar el <em>script</em> para configurar lo que falte y eliminar las herramientas intermedias. Este proceso no requiere conexión a internet.</p>
+<p>Para continuar el proceso en la nueva máquina, tenemos que copiar en ella toda la carpeta <code>rootfs/</code>. Solo nos quedará usar <code>chroot</code> para entrar en la jaula y ejecutar el <em>script</em> para configurar lo que falte y eliminar las herramientas intermedias. Este proceso no requiere conexión a internet.</p>
 <pre><code class="language-bash">root@odroid:~# chroot rootfs/
 # /debootstrap/debootstrap --second-stage
 I: Keyring file not available at /usr/share/keyrings/debian-archive-keyring.gpg; switching to https mirror https://mirrors.kernel.org/debian
