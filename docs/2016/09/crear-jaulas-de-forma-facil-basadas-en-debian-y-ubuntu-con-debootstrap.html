@@ -184,7 +184,7 @@ root@8e7b4f301aa0:~#
 </code></pre>
 <p><strong>TRUCO</strong>: Si la carpeta <em>jail/</em> estuviera mapeada a un dispositivo tendríamos un disco de sistema operativo casi completo. Bastaría con instalarle un <em>kernel</em> y un <em>bootloader</em> para tener un sistema operativo funcional.</p>
 <h2>Haciendo un fichero comprimido de paquetes descargados</h2>
-<p>Si la idea de ir copiando la jaula anterior no nos convence, podemos tener los paquetes <em>.deb</em> descargados y comprimidos en un fichero <em>.tar.gz</em>, para no tener que descargar todos los paquetes cada vez. Basta con poner el <em>flag &ndash;make-tarball</em>. En este caso, la carpeta de descarga es una carpeta temporal, que va a ser eliminada al terminar.</p>
+<p>Si la idea de ir copiando la jaula anterior no nos convence, podemos tener los paquetes <em>.deb</em> descargados y comprimidos en un fichero <em>.tar.gz</em>, para no tener que descargar todos los paquetes cada vez. Basta con poner el <em>flag</em> <code>--make-tarball</code>. En este caso, la carpeta de descarga es una carpeta temporal, que va a ser eliminada al terminar.</p>
 <pre><code class="language-bash">root@8e7b4f301aa0:~# debootstrap --variant=minbase --make-tarball=debian-jessie.tgz jessie temporal
 I: Retrieving Release 
 I: Retrieving Release.gpg 
