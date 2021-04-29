@@ -169,7 +169,7 @@ root@8e7b4f301aa0:~#
 
 ## Haciendo un fichero comprimido de paquetes descargados
 
-Si la idea de ir copiando la jaula anterior no nos convence, podemos tener los paquetes *.deb* descargados y comprimidos en un fichero *.tar.gz*, para no tener que descargar todos los paquetes cada vez. Basta con poner el *flag --make-tarball*. En este caso, la carpeta de descarga es una carpeta temporal, que va a ser eliminada al terminar.
+Si la idea de ir copiando la jaula anterior no nos convence, podemos tener los paquetes *.deb* descargados y comprimidos en un fichero *.tar.gz*, para no tener que descargar todos los paquetes cada vez. Basta con poner el *flag* `--make-tarball`. En este caso, la carpeta de descarga es una carpeta temporal, que va a ser eliminada al terminar.
 
 ```bash
 root@8e7b4f301aa0:~# debootstrap --variant=minbase --make-tarball=debian-jessie.tgz jessie temporal
