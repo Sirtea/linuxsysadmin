@@ -246,7 +246,7 @@ Este proceso sigue necesitando de conexión a internet, porque consulta al índi
 
 Supongamos ahora que tenemos una máquina que es de otra arquitectura y le descargamos el sistema de ficheros en nuestro local. Normalmente no sería posible ya que podemos descargar los ficheros *.deb* de la otra arquitectura, pero no podemos configurar los paquetes porque para esto se necesita ejecutar binarios que, por supuesto, no funcionan en nuestro local.
 
-El comando **debootstrap** también nos permite esto. La idea está en "dejar listo" una estructura, de forma que solo haga falta copiar en destino y configurar los paquetes. Esto es tan fácil como indicar el *flag --foreign*, y adicionalmente, indicar la arquitectura deseada con *--arch*.
+El comando **debootstrap** también nos permite esto. La idea está en "dejar listo" una estructura, de forma que solo haga falta copiar en destino y configurar los paquetes. Esto es tan fácil como indicar el *flag* `--foreign`, y adicionalmente, indicar la arquitectura deseada con `--arch`.
 
 ```bash
 root@8e7b4f301aa0:~# debootstrap --variant=minbase --arch=armhf --foreign jessie rootfs
@@ -275,7 +275,7 @@ arch  base  debootstrap  debootstrap.log  debpaths  devices.tar.gz  functions  r
 root@8e7b4f301aa0:~# 
 ```
 
-Para continuar el proceso en la nueva máquina, tenemos que copiar en ella toda la carpeta *rootfs/*. Solo nos quedará usar *chroot* para entrar en la jaula y ejecutar el *script* para configurar lo que falte y eliminar las herramientas intermedias. Este proceso no requiere conexión a internet.
+Para continuar el proceso en la nueva máquina, tenemos que copiar en ella toda la carpeta `rootfs/`. Solo nos quedará usar `chroot` para entrar en la jaula y ejecutar el *script* para configurar lo que falte y eliminar las herramientas intermedias. Este proceso no requiere conexión a internet.
 
 ```bash
 root@odroid:~# chroot rootfs/
