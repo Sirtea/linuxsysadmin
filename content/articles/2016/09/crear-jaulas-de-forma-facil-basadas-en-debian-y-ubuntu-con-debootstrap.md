@@ -221,7 +221,7 @@ var/cache/apt/archives/bash_4.3-11+b1_amd64.deb
 root@8e7b4f301aa0:~# 
 ```
 
-Cuando queramos utilizar este fichero comprimido para crear una jaula, basta con indicar que use los paquetes en el fichero, mediante el *flag --unpack-tarball*.
+Cuando queramos utilizar este fichero comprimido para crear una jaula, basta con indicar que use los paquetes en el fichero, mediante el *flag* `--unpack-tarball`.
 
 ```bash
 root@8e7b4f301aa0:~# debootstrap --variant=minbase --unpack-tarball=/root/debian-jessie.tgz jessie rootfs
