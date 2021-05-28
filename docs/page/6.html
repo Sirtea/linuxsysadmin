@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta name="generator" content="Hugo 0.82.1" />
+	<meta name="generator" content="Hugo 0.83.1" />
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Linux Sysadmin</title>
@@ -46,6 +46,10 @@
 
 <h1>Linux Sysadmin</h1>
 
+<h2 class="article"><a href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Protegiendo sistemas Linux con una autenticación de dos factores</a></h2>
+<p>El otro día tuve un auditor de seguridad imponiendo sus criterios arbitrarios; quería que cierto servidor seguro no fuera accesible si no era con una autenticación de 2 factores. Aunque personalmente no lo veo útil, me tocó ceder a sus exigencias y aquí he anotado como lo hice: con <strong>libpam-google-authenticator</strong>.</p>
+<p><a class="article" href="/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html">Seguir leyendo</a></p>
+<hr />
 <h2 class="article"><a href="/2019/01/testeando-la-apertura-de-puertos-con-perl.html">Testeando la apertura de puertos con Perl</a></h2>
 <p>Muchas veces me toca solicitar la apertura de puertos en un <em>firewall</em> que no administro. Muchas veces estos administradores se olvidan de ejecutar pasos que resultan en una ausencia total de conectividad, lo que me obliga a revisar su trabajo antes de poner alguna aplicación dando servicio en ese puerto.</p>
 <p><a class="article" href="/2019/01/testeando-la-apertura-de-puertos-con-perl.html">Seguir leyendo</a></p>
@@ -81,10 +85,6 @@
 <h2 class="article"><a href="/2018/11/verificando-peticiones-json-con-jsonschema.html">Verificando peticiones JSON con jsonschema</a></h2>
 <p>A medida que las empresas confían más y más en las APIs REST, los datos que viajan en formato JSON ha incrementado notablemente. Con este incremento, los errores por mensajes mal formados también se ha incrementado; esto nos obliga a validar los mensajes, no solamente de sintaxis, sino de semántica.</p>
 <p><a class="article" href="/2018/11/verificando-peticiones-json-con-jsonschema.html">Seguir leyendo</a></p>
-<hr />
-<h2 class="article"><a href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">Usando Traefik en un cluster de Docker Swarm</a></h2>
-<p>Hace unas semanas, hablamos de un balanceador que trabaja muy bien con <strong>docker</strong>. Se trataba de <strong>traefik</strong> y nos permitía olvidarnos de su configuración, que él mismo podía extraer de los metadatos de los contenedores y reconfigurarse dinámicamente. Hoy vamos a explicar como funciona con un <em>cluster</em> de <strong>docker swarm</strong>.</p>
-<p><a class="article" href="/2018/10/usando-traefik-en-un-cluster-de-docker-swarm.html">Seguir leyendo</a></p>
 <hr />
 
 <p class="pagination">
