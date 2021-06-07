@@ -120,7 +120,7 @@ gerard@loadbalancer:~$
 siguiente contenido:</p>
 <pre><code class="language-bash">gerard@loadbalancer:~$ cat /etc/systemd/system/haproxy.service.d/override.conf
 [Service]
-ExecStartPre=bash -c &quot;cat /etc/harpoxy/conf.d/*.cfg &gt; /etc/haproxy/haproxy.cfg&quot;
+ExecStartPre=bash -c &quot;cat /etc/haproxy/conf.d/*.cfg &gt; /etc/haproxy/haproxy.cfg&quot;
 gerard@loadbalancer:~$
 </code></pre>
 <p><strong>TRUCO</strong>: Concatenamos los ficheros <code>*.cfg</code> para poder desactivarlos si
