@@ -97,7 +97,7 @@ siguiente contenido:
 ```bash
 gerard@loadbalancer:~$ cat /etc/systemd/system/haproxy.service.d/override.conf
 [Service]
-ExecStartPre=bash -c "cat /etc/harpoxy/conf.d/*.cfg > /etc/haproxy/haproxy.cfg"
+ExecStartPre=bash -c "cat /etc/haproxy/conf.d/*.cfg > /etc/haproxy/haproxy.cfg"
 gerard@loadbalancer:~$
 ```
 
