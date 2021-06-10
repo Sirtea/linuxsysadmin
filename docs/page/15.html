@@ -46,6 +46,10 @@
 
 <h1>Linux Sysadmin</h1>
 
+<h2 class="article"><a href="/2017/05/problemas-de-log-con-docker-y-python.html">Problemas de log con docker y python</a></h2>
+<p>El otro día estaba haciendo un <em>script</em> de <strong>python</strong> que debía ejecutarse en un contenedor <strong>docker</strong>. A pesar de la cantidad de <em>verbose</em> que le puse, no era capaz de ver ningún texto cuando miraba los <em>logs</em>. Tras mucha búsqueda, finalmente encontré el culpable en la variable de entorno <strong>PYTHONUNBUFFERED</strong>.</p>
+<p><a class="article" href="/2017/05/problemas-de-log-con-docker-y-python.html">Seguir leyendo</a></p>
+<hr />
 <h2 class="article"><a href="/2017/04/administrando-docker-via-web-portainer.html">Administrando Docker vía web: Portainer</a></h2>
 <p>El otro día me topé con un desarrollador que quiere desplegar sus contenedores <strong>Docker</strong> en el servidor de integración, pero no conoce la sintaxis del comando <em>docker</em> y prefiere una interfaz gráfica. Eso me llevó a investigar, buscando una opción bonita, funcional y ligera; al final, me topé con <strong>Portainer</strong>.</p>
 <p><a class="article" href="/2017/04/administrando-docker-via-web-portainer.html">Seguir leyendo</a></p>
@@ -81,10 +85,6 @@
 <h2 class="article"><a href="/2017/02/alta-disponibilidad-con-keepalived.html">Alta disponibilidad con Keepalived</a></h2>
 <p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
 <p><a class="article" href="/2017/02/alta-disponibilidad-con-keepalived.html">Seguir leyendo</a></p>
-<hr />
-<h2 class="article"><a href="/2017/02/sincronizando-ficheros-con-owncloud.html">Sincronizando ficheros con ownCloud</a></h2>
-<p>Finalmente ha sucedido: el ingeniero de seguridad de la empresa ha decidido cerrar servicios de sincronizado de ficheros, dejando inútiles servicios como <strong>Dropbox</strong>, <strong>Mega</strong> y otros. Sin embargo, cualquier bloqueo que se haga mediante el dominio hace que sea imposible cerrar todos estos servicios, e incluso podemos poner el nuestro.</p>
-<p><a class="article" href="/2017/02/sincronizando-ficheros-con-owncloud.html">Seguir leyendo</a></p>
 <hr />
 
 <p class="pagination">

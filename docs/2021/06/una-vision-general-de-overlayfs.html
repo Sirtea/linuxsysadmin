@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Una vision general de OverlayFS - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Una vision general de OverlayFS</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2021-06-10
+	<strong>Tiempo de lectura</strong>: 10 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/debian.html">debian</a> / <a href="/tag/debootstrap.html">debootstrap</a> / <a href="/tag/jaula.html">jaula</a> / <a href="/tag/overlayfs.html">overlayfs</a> / <a href="/tag/squashfs.html">squashfs</a>
+</p>
+
+<p>Ya vimos en otro artículo sobre los sistemas de ficheros tipo <em>stacked</em>,
+como por ejemplo <a href="/2016/03/sistemas-de-ficheros-multicapa-con-aufs.html">AUFS</a>. Estos nos pueden ser útiles en multitud de
+ocasiones, y en particular <strong>OverlayFS</strong>, que ya viene en el <em>kernel</em> de
+muchos de los <strong>Linux</strong> habituales y sirve como la base sobre la que se
+construye <strong>Docker</strong>.</p>
+<p>La idea es muy simple: tenemos un sistema de ficheros, al que vamos a
+llamar <em>merged</em> que es el resultado de juntar 2 o más capas de entre las
+siguientes:</p>
+<ul>
+<li>Una <em>upperdir</em> opcional, que es de lectura y escritura</li>
+<li>Una <em>lowerdir</em> (si hay <em>upperdir</em>, sino se necesitan dos) o más, que son de solo lectura</li>
+</ul>
+<p>La idea es que la carpeta <em>merged</em> va contener todos los ficheros y
+carpetas de todas las otras capas, usando la de más arriba en caso de
+duda. Las escrituras siempre van a la <em>upperdir</em>, que sirve como capa
+de cambios respecto a las otras <em>lowerdir</em>, evitando así modificarlas.</p>
+<p><strong>NOTA</strong>: En caso de tener una capa <em>upperdir</em> también es necesario
+tener una carpeta <em>workdir</em> para uso interno del sistema operativo,
+sobre la que no tenemos control, pero que debe estar en el mismo sistema
+de ficheros que la <em>upperdir</em>.</p>
+<p>Por ejemplo podríamos montar una <em>merged</em> de 3 formas:</p>
+<ul>
+<li><code>mount -t overlay overlay -o lowerdir=lower1:lower2 merged</code><br>
+Mezcla de dos <em>lowerdir</em> sin <em>upperdir</em>, que nos deja un <em>merged</em>
+de solo lectura, al no tener <strong>upperdir</strong>.</li>
+<li><code>mount -t overlay overlay -o lowerdir=lower1,upperdir=upper,workdir=work merged</code><br>
+Sistema tradicional de capa base y capa de cambios, que guarda los
+cambios hechos en <em>merged</em> en la carpeta <em>upperdir</em>.</li>
+<li><code>mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work merged</code><br>
+Juntando ambos conceptos, podemos hacer una capa de cambios, juntando
+dos capas de solo lectura. Esto nos permite &ldquo;trocear&rdquo; la base, sobre
+la que añadimos una capa de cambios.</li>
+</ul>
+<p><strong>TRUCO</strong>: En todo caso, veremos todos los ficheros y carpetas presentes
+en todas las capas, con el entendido que se van a guardar los cambios
+en <em>upperdir</em>, y que en caso de lectura, primero veremos el fichero
+de <em>upperdir</em> y en caso de no estar, veríamos los <em>lowerdir</em> en el
+orden especificado (en el tercer ejemplo, el orden sería <code>upper/</code>,
+<code>lower1/</code> y finalmente <code>lower2/</code> ).</p>
+<h2>Una pequeña demostración</h2>
+<p>Supongamos que tenemos dos capas de solo lectura, que son <code>lower1/</code>
+y <code>lower2/</code>. Queremos ver la mezcla de ambas carpetas en una sola,
+y queremos poder modificarlas sin que eso repercuta en las capas
+de solo lectura. Esto nos obliga a poner un <em>upperdir</em> y un <em>workdir</em>.</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ tree
+.
+├── lower1
+│   ├── a
+│   └── b
+├── lower2
+│   ├── a
+│   └── c
+├── merged
+├── upper
+└── work
+
+5 directories, 4 files
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Para la demostración nos limitaremos a poner como contenido de los
+ficheros una la capa de la que proceden, y así podremos salir de dudas.</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ grep . lower*/*
+lower1/a:lower1
+lower1/b:lower1
+lower2/a:lower2
+lower2/c:lower2
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Montamos el sistema de ficheros <em>overlayfs</em> con el comando arriba mencionado:</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ sudo mount -t overlay overlay -o lowerdir=lower1:lower2,upperdir=upper,workdir=work merged
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Podemos comprobar que la carpeta <code>merged/</code> contiene los ficheros de los dos
+<em>lowerdir</em> y que el contenido es el esperado. Cabe indicar que, en el caso
+del fichero <code>a</code>, veremos primero el de <code>lower1/</code> por ser el primer <em>lowerdir</em>
+de la lista y no haber un <em>upperdir</em> más prioritario.</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ tree merged/
+merged/
+├── a
+├── b
+└── c
+
+0 directories, 3 files
+gerard@debian:~/projects/overlay$
+</code></pre>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ grep . merged/*
+merged/a:lower1
+merged/b:lower1
+merged/c:lower2
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Vamos a crear un nuevo fichero y vamos a reescribir otro, trabajando en la
+vista, que es <code>merged/</code> y es nuestra carpeta de trabajo:</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ echo merged &gt; merged/a
+gerard@debian:~/projects/overlay$ echo merged &gt; merged/d
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Podemos observar que el contenido de la vista <code>merged/</code> es el esperado,
+acumulando los cambios en <code>upper/</code> (que es la capa de cambios). Los
+ficheros de <code>lower1/</code> y de <code>lower2</code> no han sufrido cambio alguno, y
+vemos que leer el fichero <code>a</code> nos muestra el contenido del <em>upperdir</em>,
+que tiene preferencia respecto a los <em>lowerdir</em>.</p>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ tree
+.
+├── lower1
+│   ├── a
+│   └── b
+├── lower2
+│   ├── a
+│   └── c
+├── merged
+│   ├── a
+│   ├── b
+│   ├── c
+│   └── d
+├── upper
+│   ├── a
+│   └── d
+└── work
+    └── work [error opening dir]
+
+6 directories, 10 files
+gerard@debian:~/projects/overlay$
+</code></pre>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ grep . merged/*
+merged/a:merged
+merged/b:lower1
+merged/c:lower2
+merged/d:merged
+gerard@debian:~/projects/overlay$
+</code></pre>
+<pre><code class="language-bash">gerard@debian:~/projects/overlay$ grep . lower*/* upper/*
+lower1/a:lower1
+lower1/b:lower1
+lower2/a:lower2
+lower2/c:lower2
+upper/a:merged
+upper/d:merged
+gerard@debian:~/projects/overlay$
+</code></pre>
+<p>Esto hace los backups más simples, nos permite ahorrar espacio en disco
+(reutilizando las capas base) y, en caso de intrusión, sabemos que solo
+nos han podido cambiar el <em>upperdir</em>; reconstruir la jaula es tan simple
+como vaciar la capa de cambios en <code>upper/</code> y remontar el <code>merged/</code>&hellip;</p>
+<p><strong>TRUCO</strong>: En caso de querer montar el sistema de ficheros <em>merged</em> en
+tiempo de <em>boot</em>, basta con utilizar el fichero <code>/etc/fstab</code>, con una
+línea así:</p>
+<pre><code class="language-bash">overlay /merged overlay noauto,x-systemd.automount,lowerdir=/lower1:/lower2,upperdir=/upper,workdir=/work 0 0
+</code></pre>
+<p><strong>TRUCO</strong>: Las carpetas <em>lowerdir</em> son de solo lectura; nada nos impide
+utilizar carpetas montadas como solo lectura, por ejemplo que sean
+el montaje de un fichero <strong>SquashFS</strong>.</p>
+<h2>Un caso real con varias jaulas</h2>
+<p>Tengo un amigo que está paranoico con la seguridad; no hay aplicación
+que no quiera ver enjaulada, y no le gusta nada <strong>Docker</strong>. Esto le
+obliga a utilizar <strong>chroot</strong> y <strong>debootstrap</strong> para todo, pero eso tiene
+un coste en espacio de disco utilizado.</p>
+<p>Veamos como podemos hacer un sistema con 3 jaulas <strong>chroot</strong> con base
+<strong>Debian</strong>, dos de ellas ejecutando <strong>nginx</strong> y la otra si nada especial.
+Empezaremos instalando la herramienta que vamos a usar:</p>
+<pre><code class="language-bash">gerard@alcatraz:~$ sudo apt install debootstrap
+...
+gerard@alcatraz:~$
+</code></pre>
+<p>Por ser ordenados, vamos a colocar todas las carpetas en <code>/srv/overlay/</code>,
+con una carpeta <code>lowerdirs/</code> para contener los <em>lowerdirs</em>, una carpeta
+<code>workdirs/</code> para contener los <em>workdirs</em>, una carpeta <code>upperdirs/</code> para
+contener los <em>upperdirs</em> y una carpeta <code>/srv/jails/</code> para los <em>merged</em>
+(así será transparente para los usuarios).</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ tree
+.
+├── jails
+└── overlay
+    ├── lowerdirs
+    ├── upperdirs
+    └── workdirs
+
+5 directories, 0 files
+gerard@alcatraz:/srv$
+</code></pre>
+<h3>La capa base Debian</h3>
+<p>Se trata de un sistema de fichero <strong>Debian</strong> estándar que vamos a crear
+con <strong>debootstrap</strong>, y que vamos a reutilizar para todo el resto. Le
+vamos a borrar algunos ficheros innecesarios para ahorrar espacio, pero
+esto es opcional.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay/lowerdirs$ sudo debootstrap --variant=minbase buster debian
+...
+gerard@alcatraz:/srv/overlay/lowerdirs$ sudo chroot debian/ apt clean
+gerard@alcatraz:/srv/overlay/lowerdirs$ sudo chroot debian/ rm -rf /var/lib/apt/lists/*
+gerard@alcatraz:/srv/overlay/lowerdirs$
+</code></pre>
+<p>Y ya tenemos nuestro primer <em>lowerdir</em> base en <code>/srv/overlay/lowerdirs/debian/</code>.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ tree -L 2
+.
+├── lowerdirs
+│   └── debian
+├── upperdirs
+└── workdirs
+
+4 directories, 0 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<h3>La capa de añadido con Nginx</h3>
+<p>Vamos a crear una jaula con <strong>OverlayFS</strong> y vamos a instalar <strong>nginx</strong>.
+Esto hará que los añadidos acaben en el <em>upperdir</em> de la nueva jaula, que
+vamos a convertir en una nueva capa <em>lowerdir</em> para otras jaulas.</p>
+<p>Nos aseguramos que tenemos el <em>upperdir</em> necesario, junto con el <em>workdir</em>
+y la carpeta contenedora de nuestra nueva jaula temporal:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ sudo mkdir upperdirs/temporal
+gerard@alcatraz:/srv/overlay$ sudo mkdir workdirs/temporal
+gerard@alcatraz:/srv/overlay$ tree -L 2
+.
+├── lowerdirs
+│   └── debian
+├── upperdirs
+│   └── temporal
+└── workdirs
+    └── temporal
+
+6 directories, 0 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<p>Ya podemos crear la jaula como la vista de la capa <strong>Debian</strong> base y
+la carpeta <em>upperdir</em> nueva como capa de cambio, en donde vamos a
+recoger el añadido de <strong>nginx</strong>.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/jails$ sudo mkdir temporal
+gerard@alcatraz:/srv/jails$ sudo mount -t overlay overlay -o lowerdir=/srv/overlay/lowerdirs/debian,upperdir=/srv/overlay/upperdirs/temporal,workdir=/srv/overlay/workdirs/temporal temporal/
+gerard@alcatraz:/srv/jails$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:/srv/jails$ sudo chroot temporal/ apt update
+...
+gerard@alcatraz:/srv/jails$ sudo chroot temporal/ apt install nginx-light
+...
+gerard@alcatraz:/srv/jails$ sudo chroot temporal/ apt clean
+gerard@alcatraz:/srv/jails$ sudo chroot temporal/ rm -rf /var/lib/apt/lists/*
+gerard@alcatraz:/srv/jails$
+</code></pre>
+<p>En este punto, ya no nos interesa la jaula temporal y solo nos interesa
+el añadido, que está en el <em>upperdir</em>. Vamos a rescatar el <em>upperdir</em>
+como un nuevo <em>lowerdir</em> para su uso futuro, y vamos a limpiar todo el
+resto, que ya no nos sirve.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ sudo umount /srv/jails/temporal/
+gerard@alcatraz:/srv/overlay$ sudo mv upperdirs/temporal/ lowerdirs/nginx
+gerard@alcatraz:/srv/overlay$ sudo rm -Rf workdirs/temporal/ /srv/jails/temporal/
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<p>En este punto ya tenemos nuestra capa como un <em>lowerdir</em> más, listo
+para su uso futuro. En caso de más añadidos, podemos repetir este
+paso tanto como sea necesario.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ tree -L 2
+.
+├── lowerdirs
+│   ├── debian
+│   └── nginx
+├── upperdirs
+└── workdirs
+
+5 directories, 0 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<h3>Las jaulas individuales</h3>
+<p>Ya queremos entregar las 3 jaulas al usuario, para que las pueda modificar a
+placer. Como esperamos que las modifique, las 3 jaulas van a necesitar su
+propio <em>upperdir</em> y, por lo tanto, un <em>workdir</em>.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ sudo mkdir {upperdirs,workdirs}/{nginx1,nginx2,debian1}
+gerard@alcatraz:/srv/overlay$ tree -L 2
+.
+├── lowerdirs
+│   ├── debian
+│   └── nginx
+├── upperdirs
+│   ├── debian1
+│   ├── nginx1
+│   └── nginx2
+└── workdirs
+    ├── debian1
+    ├── nginx1
+    └── nginx2
+
+11 directories, 0 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<p>Les creamos la carpeta contenedora de la jaula, y les montamos la jaula
+juntando los <em>lowerdirs</em> necesarios, con los <em>upperdirs</em> y los <em>workdirs</em>.
+Hay que prestar atención a los <em>lowerdirs</em> montados: <code>debian</code> para todos,
+pero solo el añadido <code>nginx</code> al que lo necesite.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/jails$ sudo mkdir nginx1 nginx2 debian1
+gerard@alcatraz:/srv/jails$ sudo mount -t overlay overlay -o lowerdir=/srv/overlay/lowerdirs/debian:/srv/overlay/lowerdirs/nginx,upperdir=/srv/overlay/upperdirs/nginx1,workdir=/srv/overlay/workdirs/nginx1 /srv/jails/nginx1/
+gerard@alcatraz:/srv/jails$ sudo mount -t overlay overlay -o lowerdir=/srv/overlay/lowerdirs/debian:/srv/overlay/lowerdirs/nginx,upperdir=/srv/overlay/upperdirs/nginx2,workdir=/srv/overlay/workdirs/nginx2 /srv/jails/nginx2/
+gerard@alcatraz:/srv/jails$ sudo mount -t overlay overlay -o lowerdir=/srv/overlay/lowerdirs/debian,upperdir=/srv/overlay/upperdirs/debian1,workdir=/srv/overlay/workdirs/debian1 /srv/jails/debian1/
+gerard@alcatraz:/srv/jails$
+</code></pre>
+<p>Y ya tenemos las jaulas listas para trabajar; es interesante ver que las
+jaulas de <strong>nginx</strong> utilizan ambas capas, pero que la jaula <strong>debian</strong>
+parte solamente de la primera (y por lo tanto, no tiene <strong>nginx</strong>).</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/jails$ sudo chroot nginx1/ which nginx
+/usr/sbin/nginx
+gerard@alcatraz:/srv/jails$ sudo chroot nginx2/ which nginx
+/usr/sbin/nginx
+gerard@alcatraz:/srv/jails$ sudo chroot debian1/ which nginx
+gerard@alcatraz:/srv/jails$
+</code></pre>
+<p>Tras la modificación de la jaula <code>nginx1</code>, vemos que se comporta según
+lo esperado, sin modificar la jaula <code>nginx2</code>:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/jails$ sudo chroot nginx1/ ls /var/www/html/
+index.html
+gerard@alcatraz:/srv/jails$ sudo chroot nginx2/ ls /var/www/html/
+index.nginx-debian.html
+gerard@alcatraz:/srv/jails$
+</code></pre>
+<p>Estas modificaciones se guardan en el <em>upperdir</em> de <code>nginx1</code>, que es el
+punto en el que deberíamos hacer copias de seguridad o investigar cambios
+sospechosos del sistema de ficheros.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ tree upperdirs/
+upperdirs/
+├── debian1
+├── nginx1
+│   ├── etc
+│   │   └── nginx
+│   │       └── sites-enabled
+│   │           ├── default
+│   │           └── web
+│   └── var
+│       └── www
+│           └── html
+│               ├── index.html
+│               └── index.nginx-debian.html
+└── nginx2
+
+9 directories, 4 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<p><strong>NOTA</strong>: En este caso se borraron los ficheros originales <code>default</code> y
+<code>index.nginx-debian.html</code>; esto queda marcado como un cambio, creando
+un <a href="https://www.kernel.org/doc/Documentation/admin-guide/devices.txt">dispositivo especial</a> con <em>major</em> y <em>minor</em> a cero, reservado
+por el <em>kernel</em> de <strong>Linux</strong>.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv/overlay$ tree upperdirs/nginx1/ -p
+upperdirs/nginx1/
+├── [drwxr-xr-x]  etc
+│   └── [drwxr-xr-x]  nginx
+│       └── [drwxr-xr-x]  sites-enabled
+│           ├── [c---------]  default
+│           └── [-rw-r--r--]  web
+└── [drwxr-xr-x]  var
+    └── [drwxr-xr-x]  www
+        └── [drwxr-xr-x]  html
+            ├── [-rw-r--r--]  index.html
+            └── [c---------]  index.nginx-debian.html
+
+6 directories, 4 files
+gerard@alcatraz:/srv/overlay$
+</code></pre>
+<h3>Sobre el espacio en disco</h3>
+<p>El espacio en disco ocupado parece que es 4 veces el de la jaula; esto es
+porque el comando <code>du</code> cuenta también los sistemas de ficheros montados
+dentro del que pidamos:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ sudo du -sh * | sort -h
+129M    overlay
+373M    jails
+gerard@alcatraz:/srv$
+</code></pre>
+<p>Podemos utilizar <code>df</code> o poner el <em>flag</em> <code>-x</code> para que se quede en nuestro
+dispositivo físico:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ sudo du -shx * | sort -h
+4,0K    jails
+129M    overlay
+gerard@alcatraz:/srv$
+</code></pre>
+<p>También podemos ver qué tamaño consume cada capa mirando simplemente
+sus partes individuales:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ sudo du -sh overlay/{upper,lower}dirs/* | sort -h
+4,0K    overlay/upperdirs/debian1
+4,0K    overlay/upperdirs/nginx2
+52K     overlay/upperdirs/nginx1
+7,9M    overlay/lowerdirs/nginx
+121M    overlay/lowerdirs/debian
+gerard@alcatraz:/srv$
+</code></pre>
+<p>Así pues, las jaulas individuales ocuparían 120-130mb cada una, pero con
+<strong>overlayfs</strong> se quedan ocupando solamente unos 130mb entre todas, ya que
+comparten todas las capas intermedias, de solo lectura; solo hay que añadir
+las capas de cambios <em>upperdir</em>, en las que no esperamos muchas cambios.</p>
+<p>Como punto extra, y si el espacio es un problema, podemos comprimir los
+<em>lowerdir</em> con <strong>squashfs</strong> y montarlos desde el fichero comprimido, lo
+que reduciría el espacio usado a unos impresionantes 47mb.</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ sudo du -shx *
+4,0K    jails
+47M     overlay
+gerard@alcatraz:/srv$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:~$ df -h | grep overlay
+/dev/loop0       2,9M   2,9M     0 100% /srv/overlay/lowerdirs/nginx
+/dev/loop1        44M    44M     0 100% /srv/overlay/lowerdirs/debian
+overlay          7,9G   950M  6,9G  12% /srv/jails/debian1
+overlay          7,9G   950M  6,9G  12% /srv/jails/nginx1
+overlay          7,9G   950M  6,9G  12% /srv/jails/nginx2
+gerard@alcatraz:~$
+</code></pre>
+<p>Nada mal, considerando que las jaulas ocupaban 373mb, con <strong>overlayfs</strong>
+pasamos a ocupar 129mb, y con <strong>squashfs</strong> caemos a 47mb. Esto es un
+13% del tamaño real&hellip;</p>
+<p>El <em>backup</em> consiste en guardar los <em>lowerdir</em> una sola vez (son de solo
+lectura), en formato <strong>squashfs</strong> o comprimidos; los <em>upperdirs</em> necesitan
+copias de seguridad periódicas, pero espero que no cambien demasiado.</p>
+<p><strong>NOTA</strong>: Dejo el fichero <code>/etc/fstab</code> para futuras referencias:</p>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /etc/fstab
+...
+/srv/overlay/lowerdirs/debian.sqsh /srv/overlay/lowerdirs/debian squashfs loop 0 0
+/srv/overlay/lowerdirs/nginx.sqsh /srv/overlay/lowerdirs/nginx squashfs loop 0 0
+overlay /srv/jails/nginx1 overlay noauto,x-systemd.automount,lowerdir=/srv/overlay/lowerdirs/debian:/srv/overlay/lowerdirs/nginx,upperdir=/srv/overlay/upperdirs/nginx1,workdir=/srv/overlay/workdirs/nginx1 0 0
+overlay /srv/jails/nginx2 overlay noauto,x-systemd.automount,lowerdir=/srv/overlay/lowerdirs/debian:/srv/overlay/lowerdirs/nginx,upperdir=/srv/overlay/upperdirs/nginx2,workdir=/srv/overlay/workdirs/nginx2 0 0
+overlay /srv/jails/debian1 overlay noauto,x-systemd.automount,lowerdir=/srv/overlay/lowerdirs/debian,upperdir=/srv/overlay/upperdirs/debian1,workdir=/srv/overlay/workdirs/debian1 0 0
+gerard@alcatraz:~$
+</code></pre>
+
+
+<p class="footer">Copyright &copy; 2015-2021 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
