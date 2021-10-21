@@ -232,7 +232,7 @@ root@gemini:~/playbooks/keepalived#
 <ul>
 <li>Si una máquina está caída no es candidata a tener la IP flotante (las dos caídas son un tema serio).</li>
 <li>Si <em>castor</em> tiene el <strong>nginx</strong> funcional, suma 103, y gana a <em>pollux</em> (102 o 100, dependiendo si corre o no el <strong>nginx</strong>).</li>
-<li>Si el <strong>nginx</strong> de <em>castor</em> no funciona, depende; si el de *pollux funciona, pasa este a ser el <em>MASTER</em> del <em>cluster</em> (101 vs 102); sino, gana <em>castor</em> (101 vs 100), aunque este caso también es un problema.</li>
+<li>Si el <strong>nginx</strong> de <em>castor</em> no funciona, depende; si el de <em>pollux</em> funciona, pasa este a ser el <em>MASTER</em> del <em>cluster</em> (101 vs 102); sino, gana <em>castor</em> (101 vs 100), aunque este caso también es un problema.</li>
 </ul>
 <p>Lanzamos el <em>playbook</em> para instalar <strong>keepalived</strong> y su configuración:</p>
 <pre><code class="language-bash">root@gemini:~/playbooks/keepalived# ansible-playbook keepalived.yml 
