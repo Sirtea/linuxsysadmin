@@ -227,7 +227,7 @@ Con los valores 101 y 100 (que salen del fichero de *hosts*) y el propio funcion
 
 * Si una máquina está caída no es candidata a tener la IP flotante (las dos caídas son un tema serio).
 * Si *castor* tiene el **nginx** funcional, suma 103, y gana a *pollux* (102 o 100, dependiendo si corre o no el **nginx**).
-* Si el **nginx** de *castor* no funciona, depende; si el de *pollux funciona, pasa este a ser el *MASTER* del *cluster* (101 vs 102); sino, gana *castor* (101 vs 100), aunque este caso también es un problema.
+* Si el **nginx** de *castor* no funciona, depende; si el de *pollux* funciona, pasa este a ser el *MASTER* del *cluster* (101 vs 102); sino, gana *castor* (101 vs 100), aunque este caso también es un problema.
 
 Lanzamos el *playbook* para instalar **keepalived** y su configuración:
 

@@ -41,7 +41,7 @@ vez, este certificado puede estar firmado por otro, y así sucesivamente.
 que vamos a tratar como nuestro certificado raíz o intermedio.
 
 El primer paso para crear un certificado es generar una clave. Esta clave es
-privada, y no debería ser accesible a nadie ajeno a nuestro intereses.
+privada, y no debería ser accesible a nadie ajeno a nuestros intereses.
 
 ```bash
 gerard@umbra:~/services/ca$ openssl genrsa -out ca.key 2048
