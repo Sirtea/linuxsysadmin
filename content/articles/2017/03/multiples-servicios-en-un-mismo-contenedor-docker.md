@@ -8,7 +8,7 @@ tags: ['docker', 'runit', 'LAMP', 'apache', 'mysql', 'php']
 
 Como ya sabemos, un contenedor **docker** solo puede ejecutar un proceso, y su finalización implica la parada del contenedor. Sin embargo, a veces nos puede interesar cargar los contenedores con algún servicio más, para hacerlos autosuficientes. Para ello, nos podemos ayudar de un *gestor de procesos*, como por ejemplo, **runit**.<!--more-->
 
-Antes de nada, [una referencia en contra](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/); esto complica nuestro contenedor de una forma no recomendad por el propia autor de **docker**.
+Antes de nada, [una referencia en contra](https://blog.docker.com/2014/06/why-you-dont-need-to-run-sshd-in-docker/); esto complica nuestro contenedor de una forma no recomendada por el propio autor de **docker**.
 
 > If you need multiple processes, you need to add one at the top-level to take care of the others. In other words, you’re turning a lean and simple container into something much more complicated.
 
