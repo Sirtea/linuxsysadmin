@@ -46,6 +46,10 @@
 
 <h1>Linux Sysadmin</h1>
 
+<h2 class="article"><a href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Reduciendo el tiempo de build con Docker y su caché</a></h2>
+<p>Cuando construimos imágenes <strong>docker</strong>, muchas veces no somos conscientes del poder de la caché integrada. Si reordenamos algunas instrucciones y aplicamos algún truco, podemos evitarnos el hecho de reconstruir muchas de esas capas, llegando a reducir el tiempo de <em>rebuild</em> a prácticamente cero, siempre y cuando no hayan grandes cambios.</p>
+<p><a class="article" href="/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html">Seguir leyendo</a></p>
+<hr />
 <h2 class="article"><a href="/2017/05/problemas-de-log-con-docker-y-python.html">Problemas de log con docker y python</a></h2>
 <p>El otro día estaba haciendo un <em>script</em> de <strong>python</strong> que debía ejecutarse en un contenedor <strong>docker</strong>. A pesar de la cantidad de <em>verbose</em> que le puse, no era capaz de ver ningún texto cuando miraba los <em>logs</em>. Tras mucha búsqueda, finalmente encontré el culpable en la variable de entorno <strong>PYTHONUNBUFFERED</strong>.</p>
 <p><a class="article" href="/2017/05/problemas-de-log-con-docker-y-python.html">Seguir leyendo</a></p>
@@ -81,10 +85,6 @@
 <h2 class="article"><a href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Múltiples servicios en un mismo contenedor Docker</a></h2>
 <p>Como ya sabemos, un contenedor <strong>docker</strong> solo puede ejecutar un proceso, y su finalización implica la parada del contenedor. Sin embargo, a veces nos puede interesar cargar los contenedores con algún servicio más, para hacerlos autosuficientes. Para ello, nos podemos ayudar de un <em>gestor de procesos</em>, como por ejemplo, <strong>runit</strong>.</p>
 <p><a class="article" href="/2017/03/multiples-servicios-en-un-mismo-contenedor-docker.html">Seguir leyendo</a></p>
-<hr />
-<h2 class="article"><a href="/2017/02/alta-disponibilidad-con-keepalived.html">Alta disponibilidad con Keepalived</a></h2>
-<p>Cuando tenemos un servicio balanceado, los <em>backends</em> no tienen relación entre sí y podemos poner tantos como queramos, sin miedo a que alguno se caiga. Sin embargo, para los servicios tipo &ldquo;ventanilla única&rdquo; interesa tener varios dispuestos a dar un servicio <em>failover</em>; si uno se cae, otro asume la carga.</p>
-<p><a class="article" href="/2017/02/alta-disponibilidad-con-keepalived.html">Seguir leyendo</a></p>
 <hr />
 
 <p class="pagination">

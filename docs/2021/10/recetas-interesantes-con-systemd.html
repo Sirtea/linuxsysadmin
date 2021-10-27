@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Recetas interesantes con Systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Recetas interesantes con Systemd</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2021-10-27
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/debian.html">debian</a> / <a href="/tag/systemd.html">systemd</a> / <a href="/tag/jaula.html">jaula</a> / <a href="/tag/overlayfs.html">overlayfs</a> / <a href="/tag/squashfs.html">squashfs</a>
+</p>
+
+<p>No es un secreto que me encanta utilizar <strong>systemd</strong>; aunque hay una buena
+parte de la comunidad que lo detesta, siempre encuentro la manera de hacer
+lo que yo necesito. Y es que las funcionalidades que ofrece son muchas y
+la documentación es excelente. Vamos a ver algunas recetas útiles.</p>
+<h2>Orden de montado de sistemas de ficheros</h2>
+<p>A veces es importante el orden en el que se montan los sistemas de ficheros;
+con el fichero <code>/etc/fstab</code> el orden era que marcaban las líneas del fichero.
+Con <strong>systemd</strong>, esto cambia; se intenta paralelizar todas las tareas posibles,
+lo que puede resultar en un caos impresionante.</p>
+<p>Tomemos como ejemplo <a href="/2021/06/una-vision-general-de-overlayfs.html">un artículo anterior</a>. La última parte del artículo
+sugiere que podemos montar las jaulas mezclando una capa de cambios con una
+capa base, que a su vez puede ser un punto de montaje <strong>squashfs</strong>. Dejo
+un ejemplo aquí:</p>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ tree
+.
+├── debian-nginx.sqsh
+├── jails
+│   └── nginx1
+└── overlay
+    └── nginx1
+        ├── lowerdir
+        ├── upperdir
+        │   ├── etc
+        │   │   └── nginx
+        │   │       └── sites-enabled
+        │   │           ├── default
+        │   │           └── web
+        │   └── var
+        │       └── www
+        │           └── html
+        │               ├── index.html
+        │               └── index.nginx-debian.html
+        └── workdir
+
+13 directories, 5 files
+gerard@alcatraz:/srv$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ cat /etc/fstab
+...
+/srv/debian-nginx.sqsh /srv/overlay/nginx1/lowerdir squashfs loop 0 0
+overlay /srv/jails/nginx1 overlay noauto,x-systemd.automount,lowerdir=/srv/overlay/nginx1/lowerdir,upperdir=/srv/overlay/nginx1/upperdir,workdir=/srv/overlay/nginx1/workdir 0 0
+...
+gerard@alcatraz:/srv$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:/srv$ cat /etc/systemd/system/nginx1.service
+[Service]
+RootDirectory=/srv/jails/nginx1
+ExecStart=/usr/sbin/nginx -g &quot;daemon off;&quot;
+
+[Install]
+WantedBy=multi-user.target
+gerard@alcatraz:/srv$
+</code></pre>
+<p>Todo funciona muy bien si montamos los puntos manualmente, pero falla al
+reiniciar la máquina; solo nos queda una jaula con la capa superior. El
+motivo es simple: el montaje del sistema de ficheros <strong>overlayfs</strong> se hace
+antes que el montaje del sistema de ficheros <strong>squashfs</strong>.</p>
+<p>Esto causa que la capa conjunta sea el resultado de juntar una carpeta de
+cambios con una carpeta vacía. Por suerte, podemos cambiar este comportamiento
+añadiendo dependencias entre ellos para que se monten en un orden concreto.</p>
+<p>La solución pasa por entender como funciona <strong>systemd</strong> en relación al fichero
+<code>/etc/fstab</code>: hay un binario <code>systemd-fstab-generator</code> que genera una <em>unit</em>
+por cada línea del fichero. Por ejemplo, pongo la línea del <code>/etc/fstab</code> que
+monta la carpeta raíz y su <em>unit</em> generada:</p>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /etc/fstab
+...
+UUID=3723d7aa-ca4d-4959-ade2-80d7b2d0bb5e /               ext4    errors=remount-ro 0       1
+...
+gerard@alcatraz:~$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /run/systemd/generator/-.mount
+# Automatically generated by systemd-fstab-generator
+
+[Unit]
+Documentation=man:fstab(5) man:systemd-fstab-generator(8)
+SourcePath=/etc/fstab
+After=blockdev@dev-disk-by\x2duuid-3723d7aa\x2dca4d\x2d4959\x2dade2\x2d80d7b2d0bb5e.target
+
+[Mount]
+Where=/
+What=/dev/disk/by-uuid/3723d7aa-ca4d-4959-ade2-80d7b2d0bb5e
+Type=ext4
+Options=errors=remount-ro
+gerard@alcatraz:~$
+</code></pre>
+<p>Sabiendo esto, podemos atacar el problema de dos formas distintas:</p>
+<ul>
+<li>Podemos eliminar (o comentar) la línea en el <code>/etc/fstab</code> para que no genere
+la <em>unit</em>, que gestionaremos nosotros; podemos coger la autogenerada como
+punto de partida. A partir de aquí, pondremos las directivas que queramos.</li>
+<li>Otra opción, consiste en indicar las directivas que queremos que se autogeneren
+en las opciones de montaje en el <code>/etc/fstab</code>, prefijadas por <code>x-systemd.</code>.</li>
+</ul>
+<p>Optamos por este último, por su simplicidad. En este caso, la directiva a añadir
+es <code>x-systemd.requires-mounts-for</code> y esto nos va a generar una <em>unit</em> que contenga
+nuestros requisitos en el orden del montaje.</p>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /etc/fstab
+...
+/srv/debian-nginx.sqsh /srv/overlay/nginx1/lowerdir squashfs loop 0 0
+overlay /srv/jails/nginx1 overlay noauto,x-systemd.automount,lowerdir=/srv/overlay/nginx1/lowerdir,upperdir=/srv/overlay/nginx1/upperdir,workdir=/srv/overlay/nginx1/workdir,x-systemd.requires-mounts-for=/srv/overlay/nginx1/lowerdir 0 0
+...
+gerard@alcatraz:~$
+</code></pre>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /run/systemd/generator/srv-jails-nginx1.mount
+# Automatically generated by systemd-fstab-generator
+
+[Unit]
+Documentation=man:fstab(5) man:systemd-fstab-generator(8)
+SourcePath=/etc/fstab
+RequiresMountsFor=/srv/overlay/nginx1/lowerdir
+
+[Mount]
+Where=/srv/jails/nginx1
+What=overlay
+Type=overlay
+Options=noauto,x-systemd.automount,lowerdir=/srv/overlay/nginx1/lowerdir,upperdir=/srv/overlay/nginx1/upperdir,workdir=/srv/overlay/nginx1/workdir,x-systemd.requires-mounts-for=/srv/overlay/nginx1/lowerdir
+gerard@alcatraz:~$
+</code></pre>
+<p>Reiniciamos la máquina y vemos que la jaula se ha montado correctamente y que
+el servicio funciona como esperábamos (y como funcionaba antes del reinicio).</p>
+<h2>Levantando servicios dentro de una jaula</h2>
+<p>Cuando trabajamos con jaulas, debemos ejecutar los binarios entrando en la
+misma, normalmente utilizando el comando <code>chroot</code>. Si queremos que este
+ejecutable levante un servicio, y lo queremos hacer cómodamente mediante
+el proceso inicial de nuestro sistema operativo, la cosa suele complicarse.</p>
+<p>Por suerte, <strong>systemd</strong> simplifica las cosas de forma notable. Aunque el
+proceso <strong>systemd</strong> está en el sistema operativo principal, y por lo tanto
+también sus <em>units</em>, ejecutar dentro de un <strong>chroot</strong> es tan fácil como
+indicar la directiva <code>RootDirectory</code>.</p>
+<p>Veamos un ejemplo, aprovechando el ejemplo anterior:</p>
+<pre><code class="language-bash">gerard@alcatraz:~$ cat /etc/systemd/system/nginx1.service
+[Service]
+RootDirectory=/srv/jails/nginx1
+ExecStart=/usr/sbin/nginx -g &quot;daemon off;&quot;
+
+[Install]
+WantedBy=multi-user.target
+gerard@alcatraz:~$
+</code></pre>
+<p>En este caso se va a ejecutar el binario <code>/usr/sbin/nginx</code>, con el entendido
+de que es la ruta una vez ya estamos enjaulados en <code>/srv/jails/nginx1</code>. Por
+lo tanto, ejecutaremos el binario real <code>/srv/jails/nginx1/usr/sbin/nginx</code>,
+aunque este no lo sepa&hellip;</p>
+<h2>Configurando servicios mediante variables de entorno</h2>
+<p>Con el paradigma de <strong>docker</strong> en la esquina, muchos aplicativos empiezan
+a permitir su configuración mediante variables de entorno y algunos lo llevan
+fuera de esa tecnología concreta. Otros optan por dejarlo listo para un
+futuro uso en <strong>docker</strong>, pero levantan la aplicación en local, usando el
+proceso inicial del que disponen.</p>
+<p>En estos casos, <strong>systemd</strong> también es una ayuda grande. Con las directivas
+<code>Environment</code> y <code>EnvironmentFile</code> podemos dar esas variables, sea directamente
+en la <em>unit</em> de <strong>systemd</strong>, o en un fichero tipo <code>source</code>.</p>
+<p>Ilustremos esto con un ejemplo, por ejemplo una API escrita en <strong>python</strong>.
+Disponemos de una aplicación, su fichero de requisitos y un fichero con los
+secretos. Le ponemos su <em>virtualenv</em> y su <em>unit</em> de <strong>systemd</strong>:</p>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ tree -L 2
+.
+├── env
+│   ├── bin
+│   ├── include
+│   ├── lib
+│   ├── lib64 -&gt; lib
+│   ├── share
+│   └── pyvenv.cfg
+├── app.py
+├── requirements.txt
+└── secrets
+
+6 directories, 4 files
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ cat app.py
+import falcon
+import os
+
+class SecretsResource:
+    def on_get(self, req, resp):
+        resp.media = {
+            'SECRET1': os.environ.get('SECRET1', 'undefined'),
+            'SECRET2': os.environ.get('SECRET2', 'undefined'),
+            'SECRET3': os.environ.get('SECRET3', 'undefined'),
+        }
+
+app = falcon.App()
+app.add_route('/secrets', SecretsResource())
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ cat requirements.txt
+falcon==3.0.1
+gunicorn==20.1.0
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ cat secrets
+SECRET1=&quot;secret1_v1&quot;
+SECRET2=&quot;secret2_v1&quot;
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ cat /etc/systemd/system/showmysecrets.service
+[Service]
+DynamicUser=yes
+WorkingDirectory=/srv/showmysecrets
+Environment=&quot;SECRET3=secret3_v1&quot;
+EnvironmentFile=/srv/showmysecrets/secrets
+ExecStart=/srv/showmysecrets/env/bin/gunicorn --bind :8080 app:app
+
+[Install]
+WantedBy=multi-user.target
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<p><strong>NOTA</strong>: Nos hemos basado en <a href="/2019/12/desplegando-aplicaciones-python-con-gunicorn-y-systemd.html">este otro artículo</a>.</p>
+<p>Tras el correspondiente <code>systemctl daemon-reload</code> y el <code>systemctl start showmysecrets</code>,
+tenemos el servicio funcional, con el entendido de que las variables de entorno
+proceden del fichero <code>secrets</code> (<code>SECRET1</code> y <code>SECRET2</code>) y de la misma <em>unit</em> de
+<strong>systemd</strong> (<code>SECRET3</code>).</p>
+<p>No es una sorpresa que la API nos devuelva los valores esperados:</p>
+<pre><code class="language-bash">gerard@medusa:/srv/showmysecrets$ curl -s http://localhost:8080/secrets | python3 -m json.tool
+{
+    &quot;SECRET1&quot;: &quot;secret1_v1&quot;,
+    &quot;SECRET2&quot;: &quot;secret2_v1&quot;,
+    &quot;SECRET3&quot;: &quot;secret3_v1&quot;
+}
+gerard@medusa:/srv/showmysecrets$
+</code></pre>
+<p><strong>NOTA</strong>: El fichero de secretos se lee cada vez que se (re)inicia el servicio.
+Las variables de entorno que vienen de la <em>unit</em> de <strong>systemd</strong>, además, necesitan
+aplicar un <code>systemctl daemon-reload</code> para que <strong>systemd</strong> recargue la <em>unit</em>.</p>
+<p>Ambos métodos tienen sus ventajas e inconvenientes, especialmente la facilidad
+de modificación de las variables (si el usuario pudiera escribir el fichero de
+secretos) y la seguridad que nos ofrece tenerla en un sitio de sistema.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2021 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
