@@ -3,18 +3,39 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/jaula.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
+    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/mysql.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/phpmyadmin.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/01/volviendo-a-usar-mysql-y-mariadb.html</loc>
+    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/jaula.html</loc>
     <lastmod>2021-10-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/overlayfs.html</loc>
@@ -23,16 +44,10 @@
     <loc>https://www.linuxsysadmin.ml/2021/10/recetas-interesantes-con-systemd.html</loc>
     <lastmod>2021-10-27T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/squashfs.html</loc>
     <lastmod>2021-10-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2021-10-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/debootstrap.html</loc>
@@ -78,9 +93,6 @@
     <lastmod>2021-05-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/04/creando-sidekick-containers-en-docker-swarm.html</loc>
-    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
     <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
@@ -539,16 +551,10 @@
     <loc>https://www.linuxsysadmin.ml/tag/webhooks.html</loc>
     <lastmod>2018-12-10T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
-    <lastmod>2018-12-03T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/mediawiki.html</loc>
     <lastmod>2018-12-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/12/montando-una-wiki-interna-con-mediawiki-y-docker.html</loc>
-    <lastmod>2018-12-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/mysql.html</loc>
     <lastmod>2018-12-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/wiki.html</loc>

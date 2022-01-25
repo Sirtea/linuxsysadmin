@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Volviendo a usar MySQL y MariaDB - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Volviendo a usar MySQL y MariaDB</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-01-25
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/debian.html">debian</a> / <a href="/tag/mysql.html">mysql</a> / <a href="/tag/mariadb.html">mariadb</a> / <a href="/tag/phpmyadmin.html">phpmyadmin</a> / <a href="/tag/docker.html">docker</a>
+</p>
+
+<p>Hace mucho tiempo que he creído en <strong>MongoDB</strong>. Sin embargo, con el cambio de
+licencia el soporte del mismo ha caído en los repositorios oficiales de las
+diferentes distribuciones. Para añadir más sal a la herida, la empresa responsable
+no soporta las últimas distribuciones estables de <strong>Debian</strong> en sus repositorios.</p>
+<p>Eso me ha llevado a plantearme el abandono de <strong>MongoDB</strong> en favor de otros
+sistemas de bases de datos, y como no podía ser de otra manera, miré hacia atrás
+a los tiempos en que <strong>MySQL</strong> era el estándar <em>de facto</em>. Por supuesto, los
+tiempos han cambiado y tenemos otras opciones compatibles con <strong>MySQL</strong>, como
+por ejemplo <strong>MariaDB</strong> y <strong>Percona</strong>.</p>
+<p>En este artículo nos centraremos en <strong>MariaDB</strong>, simplemente porque es la
+opción que se encuentra en los repositorios de la distribución que vamos a
+usar: <strong>Debian Bullseye</strong>.</p>
+<h2>Un servidor dedicado</h2>
+<p>La idea es que vamos a dedicar este servidor al servicio de <strong>MariaDB</strong> en
+exclusiva, aunque nada os impide poner más servicios en él. Pero es más fácil,
+claro y conciso si nos centramos solamente en la parte de bases de datos.</p>
+<h3>El servidor MariaDB</h3>
+<p>Esta parte es posiblemente la más fácil; usando <strong>APT</strong> podemos instalar
+todo con el paquete <strong>mariadb-server</strong>. Las dependencias hacen el resto.</p>
+<pre><code class="language-bash">gerard@database:~$ sudo apt install mariadb-server
+...
+gerard@database:~$
+</code></pre>
+<p>En este momento tenemos un servidor de bases de datos <strong>MariaDB</strong> funcional,
+con un usuario <strong>root</strong> con una <em>password</em> inválida, lo que hace que solo
+podamos acceder desde local, sin <em>password</em> y usando el usuario <strong>root</strong> del
+sistema operativo:</p>
+<pre><code class="language-bash">gerard@database:~$ sudo mysql
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 46
+Server version: 10.5.12-MariaDB-0+deb11u1 Debian 11
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]&gt;
+</code></pre>
+<p>Esto nos puede valer para la mayoría de casos, pero a veces vamos a necesitar
+poder entrar con <strong>root</strong> desde una aplicación web o de forma remota. Entonces
+solo necesitamos darle una <em>password</em> a dicho usuario:</p>
+<pre><code class="language-bash">MariaDB [(none)]&gt; ALTER USER 'root'@'localhost' IDENTIFIED BY 's3cr3t';
+Query OK, 0 rows affected (0.013 sec)
+
+MariaDB [(none)]&gt; exit
+Bye
+gerard@database:~$
+</code></pre>
+<p>Ahora deberíamos poder entrar desde cualquier cliente con el usuario <strong>root</strong>
+y la <em>password</em> elegida.</p>
+<pre><code class="language-bash">gerard@database:~$ mysql -u root -p
+Enter password:
+...
+MariaDB [(none)]&gt;
+</code></pre>
+<p>En el caso concreto del cliente de terminal <code>mysql</code> podemos evitar indicar
+la contraseña declarando un fichero <code>~/.my.cnf</code> con los valores por defecto.</p>
+<pre><code class="language-bash">gerard@database:~$ cat .my.cnf
+[client]
+user=root
+password=s3cr3t
+database=mysql
+gerard@database:~$
+</code></pre>
+<pre><code class="language-bash">gerard@database:~$ mysql
+...
+MariaDB [mysql]&gt;
+</code></pre>
+<p>A partir de este punto, solo necesitaríamos crear las bases de datos
+necesarias para cada aplicación con un usuario dedicado, para limitar
+los desastres que se puedan hacer desde un solo sitio.</p>
+<pre><code class="language-bash">MariaDB [mysql]&gt; CREATE DATABASE myblog;
+Query OK, 1 row affected (0.000 sec)
+
+MariaDB [mysql]&gt; CREATE USER 'mybloguser'@'%' IDENTIFIED BY 'myblogpassword';
+Query OK, 0 rows affected (0.005 sec)
+
+MariaDB [mysql]&gt; GRANT ALL PRIVILEGES ON myblog.* TO 'mybloguser'@'%';
+Query OK, 0 rows affected (0.040 sec)
+
+MariaDB [mysql]&gt;
+</code></pre>
+<h3>Instalando phpmyadmin (opcional)</h3>
+<p>Esta es una herramienta muy cómoda en un servidor de bases de datos <strong>MySQL</strong>,
+que nos permite gestionar fácilmente todos los aspectos de las bases de datos
+gestionadas; desde la creación de bases de datos y tablas y sus datos, hasta
+la gestión de usuarios y <em>backups</em>.</p>
+<p><strong>WARNING</strong>: Esta herramienta es tipo web, y abre el servidor a accesos remotos.
+Usadla con cabeza y en entornos aislados o de test.</p>
+<p>Para obtener esta herramienta, solo necesitamos instalar dos paquetes:
+<strong>phpmyadmin</strong> y <strong>php</strong> (por algún motivo, las dependencias de <strong>phpmyadmin</strong>
+no incluyen el intérprete de <strong>PHP</strong>, pero sí el <strong>apache</strong> para servirlo).</p>
+<pre><code class="language-bash">gerard@database:~$ sudo apt install php phpmyadmin
+...
+gerard@database:~$
+</code></pre>
+<p><strong>TRUCO</strong>: Podemos indicarle que queremos configurar <strong>apache2</strong> y <strong>phpmyadmin</strong>
+automáticamente para ahorrarnos trabajo posterior. Es importante en este caso no
+haber cambiado la contraseña de <strong>root</strong>.</p>
+<p>En este punto ya tenemos el <strong>PHPMyAdmin</strong> funcional en <code>http://localhost/phpmyadmin/</code>,
+aunque considerando que solamente se sirve esta aplicación, podemos moverla a <code>http://localhost/</code>.</p>
+<pre><code class="language-bash">gerard@database:/etc/apache2/conf-available$ pwd
+/etc/apache2/conf-available
+gerard@database:/etc/apache2/conf-available$ diff phpmyadmin.conf.orig phpmyadmin.conf
+3c3
+&lt; Alias /phpmyadmin /usr/share/phpmyadmin
+---
+&gt; Alias / /usr/share/phpmyadmin/
+gerard@database:/etc/apache2/conf-available$ sudo systemctl restart apache2
+gerard@database:/etc/apache2/conf-available$
+</code></pre>
+<p><strong>TRUCO</strong>: En este punto no se puede acceder al <strong>PHPMyAdmin</strong> con el usuario
+<strong>root</strong>, porque la autenticación se hace con <em>password</em> y el usuario <strong>root</strong>
+no tiene. Es un buen momento para darle una contraseña, como se indica más arriba.</p>
+<p>Si no queremos tener que autenticarnos en el <strong>PHPMyAdmin</strong>, podemos modificar
+su configuración para que lo haga automáticamente:</p>
+<pre><code class="language-bash">gerard@database:/etc/phpmyadmin$ pwd
+/etc/phpmyadmin
+gerard@database:/etc/phpmyadmin$ diff config.inc.php.orig config.inc.php
+59c59,61
+&lt;     $cfg['Servers'][$i]['auth_type'] = 'cookie';
+---
+&gt;     $cfg['Servers'][$i]['auth_type'] = 'config';
+&gt;     $cfg['Servers'][$i]['user'] = 'root';
+&gt;     $cfg['Servers'][$i]['password'] = 's3cr3t';
+gerard@database:/etc/phpmyadmin$
+</code></pre>
+<p><strong>WARNING</strong>: Esto dará acceso a todas las bases de datos a cualquiera que pueda
+llegar a la aplicación web. Revisad muy bien vuestras políticas de seguridad y accesos.</p>
+<p>La operativa del servidor desde la herramienta es muy simple e intuitiva.
+Investigad su uso con cariño porque os ayudará mucho. Por ejemplo, para crear
+usuario y base de datos &ldquo;de aplicación&rdquo;, basta con ir a &ldquo;Cuentas de usuario&rdquo;,
+&ldquo;Agregar cuenta de usuario&rdquo; y recordar de darle al <em>checkbox</em> &ldquo;Crear base de
+datos con el mismo nombre y otorgar todos los privilegios&rdquo;.</p>
+<h2>Desplegando en un Docker Swarm</h2>
+<p>Hay algunas veces que desplegamos en <strong>Docker</strong>, porque es lo que utilizamos o
+porque es más cómodo en un entorno concreto. En estos casos, el despliegue se
+vuelve tan fácil como un <em>stack</em> dedicado de &ldquo;poner y quitar&rdquo;. Se deja el <em>stack</em>
+aquí mismo para referencias futuras:</p>
+<pre><code class="language-bash">gerard@docker:~/mariadb$ cat stack.yml
+version: '3'
+services:
+  mariadb:
+    image: mariadb:10.6
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    ports:
+      - &quot;3306:3306&quot;
+  phpmyadmin:
+    image: phpmyadmin:5.1
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: root
+      PMA_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    ports:
+      - &quot;8080:80&quot;
+volumes:
+  mariadb_data:
+gerard@docker:~/mariadb$
+</code></pre>
+<pre><code class="language-bash">gerard@docker:~/mariadb$ cat deploy.sh
+#!/bin/bash
+
+source secret_vars
+export MARIADB_ROOT_PASSWORD
+
+docker stack deploy -c stack.yml mariadb
+gerard@docker:~/mariadb$
+</code></pre>
+<pre><code class="language-bash">gerard@docker:~/mariadb$ cat secret_vars
+MARIADB_ROOT_PASSWORD=&quot;s3cr3t&quot;
+gerard@docker:~/mariadb$
+</code></pre>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
