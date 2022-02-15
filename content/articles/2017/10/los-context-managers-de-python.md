@@ -103,4 +103,4 @@ et dolor sit amet
 gerard@sirius:~/contextmanagers$ 
 ```
 
-E·n este caso es todavía más simple de entender: tenemos la inicialización, devolvemos la variable o nada con el *keyword* `yield` y finalmente tenemos el código de finalización.
+En este caso es todavía más simple de entender: tenemos la inicialización, devolvemos la variable o nada con el *keyword* `yield` y finalmente tenemos el código de finalización.
