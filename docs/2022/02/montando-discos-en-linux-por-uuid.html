@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Montando discos en Linux por UUID - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Montando discos en Linux por UUID</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-02-17
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/mount.html">mount</a> / <a href="/tag/filesystem.html">filesystem</a> / <a href="/tag/uuid.html">UUID</a>
+</p>
+
+<p>Ha vuelto a pasar: tengo una máquina virtual con un disco secundario que se queda pequeño.
+Añado otro disco, lo preparo, sincronizo los datos y configuro su montaje en el <code>/etc/fstab</code>,
+usando su nombre de dispositivo. Eventualmente, reinicio el servidor, tras retirar el disco
+antiguo y su nombre de dispositivo ha cambiado, causando que la máquina no arranque.</p>
+<p>Harto de este tipo de situaciones, y visto que el nombre de dispositivo no es de fiar, ha
+llegado la hora de buscar un método alternativo de especificar un disco. Y el más fiable
+de todos es su identificador único de disco o partición (UUID). Este se asigna cada vez
+que formateamos el disco o partición.</p>
+<h2>El problema expuesto</h2>
+<p>Mi máquina virtual tiene 2 discos, uno en el puerto SATA 0, que es mi disco raíz, y otro
+en el puerto SATA 1, digamos que dispone de 4GB y está montado en <code>/var/lib/docker</code>. En este
+estado, Linux asigna el dispositivo <code>/dev/sda</code> al disco en el puerto SATA 0, y <code>/dev/sdb</code>
+al disco del puerto SATA 1.</p>
+<p>Eventualmente, me doy cuenta de que el disco de 4GB de <code>/var/lib/docker</code> se ha quedado corto.
+Nada nuevo; simplemente añado un disco de 32GB en el puerto SATA 2, reinicio la máquina virtual,
+y monto este <code>/dev/sdc</code> (o partición) temporalmente a otra carpeta para sincronizar los datos
+y actualizo el <code>/etc/fstab</code> acorde a <code>/dev/sdc</code>. Apago la máquina, quito el disco en el puerto
+SATA 1 y la vuelvo a levantar. <strong>¡ERROR!</strong></p>
+<p>A pesar de que el disco de 32GB está en el puerto SATA 2, Linux le asigna el siguiente <code>/dev/sdX</code>
+libre, que a falta de un disco en el puerto SATA 1, es <code>/dev/sdb</code>: <strong>el nombre del dispositivo
+ha cambiado</strong> y el fichero <code>/etc/fstab</code> tiene <code>/dev/sdc</code>, lo que causa que <strong>la máquina virtual
+no arranque</strong>.</p>
+<h2>Usando el UUID en vez del nombre del dispositivo</h2>
+<p>Como ya hemos explicado, el nombre del dispositivo puede cambiar por varios motivos, pero
+cada disco o partición dispone de un identificador único que se crea en tiempo de formateo,
+con herramientas tipo <code>mkswap</code> o <code>mkfs</code>.</p>
+<h3>Localizar el UUID de mi disco o partición</h3>
+<p>Podemos localizar el UUID de nuestras particiones de varias maneras. Podemos usar los
+comandos <code>blkid</code>, <code>lsblk</code> o <code>tune2fs</code>; alternativamente podemos sacar esa información listando
+los ficheros de dispositivos en <code>/dev</code>. Sin ser una lista exhaustiva, pongo algunos ejemplos:</p>
+<pre><code class="language-bash">gerard@server:~$ lsblk -f
+NAME   FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINT
+sda
+└─sda1 ext4   1.0         3723d7aa-ca4d-4959-ade2-80d7b2d0bb5e    1,1G    43% /
+sdb
+└─sdb1 ext4   1.0         9b85a769-bd34-47a2-b69d-3549aa76f930   31,3G     0% /var/lib/docker
+sr0
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ sudo blkid
+/dev/sda1: UUID=&quot;3723d7aa-ca4d-4959-ade2-80d7b2d0bb5e&quot; BLOCK_SIZE=&quot;4096&quot; TYPE=&quot;ext4&quot; PARTUUID=&quot;db07bacb-01&quot;
+/dev/sdb1: UUID=&quot;9b85a769-bd34-47a2-b69d-3549aa76f930&quot; BLOCK_SIZE=&quot;4096&quot; TYPE=&quot;ext4&quot; PARTUUID=&quot;0d8dbb9b-c731-7a43-8310-7e64d3eea84c&quot;
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ ls -lh /dev/disk/by-uuid/
+total 0
+lrwxrwxrwx 1 root root 10 feb 17 14:22 3723d7aa-ca4d-4959-ade2-80d7b2d0bb5e -&gt; ../../sda1
+lrwxrwxrwx 1 root root 10 feb 17 14:22 9b85a769-bd34-47a2-b69d-3549aa76f930 -&gt; ../../sdb1
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ sudo tune2fs -l /dev/sdb1 | grep UUID
+Filesystem UUID:          9b85a769-bd34-47a2-b69d-3549aa76f930
+gerard@server:~$
+</code></pre>
+<p><strong>RESULTADO</strong>: Nos queda claro que el disco que es <code>/dev/sdb1</code> (por el momento) y que está
+montado en <code>/var/lib/docker</code> tiene el UUID <code>9b85a769-bd34-47a2-b69d-3549aa76f930</code>.</p>
+<h2>Configurando el fichero <code>/etc/fstab</code></h2>
+<p>Normalmente, suelo montar la partición &ldquo;a mano&rdquo; y sacar la línea del fichero <code>/etc/fstab</code>
+revisando <code>/etc/mtab</code> o <code>/proc/mounts</code> (son el mismo fichero); sacar esa línea del comando
+<code>mount</code> requiere cambiar el formato final y por ello lo suelo descartar.</p>
+<pre><code class="language-bash">gerard@server:~$ mount | grep &quot;/var/lib/docker&quot;
+/dev/sdb1 on /var/lib/docker type ext4 (rw,relatime)
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ grep &quot;/var/lib/docker&quot; /etc/mtab
+/dev/sdb1 /var/lib/docker ext4 rw,relatime 0 0
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ grep &quot;/var/lib/docker&quot; /proc/mounts
+/dev/sdb1 /var/lib/docker ext4 rw,relatime 0 0
+gerard@server:~$
+</code></pre>
+<p>Luego pego esa última línea en el fichero <code>/etc/fstab</code>:</p>
+<pre><code class="language-bash">gerard@server:~$ grep &quot;/var/lib/docker&quot; /etc/fstab
+/dev/sdb1 /var/lib/docker ext4 rw,relatime 0 0
+gerard@server:~$
+</code></pre>
+<p>Sin embargo, sabiendo que el nombre del dispositivo cambia, pero el identificador no,
+podemos modificar esa línea en el fichero <code>/etc/fstab</code>, cambiando el nombre del dispositivo
+por <code>UUID=&quot;xxxx&quot;</code>. En este caso quedaría así:</p>
+<pre><code class="language-bash">gerard@server:~$ grep &quot;/var/lib/docker&quot; /etc/fstab
+#/dev/sdb1 /var/lib/docker ext4 rw,relatime 0 0
+UUID=&quot;9b85a769-bd34-47a2-b69d-3549aa76f930&quot; /var/lib/docker ext4 rw,relatime 0 0
+gerard@server:~$
+</code></pre>
+<p>Y con esto ya podemos añadir y quitar discos en el servidor, sin miedo a que nos descoloque los puntos de montaje en el proceso.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
