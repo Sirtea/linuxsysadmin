@@ -81,7 +81,7 @@ gerard@server:~$
 **RESULTADO**: Nos queda claro que el disco que es `/dev/sdb1` (por el momento) y que está
 montado en `/var/lib/docker` tiene el UUID `9b85a769-bd34-47a2-b69d-3549aa76f930`.
 
-## Configurando el fichero `/etc/fstab`
+### Configurando el fichero `/etc/fstab`
 
 Normalmente, suelo montar la partición "a mano" y sacar la línea del fichero `/etc/fstab`
 revisando `/etc/mtab` o `/proc/mounts` (son el mismo fichero); sacar esa línea del comando
