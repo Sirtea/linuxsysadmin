@@ -35,7 +35,7 @@ Para ello, vamos a utilizar **borgbackup** desde la máquina cliente **client**,
 
 ### Creando y borrando backups
 
-Vamos a empezar creando el espacio de *backups* en ma máquina remota, que utilizando jerga de **borgbackup**, se llama **repositorio**. Para no complicar innecesariamente el artículo, no voy a utilizar encriptación ninguna.
+Vamos a empezar creando el espacio de *backups* en la máquina remota, que utilizando jerga de **borgbackup**, se llama **repositorio**. Para no complicar innecesariamente el artículo, no voy a utilizar encriptación ninguna.
 
 ```bash
 client:~$ borg init --encryption=none borg@bakserver:clientrepo

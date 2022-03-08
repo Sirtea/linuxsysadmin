@@ -70,7 +70,7 @@ client:~$
 <p>Para ello, vamos a utilizar <strong>borgbackup</strong> desde la máquina cliente <strong>client</strong>, que envía su respaldo al servidor central <strong>bakserver</strong>, usando el usuario <em>borg</em> que previamente hemos utilizado.</p>
 <p><strong>AVISO</strong>: Todos los comandos se ejecutan en la máquina cliente, siendo el servidor un simple proveedor de disco a través de SSH. Esto evita poner servicios adicionales en cada máquina.</p>
 <h3>Creando y borrando backups</h3>
-<p>Vamos a empezar creando el espacio de <em>backups</em> en ma máquina remota, que utilizando jerga de <strong>borgbackup</strong>, se llama <strong>repositorio</strong>. Para no complicar innecesariamente el artículo, no voy a utilizar encriptación ninguna.</p>
+<p>Vamos a empezar creando el espacio de <em>backups</em> en la máquina remota, que utilizando jerga de <strong>borgbackup</strong>, se llama <strong>repositorio</strong>. Para no complicar innecesariamente el artículo, no voy a utilizar encriptación ninguna.</p>
 <pre><code class="language-bash">client:~$ borg init --encryption=none borg@bakserver:clientrepo
 Using a pure-python msgpack! This will result in lower performance.
 Remote: Using a pure-python msgpack! This will result in lower performance.
