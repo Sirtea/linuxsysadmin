@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un servidor de hosting compartido - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Un servidor de hosting compartido</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-03-22
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/hosting.html">hosting</a> / <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/ssh.html">ssh</a> / <a href="/tag/sftp.html">sftp</a> / <a href="/tag/nginx.html">nginx</a> / <a href="/tag/php-fpm.html">php-fpm</a> / <a href="/tag/openssl.html">openssl</a>
+</p>
+
+<p>Ya hace tiempo que trabajo a nivel personal con varios <em>blogs</em> hechos con generadores estáticos
+y algunas aplicaciones simples PHP. Como ninguno tiene una carga demasiado alta, decidí unificarlos
+en pocos servidores pequeños para economizar. En algún momento se me ocurrió que podía hacerlo
+de forma estándar.</p>
+<p>La idea es simple: un servidor pequeño basta para alojar estas pequeñas webs de forma fácil
+y autónoma, con el entendido de que:</p>
+<ul>
+<li>El código se sube por SFTP, con usuarios y carpetas <em>root</em> enjauladas</li>
+<li>El servidor web tiene los <em>virtualhosts</em> automatizados de alguna manera
+<ul>
+<li>Hay la posibilidad de poner algo de PHP</li>
+<li>Hay la posibilidad de tener HTTPS</li>
+</ul>
+</li>
+</ul>
+<p>La elección de servidor web se debió a una funcionalidad ganadora: la directiva <code>server_name</code> de
+<strong>nginx</strong> permite poner comodines y expresiones regulares. Para el PHP y el SFTP se utilizarán
+<strong>php-fpm</strong> y <strong>openssh</strong> respectivamente por decisión personal.</p>
+<p><strong>NOTA</strong>: Los comandos proporcionados asumen una distribución <strong>Debian</strong>, aunque deberían
+funcionar en distribuciones derivadas sin cambios, e incluso con otras distribuciones no
+relacionadas con algún cambio simple.</p>
+<h2>El enjaulado SFTP</h2>
+<p>Haremos un enjaulado estándar basado en <strong>openssh</strong>, que es lo que tenemos instalado en casi todo
+servidor. Se asume que ya está instalado, hacedlo si procede.</p>
+<p>La estrategia es la de enjaular cada usuario del grupo <strong>sftponly</strong> en una carpeta <code>/srv/jails/&lt;usuario&gt;</code>.
+Por requisitos de SSH, esta carpeta debe pertenecer al usuario <strong>root</strong> del sistema y ser este el único
+que puede escribir en ella; entonces vamos a crearle al usuario una subcarpeta <code>www</code> que será en donde
+deba dejar el código y que será la que se sirva desde el navegador.</p>
+<p>Empezamos creando el grupo, que haremos &ldquo;de sistema&rdquo;:</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo groupadd --system sftponly
+gerard@hosting:~$
+</code></pre>
+<p>Añadiremos en <code>/etc/ssh/sshd_config</code> un bloque que se encargue del enjaulado de los usuarios de este grupo:</p>
+<pre><code class="language-bash">gerard@hosting:~$ cat /etc/ssh/sshd_config
+...
+Match Group sftponly
+  ChrootDirectory /srv/jails/%u
+  ForceCommand internal-sftp
+gerard@hosting:~$
+</code></pre>
+<p>Finalmente, reiniciaremos el servicio SSH para que aplique los cambios.</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo systemctl restart ssh
+gerard@hosting:~$
+</code></pre>
+<h2>El servidor web</h2>
+<p>Como ya dijimos, vamos a utilizar un combo de <strong>nginx</strong> + <strong>php-fpm</strong>. Vamos a instalarlos, usando el
+paquete <code>nginx-light</code>, que es el que viene con los módulos necesarios y justos para lo que necesitamos;
+habrá que instalar también cualquier módulo PHP que se vaya a necesitar <em>a posteriori</em> (por ejemplo,
+<code>php-mysql</code> o <code>php-intl</code>).</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo apt install nginx-light php-fpm
+...
+gerard@hosting:~$
+</code></pre>
+<p>Ahora viene el truco de todo esto: un <code>server_name</code> que incluya el nombre del usuario, que gracias a
+las expresiones regulares, podemos obtener en una variable, que luego pondremos en la directiva <code>root</code>.
+Esta variable <strong>no puede ir</strong> en las directivas <code>ssl_certificate</code> y <code>ssl_certificate_key</code>, hay que
+emplear la variable <code>ssl_server_name</code>.</p>
+<pre><code class="language-bash">gerard@hosting:~$ ls /etc/nginx/sites-enabled/
+sites
+gerard@hosting:~$
+</code></pre>
+<pre><code class="language-bash">gerard@hosting:~$ cat /etc/nginx/sites-enabled/sites
+server {
+        server_name ~^(?&lt;user&gt;.+)\.myhosting\.local$;
+        listen 80;
+        listen 443 ssl;
+        ssl_certificate /srv/certs/$ssl_server_name.pem;
+        ssl_certificate_key /srv/certs/$ssl_server_name.pem;
+        index index.php index.html;
+        root /srv/jails/$user/www;
+
+        location ~ \.php$ {
+                include snippets/fastcgi-php.conf;
+                fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+        }
+
+        location / { try_files $uri $uri/ =404; }
+}
+gerard@hosting:~$
+</code></pre>
+<p>Y como viene siendo costumbre, recargamos el servicio para que aplique el cambio en la configuración:</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo systemctl reload nginx
+gerard@hosting:~$
+</code></pre>
+<h2>Creando usuarios</h2>
+<p>En este momento necesitamos crear un usuario, con todo lo que implica:</p>
+<ul>
+<li>Crear el usuario, asignarle un <em>password</em> y añadirlo al grupo <em>sftponly</em></li>
+<li>Crear su carpeta <code>www</code> dentro de la jaula, con los permisos para que pueda escribir en ella</li>
+<li>Crear una carpeta <code>/srv/certs</code> con un certificado autofirmado y con permisos para que los <em>workers</em> de nginx lo puedan leer</li>
+</ul>
+<p><strong>TRUCO</strong>: En circunstancias normales, el proceso que lee los certificados es el nginx inicial,
+que funciona con el usuario <strong>root</strong>. Al poner una variable en el <code>ssl_certificate</code> y en el
+<code>ssl_certificate_key</code> se va a leer el fichero del certificado <strong>en cada petición</strong>. Rendimiento
+aparte, eso significa que los procesos que lo lean son los <em>workers</em> del <strong>nginx</strong>, que ejecutan
+con otro usuario (<strong>www-data</strong> en caso de <strong>Debian</strong>).</p>
+<p>Para facilitar las cosas, crearemos todos estos pasos en un <em>script</em>, que tomará el nombre
+del usuario de su primer parámetro, y generará todo el resto.</p>
+<pre><code class="language-bash">gerard@hosting:~$ cat create_user.sh
+#!/bin/bash
+
+useradd -m -G sftponly ${1}
+echo ${1}:changeme | chpasswd
+
+mkdir -p /srv/jails/${1}/www
+chown ${1}:${1} /srv/jails/${1}/www
+
+mkdir -p /srv/certs
+openssl req -newkey rsa:2048 -days 365 -nodes -x509 -keyout /srv/certs/${1}.myhosting.local.pem -out /srv/certs/${1}.myhosting.local.pem -subj &quot;/CN=${1}.myhosting.local&quot;
+chown www-data:www-data /srv/certs/${1}.myhosting.local.pem
+gerard@hosting:~$
+</code></pre>
+<p>Este <em>script</em> requiere de <strong>openssl</strong> para funcionar, así que también lo instalamos:</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo apt install openssl
+...
+gerard@hosting:~$
+</code></pre>
+<h2>Testeando el montaje</h2>
+<p>Para hacer las pruebas, solo necesitamos crear algunos usuarios, y ver que pueden acceder por SFTP a
+su jaula, y ver que lo que hacen se refleja en su web. Vamos a crear dos usuarios: <strong>user1</strong> y <strong>user2</strong>:</p>
+<pre><code class="language-bash">gerard@hosting:~$ sudo ./create_user.sh user1
+Generating a RSA private key
+..........................+++++
+................................................+++++
+writing new private key to '/srv/certs/user1.myhosting.local.pem'
+-----
+gerard@hosting:~$
+</code></pre>
+<pre><code class="language-bash">gerard@hosting:~$ sudo ./create_user.sh user2
+Generating a RSA private key
+...........................................+++++
+..............................................................................................................................................+++++
+writing new private key to '/srv/certs/user2.myhosting.local.pem'
+-----
+gerard@hosting:~$
+</code></pre>
+<p>Ahora entramos por SFTP con cada usuario; basta con ver que solo tenemos la carpeta <code>www</code>, por
+supuesto con contenido diferente para cada usuario. Digamos que <strong>user1</strong> deja un fichero
+<code>index.html</code> básico, y que el <strong>user2</strong> deja un <code>index.php</code> con un <code>phpinfo()</code>.</p>
+<pre><code class="language-bash">gerard@hosting:~$ tree /srv/
+/srv/
+├── certs
+│   ├── user1.myhosting.local.pem
+│   └── user2.myhosting.local.pem
+└── jails
+    ├── user1
+    │   └── www
+    │       └── index.html
+    └── user2
+        └── www
+            └── index.php
+
+6 directories, 4 files
+gerard@hosting:~$
+</code></pre>
+<p>Ahora vamos a hacer algunas peticiones, tanto por HTTP como por HTTPS en cada uno de los dominios,
+solo para ver que se devuelve lo que toca, que es el <code>index.html</code> en el caso de <strong>user1</strong>, y el
+<code>index.php</code> en el caso de <strong>user2</strong>. Se van a utilizar los <em>flags</em> <code>-s</code> (no mostrar nada más que
+la respuesta) y <code>-k</code> (confiar en el certificado autofirmado) según se necesiten.</p>
+<pre><code class="language-bash">gerard@hosting:~$ curl --resolve user1.myhosting.local:80:127.0.0.1 http://user1.myhosting.local/
+&lt;h1&gt;Hello from user1!&lt;/h1&gt;
+gerard@hosting:~$
+</code></pre>
+<pre><code class="language-bash">gerard@hosting:~$ curl -s --resolve user2.myhosting.local:80:127.0.0.1 http://user2.myhosting.local/ | grep title
+&lt;title&gt;PHP 7.4.28 - phpinfo()&lt;/title&gt;&lt;meta name=&quot;ROBOTS&quot; content=&quot;NOINDEX,NOFOLLOW,NOARCHIVE&quot; /&gt;&lt;/head&gt;
+gerard@hosting:~$
+</code></pre>
+<pre><code class="language-bash">gerard@hosting:~$ curl -k --resolve user1.myhosting.local:443:127.0.0.1 https://user1.myhosting.local/
+&lt;h1&gt;Hello from user1!&lt;/h1&gt;
+gerard@hosting:~$
+</code></pre>
+<pre><code class="language-bash">gerard@hosting:~$ curl -sk --resolve user2.myhosting.local:443:127.0.0.1 https://user2.myhosting.local/ | grep title
+&lt;title&gt;PHP 7.4.28 - phpinfo()&lt;/title&gt;&lt;meta name=&quot;ROBOTS&quot; content=&quot;NOINDEX,NOFOLLOW,NOARCHIVE&quot; /&gt;&lt;/head&gt;
+gerard@hosting:~$
+</code></pre>
+<p>Con esto solo faltaría modificar los registros DNS y poner certificados confiables,
+antes de exponer el servidor a internet.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
