@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Construyendo imágenes Docker de forma correcta - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Construyendo imágenes Docker de forma correcta</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-04-05
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/seguridad.html">Seguridad</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/dockerfile.html">dockerfile</a> / <a href="/tag/hadolint.html">hadolint</a> / <a href="/tag/trivy.html">trivy</a>
+</p>
+
+<p>Muchas veces nos ponemos a escribir nuestros ficheros <code>Dockerfile</code> sin prestar mucha atención a lo
+que salga, siempre que funcione. Es una forma correcta de ver las cosas, pero suele ser un error;
+verificar unos pocos puntos antes de dar el fichero por bueno nos puede ahorrar problemas futuros
+y no requiere mucho tiempo.</p>
+<p>Para hacerlo todavía más fácilmente, la comunidad nos brinda de algunas herramientas que nos
+simplifican enormemente la tarea, ya de por sí bastante simple y corta. Hablamos de:</p>
+<ul>
+<li><strong>Hadolint</strong> → <a href="https://github.com/hadolint/hadolint">https://github.com/hadolint/hadolint</a></li>
+<li><strong>Trivy</strong> → <a href="https://github.com/aquasecurity/trivy">https://github.com/aquasecurity/trivy</a></li>
+</ul>
+<p>Se trata de dos herramientas que son un analizador de sintaxis (<strong>hadolint</strong>) y otra que se encarga
+de buscar vulnerabilidades en la imagen, tanto presentes en la imagen como inducidas por posibles
+errores nuestros (<strong>trivy</strong>).</p>
+<h2>Instalando las herramientas</h2>
+<p>Esta parte no entraña ninguna dificultad; podemos utilizar las imágenes <strong>Docker</strong> oficiales para
+no tener que pensar demasiado: <a href="https://hub.docker.com/r/hadolint/hadolint">hadolint/hadolint</a> y <a href="https://hub.docker.com/r/aquasec/trivy/">aquasec/trivy</a>.</p>
+<p>Alternativamente, podemos descargar los binarios precompilados y dejarlos en algún lugar en el
+<em>path</em> de nuestro usuario o del sistema. Vamos a optar por esta última opción porque, al ser
+binarios únicos, es muy fácil de hacer.</p>
+<p>Descargamos la última versión disponible de <a href="https://github.com/hadolint/hadolint/releases/tag/v2.10.0">hadolint</a> y <a href="https://github.com/aquasecurity/trivy/releases/tag/v0.25.0">trivy</a> y la colocamos, por ejemplo,
+en <code>~/bin/</code>. En el caso de <strong>hadolint</strong> se trata del binario directamente, al que hay que renombrar
+y dar permisos de ejecución; en el caso de <strong>trivy</strong> se trata de un fichero comprimido con el
+binario dentro.</p>
+<pre><code class="language-bash">gerard@sandbox:~$ tree
+.
+└── bin
+    ├── hadolint
+    └── trivy
+
+1 directory, 2 files
+gerard@sandbox:~$ hadolint --version
+Haskell Dockerfile Linter 2.10.0
+gerard@sandbox:~$ trivy --version
+Version: 0.25.0
+gerard@sandbox:~$
+</code></pre>
+<h2>Un ejemplo de uso con un caso real</h2>
+<p>Tenemos un proyecto escrito en <strong>python</strong>, aunque eso es lo de menos. Creamos un <code>Dockerfile</code>
+rápido, para salir del paso y ver que todo funciona como debe:</p>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ cat Dockerfile
+FROM python
+COPY requirements.txt /tmp/
+RUN pip install -r /tmp/requirements.txt
+COPY myapi/ /srv/myapi/
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;myapi:app&quot;]
+gerard@sandbox:~/myapi$
+</code></pre>
+<p>Este <code>Dockerfile</code> funciona, pero como veremos, no es la mejor versión del mismo. Pasaremos ambas
+herramientas para ver lo que le falla.</p>
+<h3>Hadolint</h3>
+<p>Esta herramienta nos va a sugerir algunas buenas prácticas, tanto a nivel de sintaxis del fichero
+<code>Dockerfile</code>, como en el uso interno de algunos comandos que se utilizan en su construcción.</p>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ hadolint Dockerfile
+Dockerfile:1 DL3006 warning: Always tag the version of an image explicitly
+Dockerfile:3 DL3042 warning: Avoid use of cache directory with pip. Use `pip install --no-cache-dir &lt;package&gt;`
+gerard@sandbox:~/myapi$
+</code></pre>
+<h3>Trivy</h3>
+<p>Esta otra herramienta nos va a dar la visión de las vulnerabilidades, tanto de la imagen base como
+de las que podamos introducir nosotros. Vamos a empezar por las nuestras:</p>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ trivy fs --security-checks vuln,config .
+2022-04-04T23:54:51.961+0200    INFO    Number of language-specific files: 0
+2022-04-04T23:54:51.964+0200    INFO    Detected config files: 1
+
+Dockerfile (dockerfile)
+=======================
+Tests: 23 (SUCCESSES: 21, FAILURES: 2, EXCEPTIONS: 0)
+Failures: 2 (UNKNOWN: 0, LOW: 0, MEDIUM: 1, HIGH: 1, CRITICAL: 0)
+
++---------------------------+------------+--------------------+----------+------------------------------------------+
+|           TYPE            | MISCONF ID |       CHECK        | SEVERITY |                 MESSAGE                  |
++---------------------------+------------+--------------------+----------+------------------------------------------+
+| Dockerfile Security Check |   DS001    | ':latest' tag used |  MEDIUM  | Specify a tag in the 'FROM'              |
+|                           |            |                    |          | statement for image 'python'             |
+|                           |            |                    |          | --&gt;avd.aquasec.com/appshield/ds001       |
++                           +------------+--------------------+----------+------------------------------------------+
+|                           |   DS002    | root user          |   HIGH   | Specify at least 1 USER                  |
+|                           |            |                    |          | command in Dockerfile with               |
+|                           |            |                    |          | non-root user as argument                |
+|                           |            |                    |          | --&gt;avd.aquasec.com/appshield/ds002       |
++---------------------------+------------+--------------------+----------+------------------------------------------+
+gerard@sandbox:~/myapi$
+</code></pre>
+<p>Ambas herramientas nos indican que deberíamos utilizar un <em>tag</em> en la directiva <code>FROM</code>. Sobre esto
+no hay mucho que decir; tenemos varias opciones si combinamos la versión con la variante.</p>
+<p>En este caso vamos a utilizar la versión 3.8 de <strong>python</strong>, simplemente porque es la versión que
+se utilizó para hacer el desarrollo. En cuanto a la variante, disponemos de 3:</p>
+<ul>
+<li><code>python:&lt;version&gt;</code> → Se trata de una imagen <strong>debian</strong> con varios compiladores preinstalados. Como no los necesitamos, descarto la imagen directamente.</li>
+<li><code>python:&lt;version&gt;-slim</code> → Lo mismo que antes, pero sin los compiladores, que normalmente no se utilizan. Esta es una buena opción.</li>
+<li><code>python:&lt;version&gt;-alpine</code> → Esta imagen tiene una base de <strong>alpine linux</strong>, más pequeña. En principio es un reemplazo adecuado para las otras dos, aunque tampoco incluye compiladores; es otra buena opción, si nos funciona.</li>
+</ul>
+<p>Ahora toca ver las vulnerabilidades de las dos opciones, que se puede hacer con <code>trivy image</code>:</p>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ trivy image python:3.8-slim
+2022-04-05T00:02:22.961+0200    INFO    Detected OS: debian
+2022-04-05T00:02:22.964+0200    INFO    Detecting Debian vulnerabilities...
+2022-04-05T00:02:23.010+0200    INFO    Number of language-specific files: 1
+2022-04-05T00:02:23.012+0200    INFO    Detecting python-pkg vulnerabilities...
+
+python:3.8-slim (debian 11.3)
+=============================
+Total: 75 (UNKNOWN: 0, LOW: 66, MEDIUM: 4, HIGH: 5, CRITICAL: 0)
+
++------------------+------------------+----------+-------------------+-------------------------+-----------------------------------------+
+|     LIBRARY      | VULNERABILITY ID | SEVERITY | INSTALLED VERSION |      FIXED VERSION      |                  TITLE                  |
++------------------+------------------+----------+-------------------+-------------------------+-----------------------------------------+
+| apt              | CVE-2011-3374    | LOW      | 2.2.4             |                         | It was found that apt-key in apt,       |
+|                  |                  |          |                   |                         | all versions, do not correctly...       |
+|                  |                  |          |                   |                         | --&gt;avd.aquasec.com/nvd/cve-2011-3374    |
++------------------+------------------+          +-------------------+-------------------------+-----------------------------------------+
+| bsdutils         | CVE-2022-0563    |          | 2.36.1-8+deb11u1  |                         | util-linux: partial disclosure          |
+|                  |                  |          |                   |                         | of arbitrary files in chfn              |
+|                  |                  |          |                   |                         | and chsh when compiled...               |
+|                  |                  |          |                   |                         | --&gt;avd.aquasec.com/nvd/cve-2022-0563    |
++------------------+------------------+          +-------------------+-------------------------+-----------------------------------------+
+...
+Python (python-pkg)
+===================
+Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
+
+gerard@sandbox:~/myapi$
+</code></pre>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ trivy image python:3.8-alpine
+2022-04-05T00:03:59.507+0200    INFO    Detected OS: alpine
+2022-04-05T00:03:59.510+0200    INFO    Detecting Alpine vulnerabilities...
+2022-04-05T00:03:59.524+0200    INFO    Number of language-specific files: 1
+2022-04-05T00:03:59.524+0200    INFO    Detecting python-pkg vulnerabilities...
+
+python:3.8-alpine (alpine 3.15.3)
+=================================
+Total: 2 (UNKNOWN: 2, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
+
++------------+------------------+----------+-------------------+---------------+---------------------------------------+
+|  LIBRARY   | VULNERABILITY ID | SEVERITY | INSTALLED VERSION | FIXED VERSION |                 TITLE                 |
++------------+------------------+----------+-------------------+---------------+---------------------------------------+
+| busybox    | CVE-2022-28391   | UNKNOWN  | 1.34.1-r4         | 1.34.1-r5     | BusyBox through 1.35.0 allows         |
+|            |                  |          |                   |               | remote attackers to execute           |
+|            |                  |          |                   |               | arbitrary code if netstat...          |
+|            |                  |          |                   |               | --&gt;avd.aquasec.com/nvd/cve-2022-28391 |
++------------+                  +          +                   +               +                                       +
+| ssl_client |                  |          |                   |               |                                       |
+|            |                  |          |                   |               |                                       |
+|            |                  |          |                   |               |                                       |
+|            |                  |          |                   |               |                                       |
++------------+------------------+----------+-------------------+---------------+---------------------------------------+
+
+Python (python-pkg)
+===================
+Total: 0 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
+
+gerard@sandbox:~/myapi$
+</code></pre>
+<p>A la vista de los resultados vamos a utilizar la variante basada en <strong>alpine linux</strong>, simplemente
+por el menor número de vulnerabilidades presentes.</p>
+<h3>Subsanando los problemas</h3>
+<p>Hemos encontrado 3 posibles problemas:</p>
+<ul>
+<li>Una falta de <em>tag</em> en la imagen base, que podemos corregir fácilmente utilizando la imagen base <code>python:3.8-alpine</code></li>
+<li>Un <em>flag</em> sugerido en el comando <code>pip</code>, que podemos añadir sin problemas</li>
+<li>Ejecución del servidor <code>gunicorn</code> con el usuario <strong>root</strong> que se utiliza por defecto; basta con utilizar otro usuario, por ejemplo, <strong>nobody</strong>.</li>
+</ul>
+<p>Con estas simples directrices, nos quedaría un ejemplo más seguro con el siguiente <code>Dockerfile</code>:</p>
+<pre><code class="language-bash">gerard@sandbox:~/myapi$ cat Dockerfile
+FROM python:3.8-alpine
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+COPY myapi/ /srv/myapi/
+USER nobody
+CMD [&quot;gunicorn&quot;, &quot;--bind=0.0.0.0:8080&quot;, &quot;myapi:app&quot;]
+gerard@sandbox:~/myapi$
+</code></pre>
+<p>Y con esto podemos versionar el fichero <code>Dockerfile</code>, que seguramente no vaya a ver más cambios
+relevantes durante el resto de la vida del proyecto.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

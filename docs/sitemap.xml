@@ -3,10 +3,34 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/04/construyendo-imagenes-docker-de-forma-correcta.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/dockerfile.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/hadolint.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/seguridad.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/trivy.html</loc>
+    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
@@ -15,9 +39,6 @@
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/linux.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/nginx.html</loc>
@@ -38,9 +59,6 @@
     <loc>https://www.linuxsysadmin.ml/tag/ssh.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/03/un-servidor-de-hosting-compartido.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
@@ -55,9 +73,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/uuid.html</loc>
     <lastmod>2022-02-17T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
-    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
     <lastmod>2022-01-25T00:00:00+00:00</lastmod>
@@ -542,9 +557,6 @@
     <loc>https://www.linuxsysadmin.ml/2019/01/protegiendo-sistemas-linux-con-una-autenticacion-de-dos-factores.html</loc>
     <lastmod>2019-01-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/seguridad.html</loc>
-    <lastmod>2019-01-22T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/two-factor.html</loc>
     <lastmod>2019-01-22T00:00:00+00:00</lastmod>
   </url><url>
@@ -1021,9 +1033,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2017/09/escribiendo-servicios-web-con-python-y-falcon.html</loc>
     <lastmod>2017-09-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/dockerfile.html</loc>
-    <lastmod>2017-09-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/dumb-init.html</loc>
     <lastmod>2017-09-11T00:00:00+00:00</lastmod>
