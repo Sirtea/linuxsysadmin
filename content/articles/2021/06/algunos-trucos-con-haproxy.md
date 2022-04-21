@@ -287,7 +287,7 @@ fichero de **Let’s Encrypt** o una página de mantenimiento.
 
 No queremos modificar nuestro *backend* para servir estos ficheros, y no
 nos parece bonito montar un servidor web para ello. Podemos jugar con los
-*frontends* de **hapropxy** para separar la petición de este fichero concreto.
+*frontends* de **haproxy** para separar la petición de este fichero concreto.
 
 Sabemos que el *backend* va a dar un error 503 si no hay *backends*
 disponibles, y podemos cambiar el fichero de error en caso de un error,

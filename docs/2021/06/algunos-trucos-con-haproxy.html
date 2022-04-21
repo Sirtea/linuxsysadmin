@@ -260,7 +260,7 @@ que no contábamos. Puede ser el código de verificación de <strong>Google</str
 fichero de <strong>Let’s Encrypt</strong> o una página de mantenimiento.</p>
 <p>No queremos modificar nuestro <em>backend</em> para servir estos ficheros, y no
 nos parece bonito montar un servidor web para ello. Podemos jugar con los
-<em>frontends</em> de <strong>hapropxy</strong> para separar la petición de este fichero concreto.</p>
+<em>frontends</em> de <strong>haproxy</strong> para separar la petición de este fichero concreto.</p>
 <p>Sabemos que el <em>backend</em> va a dar un error 503 si no hay <em>backends</em>
 disponibles, y podemos cambiar el fichero de error en caso de un error,
 así que solo tenemos que forzar que no hayan <em>backends</em> y listo. Una
