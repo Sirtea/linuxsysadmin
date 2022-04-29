@@ -2,11 +2,29 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://www.linuxsysadmin.ml/2022/04/algunos-trucos-varios-para-bash-y-systemd.html</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/04/construyendo-imagenes-docker-de-forma-correcta.html</loc>
     <lastmod>2022-04-05T00:00:00+00:00</lastmod>
@@ -20,13 +38,7 @@
     <loc>https://www.linuxsysadmin.ml/tag/hadolint.html</loc>
     <lastmod>2022-04-05T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/category/seguridad.html</loc>
-    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2022-04-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/trivy.html</loc>
@@ -98,9 +110,6 @@
     <loc>https://www.linuxsysadmin.ml/tag/squashfs.html</loc>
     <lastmod>2021-10-27T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
-    <lastmod>2021-10-27T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/debootstrap.html</loc>
     <lastmod>2021-06-10T00:00:00+00:00</lastmod>
   </url><url>
@@ -144,9 +153,6 @@
     <lastmod>2021-05-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/04/creando-sidekick-containers-en-docker-swarm.html</loc>
-    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
     <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/sidekick.html</loc>
@@ -304,9 +310,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2019/10/algunos-trucos-con-el-cliente-ssh-y-su-configuracion.html</loc>
     <lastmod>2019-10-28T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
-    <lastmod>2019-10-21T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/fichero.html</loc>
     <lastmod>2019-10-21T00:00:00+00:00</lastmod>

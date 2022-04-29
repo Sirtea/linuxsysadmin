@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Algunos trucos varios para bash y systemd - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Algunos trucos varios para bash y systemd</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-04-29
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/bash.html">bash</a> / <a href="/tag/systemd.html">systemd</a>
+</p>
+
+<p>A veces descubrimos algunos trucos que no merecen un artículo en sí mismos. Para
+estos casos, una opción es dejarlos olvidados en algún apartado remoto de la memoria;
+como no queremos tener que recordar, me voy a limitar a dejarlos por aquí como ideas
+para cuando se puedan utilizar.</p>
+<h2>Usando cadenas aleatorias</h2>
+<p>Algunas veces nos puede interesar disponer de cierta aleatoriedad en nuestros <em>scripts</em>.
+Si estos se hacen utilizando <strong>bash</strong>, disponemos de la función <code>$RANDOM</code> que devuelve
+un número de 0 a 32767, sacado de la fuente de entropía de nuestro sistema (por ejemplo,
+de <code>/dev/random</code> o <code>/dev/urandom</code>).</p>
+<pre><code class="language-bash">gerard@debian:~$ echo $RANDOM
+26639
+gerard@debian:~$
+</code></pre>
+<p>Si queremos un valor algo más acotado, podemos utilizar aritmética básica. Por ejemplo,
+para tener un resultado de una tirada de dado, podemos hacer:</p>
+<pre><code class="language-bash">gerard@debian:~$ echo $((1 + $RANDOM % 6))
+4
+gerard@debian:~$
+</code></pre>
+<p>Si por contra necesitamos un resultado un poco más elaborado, ya necesitaríamos utilizar
+<strong>python</strong> o <strong>perl</strong>. Una notable excepción son los valores que el mismo <em>kernel</em> de
+Linux ya nos ofrecen de serie, por ejemplo, un UUID:</p>
+<pre><code class="language-bash">gerard@debian:~$ cat /proc/sys/kernel/random/uuid
+970b8777-6768-4d53-8252-8f264a3950ec
+gerard@debian:~$ cat /proc/sys/kernel/random/uuid
+5093ca94-5d26-4e12-99eb-03ae4b22fc93
+gerard@debian:~$ cat /proc/sys/kernel/random/uuid
+6cfa28af-0f48-4572-ad7b-9afa77b41b3f
+gerard@debian:~$
+</code></pre>
+<h2>Generando marcas temporales</h2>
+<p>Estoy harto de utilizar <em>scripts</em> de <em>backups</em> de forma automatizada; algunos de ellos
+se lanzan desde procesos tipo <strong>cron</strong>. Para su fácil organización, la mayoría suelen
+llevar algún tipo de marca temporal que indican el momento en el que se hizo ese <em>backup</em>.</p>
+<p>En el caso concreto de <strong>bash</strong>, podemos invocar el comando <code>date</code>, que dispone de todo
+tipo de formatos de salida, e incluso nos ofrece la posibilidad de operar en UTC
+(<em>flag</em> <code>-u</code>) o en hora local.</p>
+<p>Algunos formatos útiles pasan por:</p>
+<ul>
+<li><code>%Y</code>, <code>%m</code>, <code>%d</code> → Año (4 dígitos), mes y día (2 dígitos)</li>
+<li><code>%F</code> → Fecha en formato ISO, equivale a <code>%Y-%m-%d</code></li>
+<li><code>%H</code>, <code>%M</code>, <code>%S</code> → Hora, minuto y segundo (2 dígitos)</li>
+<li><code>%T</code> → Tiempo en formato ISO, equivale a <code>%H:%M:%S</code></li>
+<li><code>%s</code> → <em>UNIX timestamp</em> (segundos transcurridos desde el tiempo &ldquo;0&rdquo; de UNIX, que es 1970-01-01 00:00:00 UTC)</li>
+<li><code>%N</code> → Nanosegundos de la hora actual; se puede intercalar un dígito para limitar el número de decimales (por ejemplo, <code>%3N</code> serían 3 dígitos, equivalente a milisegundos).</li>
+</ul>
+<p>Así pues, mis <em>backups</em> suelen tener fecha y hora sin caracteres irrelevantes:</p>
+<pre><code class="language-bash">gerard@debian:~$ touch backup_$(date &quot;+%Y%m%d_%H%M%S&quot;).tar.gz
+gerard@debian:~$ ls -1 backup_*
+backup_20220429_004536.tar.gz
+gerard@debian:~$
+</code></pre>
+<p>Si necesito valores numéricos diferentes entre dos ejecuciones muy seguidas, añado los
+nanosegundos o una porción de los mismos (décimas, microsegundos, milisegundos&hellip;):</p>
+<pre><code class="language-bash">gerard@debian:~$ date -u +%s.%3N
+1651186083.154
+gerard@debian:~$
+</code></pre>
+<h2>Limpiando los logs de systemd</h2>
+<p>Cuando <strong>systemd</strong> ejecuta un binario o un <em>script</em>, muchas veces este último no recoge
+su salida estándar o la de error; esto va a parar a un &ldquo;<em>logger</em> de oficio&rdquo; que es el
+<strong>systemd journal</strong>. Esto nos permite consultarlos con el comando <code>journalctl -u &lt;servicio&gt;</code>.</p>
+<p>El problema de esta aproximación es que los <em>logs</em> se acumulan en ficheros en
+<code>/var/log/journal/</code>, que no podemos ver con un usuario normal y que se suelen acumular
+sin control por parte de herramientas externas como <strong>logrotate</strong>.</p>
+<p>Si fuera necesario hacer algún tipo de eliminación de estos <em>logs</em>, también se nos ofrece
+una forma fácil de hacerlo; basta con invocar <code>journalctl</code> con algunos <em>flags</em> relacionados:</p>
+<ul>
+<li><code>--rotate</code> → Causa que el fichero activo de <em>log</em> se archive, lo que lo hace susceptible de ser afectado por el resto de <em>flags</em>.</li>
+<li><code>--vacuum-size</code> → Limpia ficheros inactivos suficientes para limitar el espacio, aunque no va a borrar el fichero activo.</li>
+<li><code>--vacuum-time</code> → Limpia todas las entradas de los ficheros inactivos para intentar mantener el tiempo indicado.</li>
+<li><code>--vacuum-files</code> → Limpia ficheros inactivos para intentar mantener el número indicado.</li>
+</ul>
+<p><strong>AVISO</strong>: Si se indican a &ldquo;0&rdquo; no se hace nada; se considera que esto equivale a deshabilitar el <em>flag</em>.</p>
+<p><strong>TRUCO</strong>: Se pueden combinar estos <em>flags</em> para conseguir un efecto más restrictivo.</p>
+<p>Por ejemplo, para mantener 7 días de <em>logs</em>, utilizaría:</p>
+<pre><code class="language-bash">gerard@debian:~$ sudo journalctl --vacuum-time=7d
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Vacuuming done, freed 0B of archived journals from /var/log/journal/aa7ee5a5eb1442d98c8013df2c83d857.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+gerard@debian:~$
+</code></pre>
+<p>Si quisiera mantener los <em>logs</em> en un tamaño estable, trabajaría con el tamaño:</p>
+<pre><code class="language-bash">gerard@debian:~$ sudo journalctl --vacuum-size=100M
+Vacuuming done, freed 0B of archived journals from /var/log/journal/aa7ee5a5eb1442d98c8013df2c83d857.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+gerard@debian:~$
+</code></pre>
+<p>Finalmente, para hacer una limpieza total, mantendría un solo fichero (el activo), no sin antes vaciarlo con un rotado&hellip;</p>
+<pre><code class="language-bash">gerard@debian:~$ sudo journalctl --rotate --vacuum-files=1
+Deleted archived journal /var/log/journal/aa7ee5a5eb1442d98c8013df2c83d857/system@02c71151a6f749389e6d3ceb1a3c57c4-0000000000005c65-0005dc5bf6c5d381.journal (8.0M).
+Deleted archived journal /var/log/journal/aa7ee5a5eb1442d98c8013df2c83d857/user-1000@61d7facc2a7c4cf3870e43c452e62b7a-0000000000005c66-0005dc5bf6ea60fa.journal (8.0M).
+Vacuuming done, freed 16.0M of archived journals from /var/log/journal/aa7ee5a5eb1442d98c8013df2c83d857.
+Vacuuming done, freed 0B of archived journals from /var/log/journal.
+Vacuuming done, freed 0B of archived journals from /run/log/journal.
+gerard@debian:~$
+</code></pre>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
