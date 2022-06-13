@@ -187,7 +187,7 @@ slave2 | SUCCESS =&gt; {
 </code></pre>
 <p>Es importante recalcar que solo se puede indicar una contraseña para nuestros <em>vaults</em>, sea por el terminal o por un fichero. Eso significa que todas las contraseñas usadas en un mismo comando deben ser las mismas.</p>
 <h2>Limpiando nuestras líneas de comandos</h2>
-<p>si el fichero de la <em>password</em> es siempre el mismo, nuestros comandos van a ser largos y repetitivos. La gracia es que podemos ocultar los parámetros permanentes en el fichero de configuración de <strong>ansible</strong>.</p>
+<p>Si el fichero de la <em>password</em> es siempre el mismo, nuestros comandos van a ser largos y repetitivos. La gracia es que podemos ocultar los parámetros permanentes en el fichero de configuración de <strong>ansible</strong>.</p>
 <pre><code class="language-bash">~ # cat .ansible.cfg 
 [defaults]
 host_key_checking = False

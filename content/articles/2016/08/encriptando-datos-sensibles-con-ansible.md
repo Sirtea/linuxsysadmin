@@ -179,7 +179,7 @@ Es importante recalcar que solo se puede indicar una contraseña para nuestros *
 
 ## Limpiando nuestras líneas de comandos
 
-si el fichero de la *password* es siempre el mismo, nuestros comandos van a ser largos y repetitivos. La gracia es que podemos ocultar los parámetros permanentes en el fichero de configuración de **ansible**.
+Si el fichero de la *password* es siempre el mismo, nuestros comandos van a ser largos y repetitivos. La gracia es que podemos ocultar los parámetros permanentes en el fichero de configuración de **ansible**.
 
 ```bash
 ~ # cat .ansible.cfg 
