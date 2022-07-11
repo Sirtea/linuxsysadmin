@@ -2,28 +2,40 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
+    <loc>https://www.linuxsysadmin.ml/archives.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/backup.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/categories.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/git.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/07/haciendo-backups-de-repositorios-git.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+  </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/04/algunos-trucos-varios-para-bash-y-systemd.html</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
-    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
-    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/04/construyendo-imagenes-docker-de-forma-correcta.html</loc>
@@ -63,9 +75,6 @@
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/sftp.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/ssh.html</loc>
@@ -223,9 +232,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2020/02/traspasando-bases-de-datos-entre-servidores-mongodb.html</loc>
     <lastmod>2020-02-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/backup.html</loc>
-    <lastmod>2020-01-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2020/01/una-imagen-de-docker-para-hacer-backups-de-mongodb.html</loc>
     <lastmod>2020-01-28T00:00:00+00:00</lastmod>
@@ -772,9 +778,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/06/contrasenas-de-un-solo-uso-para-usuarios-linux.html</loc>
     <lastmod>2018-06-18T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/git.html</loc>
-    <lastmod>2018-06-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/gitea.html</loc>
     <lastmod>2018-06-11T00:00:00+00:00</lastmod>
