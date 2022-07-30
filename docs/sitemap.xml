@@ -3,27 +3,42 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/backup.html</loc>
-    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/mysql.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/07/un-cluster-activo-activo-de-mariadb.html</loc>
+    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/backup.html</loc>
     <lastmod>2022-07-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/git.html</loc>
     <lastmod>2022-07-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/07/haciendo-backups-de-repositorios-git.html</loc>
-    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
-    <lastmod>2022-07-11T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2022-07-11T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/04/algunos-trucos-varios-para-bash-y-systemd.html</loc>
@@ -55,9 +70,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/trivy.html</loc>
     <lastmod>2022-04-05T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/hosting.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
@@ -94,12 +106,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/uuid.html</loc>
     <lastmod>2022-02-17T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
-    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/mysql.html</loc>
-    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/phpmyadmin.html</loc>
     <lastmod>2022-01-25T00:00:00+00:00</lastmod>
@@ -354,9 +360,6 @@
     <lastmod>2019-10-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/autenticacion.html</loc>
-    <lastmod>2019-09-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
     <lastmod>2019-09-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2019/09/un-entorno-productivo-basado-en-docker-swarm-3.html</loc>

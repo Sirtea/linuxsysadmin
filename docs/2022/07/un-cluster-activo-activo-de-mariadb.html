@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un clúster activo-activo de MariaDB - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Un clúster activo-activo de MariaDB</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-07-30
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/debian.html">debian</a> / <a href="/tag/cluster.html">cluster</a> / <a href="/tag/mariadb.html">mariadb</a> / <a href="/tag/mysql.html">mysql</a>
+</p>
+
+<p>Muchas de nuestras aplicaciones diarias utilizan una base de datos, y es muy fácil
+disponer de una utilizando los repositorios de la distribución utilizada. Sin embargo,
+en entornos críticos hace falta algo <em>más profesional</em>, capaz de resistir en caso de
+fallos en los nodos y capaz de asumir mucha más carga.</p>
+<p>Para eso montamos <em>clústeres</em> que nos proporcionen esa seguridad de que no vamos a
+tener que actuar con prisas ni fuera de horas para garantizar el servicio que ofrecemos.
+En este artículo nos vamos a centrar en montar un <em>clúster</em> de <strong>MariaDB</strong>, en donde
+tanto lecturas como escrituras puedan ir a cualquiera de los nodos.</p>
+<p>Para ello disponemos de 3 servidores <strong>Debian Bullseye</strong>: <strong>mariadb01</strong>, <strong>mariadb02</strong>
+y <strong>mariadb03</strong>. Sus direcciones IP son irrelevantes, puesto que disponemos de una
+resolución de nombres adecuada (utilizad un servicio DNS o el fichero <code>/etc/hosts</code>,
+a vuestro gusto).</p>
+<h2>Preparando los nodos</h2>
+<p>Para poder ejercer como nodos de un <em>clúster</em> de <strong>MariaDB</strong>, todos los servidores
+deben disponer del servicio, que en el caso de <strong>Debian</strong> es <code>mariadb-server</code>. Vamos
+a instalarlo:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo apt update
+...
+gerard@mariadb01:~$
+</code></pre>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo apt install mariadb-server
+...
+gerard@mariadb01:~$
+</code></pre>
+<p>Este servicio va a levantarse con una configuración diferente, así que de momento lo paramos:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo systemctl stop mariadb
+gerard@mariadb01:~$
+</code></pre>
+<p>La configuración del <em>clúster</em> se hace modificando la configuración del servicio, y en
+el caso de <strong>Debian</strong> disponemos de un fichero preparado para ello:</p>
+<pre><code class="language-bash">gerard@mariadb01:/etc/mysql/mariadb.conf.d$ pwd
+/etc/mysql/mariadb.conf.d
+gerard@mariadb01:/etc/mysql/mariadb.conf.d$ cat 60-galera.cnf
+#
+# * Galera-related settings
+#
+# See the examples of server wsrep.cnf files in /usr/share/mysql
+# and read more at https://mariadb.com/kb/en/galera-cluster/
+
+[galera]
+# Mandatory settings
+#wsrep_on                 = ON
+#wsrep_cluster_name       = &quot;MariaDB Galera Cluster&quot;
+#wsrep_cluster_address    = gcomm://
+#binlog_format            = row
+#default_storage_engine   = InnoDB
+#innodb_autoinc_lock_mode = 2
+
+# Allow server to accept connections on all interfaces.
+#bind-address = 0.0.0.0
+
+# Optional settings
+#wsrep_slave_threads = 1
+#innodb_flush_log_at_trx_commit = 0
+gerard@mariadb01:/etc/mysql/mariadb.conf.d$
+</code></pre>
+<p>La lista de valores obligados la podemos encontrar en <a href="https://mariadb.com/kb/en/configuring-mariadb-galera-cluster/">la documentación</a>, y vemos
+dos claras diferencias a mencionar: el <code>wsrep_cluster_name</code> no es obligado, y falta
+la directiva necesaria <code>wsrep_provider</code>.</p>
+<p>Tras modificar el fichero, nos debería quedar así:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ cat /etc/mysql/mariadb.conf.d/60-galera.cnf
+#
+# * Galera-related settings
+#
+# See the examples of server wsrep.cnf files in /usr/share/mysql
+# and read more at https://mariadb.com/kb/en/galera-cluster/
+
+[galera]
+# Mandatory settings
+wsrep_on                 = ON
+#wsrep_cluster_name       = &quot;MariaDB Galera Cluster&quot;
+wsrep_cluster_address    = gcomm://mariadb01,mariadb02,mariadb03
+binlog_format            = row
+default_storage_engine   = InnoDB
+innodb_autoinc_lock_mode = 2
+wsrep_provider           = /usr/lib/galera/libgalera_smm.so
+
+# Allow server to accept connections on all interfaces.
+bind-address = 0.0.0.0
+
+# Optional settings
+#wsrep_slave_threads = 1
+#innodb_flush_log_at_trx_commit = 0
+gerard@mariadb01:~$
+</code></pre>
+<p>Solo hemos descomentado las líneas obligadas (menos el nombre del <em>clúster</em>) y hemos
+añadido el <em>provider</em>. Se habilita también el acceso remoto del servidor con la directiva
+<code>bind-address</code>. Esta configuración es la misma para los tres nodos.</p>
+<p>En este momento, tenemos el servicio instalado, configurado y parado.</p>
+<p><strong>NOTA</strong>: Esto se repite en los nodos <strong>mariadb02</strong> y <strong>mariadb03</strong>.</p>
+<h2>Levantando el clúster</h2>
+<p>En circunstancias normales, la configuración especificada es suficiente; un nodo se
+levanta, lee la directiva <code>wsrep_cluster_address</code> y busca uno de los nodos especificados
+para unirse al <em>clúster</em>. El problema viene cuando no hay nodos levantados; el primer nodo
+es incapaz de encontrar otro nodo levantado y, por lo tanto, no se puede unir al <em>clúster</em>.</p>
+<p>En este momento hay que indicar que queremos crear un nuevo <em>clúster</em>, y eso se consigue
+especificando la directiva <code>wsrep_cluster_address</code> vacía, indicando como valor <code>gcomm://</code>.
+Para hacerlo disponemos de dos opciones:</p>
+<ul>
+<li>Modificar la configuración <strong>temporalmente</strong> para poder levantar el primer nodo, restableciéndola después.</li>
+<li>Utilizando el <em>script</em> <code>galera_new_cluster</code>, que levanta el servicio especificando la directiva vacía por parámetro.</li>
+</ul>
+<p>Vamos a utilizar la segunda opción por ser la opción más fácil. Para ello decidimos
+empezar con <strong>mariadb01</strong> como el primer nodo, y ejecutamos:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo galera_new_cluster
+gerard@mariadb01:~$
+</code></pre>
+<p>En este momento tenemos un <em>clúster</em> de un solo nodo, que es <strong>mariadb01</strong>. Esto se
+puede verificar fácilmente (directiva <code>wsrep_cluster_size</code>):</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ echo 'show status like &quot;wsrep_cluster%&quot;' | sudo mysql
+Variable_name   Value
+wsrep_cluster_weight    1
+wsrep_cluster_capabilities
+wsrep_cluster_conf_id   1
+wsrep_cluster_size      1
+wsrep_cluster_state_uuid        0c50e58b-0e68-11ed-9292-da9b77c8b3ef
+wsrep_cluster_status    Primary
+gerard@mariadb01:~$
+</code></pre>
+<p>El resto de nodos ya pueden unirse al <em>clúster</em>, haciendo caso a su configuración.</p>
+<pre><code class="language-bash">gerard@mariadb02:~$ sudo systemctl restart mariadb
+gerard@mariadb02:~$
+</code></pre>
+<pre><code class="language-bash">gerard@mariadb03:~$ sudo systemctl restart mariadb
+gerard@mariadb03:~$
+</code></pre>
+<p>Podemos verificar que el <em>clúster</em> está bien montado repitiendo la consulta anterior:</p>
+<pre><code class="language-bash">gerard@mariadb03:~$ echo 'show status like &quot;wsrep_cluster%&quot;' | sudo mysql
+Variable_name   Value
+wsrep_cluster_weight    3
+wsrep_cluster_capabilities
+wsrep_cluster_conf_id   3
+wsrep_cluster_size      3
+wsrep_cluster_state_uuid        0c50e58b-0e68-11ed-9292-da9b77c8b3ef
+wsrep_cluster_status    Primary
+gerard@mariadb03:~$
+</code></pre>
+<p><strong>NOTA</strong>: Solo necesitamos ejecutar <code>galera_new_cluster</code> cuando no hay nodos levantados;
+de ahora en adelante podemos parar y levantar de forma normal el nodo <strong>mariadb01</strong>,
+utilizando <code>systemctl</code>.</p>
+<p>Y con esto el <em>clúster</em> queda funcionando.</p>
+<h2>Probando la replicación (opcional)</h2>
+<p>Para hacer las pruebas del <em>clúster</em> nos limitaremos a ejecutar consultas y modificaciones
+en todos los nodos, verificando que se reproducen en el resto. Empezamos creando una base
+de datos, con una tabla y contenido; por ejemplo, en <strong>mariadb01</strong>:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo mysql
+...
+MariaDB [(none)]&gt; create database testdb;
+Query OK, 1 row affected (0.031 sec)
+
+MariaDB [(none)]&gt; use testdb;
+Database changed
+MariaDB [testdb]&gt; create table kittens (id int auto_increment, name varchar(100), primary key (id));
+Query OK, 0 rows affected (0.033 sec)
+
+MariaDB [testdb]&gt; insert into kittens (name) values (&quot;Garfield&quot;);
+Query OK, 1 row affected (0.013 sec)
+
+MariaDB [testdb]&gt; insert into kittens (name) values (&quot;Azrael&quot;);
+Query OK, 1 row affected (0.015 sec)
+
+MariaDB [testdb]&gt; insert into kittens (name) values (&quot;Snowball&quot;);
+Query OK, 1 row affected (0.022 sec)
+
+MariaDB [testdb]&gt; select * from kittens;
++----+----------+
+| id | name     |
++----+----------+
+|  1 | Garfield |
+|  4 | Azrael   |
+|  7 | Snowball |
++----+----------+
+3 rows in set (0.000 sec)
+
+MariaDB [testdb]&gt;
+</code></pre>
+<p>Podemos verificar que la base de datos ha aparecido en <strong>mariadb02</strong>:</p>
+<pre><code class="language-bash">gerard@mariadb02:~$ sudo mysql
+...
+MariaDB [(none)]&gt; show databases;
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| testdb             |
++--------------------+
+4 rows in set (0.001 sec)
+
+MariaDB [(none)]&gt;
+</code></pre>
+<p>Verificamos que la tabla y su contenido existen también en <strong>mariadb03</strong> y, ya que
+estamos, modificamos su contenido:</p>
+<pre><code class="language-bash">gerard@mariadb03:~$ sudo mysql testdb
+...
+MariaDB [testdb]&gt; select * from kittens;
++----+----------+
+| id | name     |
++----+----------+
+|  1 | Garfield |
+|  4 | Azrael   |
+|  7 | Snowball |
++----+----------+
+3 rows in set (0.000 sec)
+
+MariaDB [testdb]&gt; delete from kittens where id = 4;
+Query OK, 1 row affected (0.041 sec)
+
+MariaDB [testdb]&gt;
+</code></pre>
+<p>Solo haría falta ir a cualquier otro nodo y verificar que las operaciones ejecutadas
+en <strong>mariadb03</strong> también se replican al resto de nodos:</p>
+<pre><code class="language-bash">gerard@mariadb01:~$ sudo mysql testdb
+...
+MariaDB [testdb]&gt; select * from kittens;
++----+----------+
+| id | name     |
++----+----------+
+|  1 | Garfield |
+|  7 | Snowball |
++----+----------+
+2 rows in set (0.000 sec)
+
+MariaDB [testdb]&gt;
+</code></pre>
+<p>De esta forma, nos da igual cuál es el nodo que ejecuta las consultas; todos van a ver
+esos datos replicados. Esto nos garantiza que el <em>clúster</em> va a seguir operando si
+se cae algún nodo y nos permite lanzar más consultas concurrentes, ganando rendimiento.</p>
+<h2>¿Dónde conectamos nuestras aplicaciones?</h2>
+<p>Tenemos 3 nodos y podemos leer y escribir en cualquiera de ellos. Sin embargo, los
+<em>drivers</em> de conexión a <strong>MySQL</strong> o <strong>MariaDB</strong> suelen pedir una dirección IP y un
+puerto para conectarse a la base de datos.</p>
+<p>Por supuesto podemos añadir complejidad a nuestra aplicación manteniendo 3 conexiones
+y reintentando las que fallen en algún otro nodo, pero no es lo ideal. Lo que necesitamos
+es una dirección IP &ldquo;de servicio&rdquo; que sea consciente del nodo a utilizar.</p>
+<p>Esto nos deja varias opciones, por ejemplo:</p>
+<ul>
+<li>Una dirección IP compartida con <strong>keepalived</strong>, que se vaya moviendo a un nodo saludable.</li>
+<li>Un elemento de red que pueda dirigir las peticiones a los nodos saludables, por ejemplo un balanceador <strong>haproxy</strong>.</li>
+</ul>
+<p>La primera opción es algo más sencilla (en cuando a número de servidores), pero las
+consultas solo irían a uno de los nodos. La segunda nos da más versatilidad, porque
+utiliza mejor el factor numérico y nos permite distribuir las peticiones de forma
+inteligente; incluso podríamos crear varios <em>endpoints</em>, por ejemplo:</p>
+<ul>
+<li>Un <em>endpoint</em> (<em>roundrobin</em> o <em>leastconn</em>) hacia <strong>mariadb01</strong> y <strong>mariadb02</strong> para uso habitual.</li>
+<li>Un <em>endpoint</em> hacia <strong>mariadb03</strong> para descargar consultas pesadas (informes o cargas, por ejemplo), sin afectar a la operativa habitual.</li>
+</ul>
+<p><strong>TRUCO</strong>: Es importante que haya un <em>check</em> para decidir los nodos saludables, o
+nuestras consultas irán a parar en saco roto si el nodo elegido está caído.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
