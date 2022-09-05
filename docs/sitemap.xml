@@ -3,18 +3,36 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/limpieza.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/09/limpieza-automatica-de-datos-sin-usar-en-docker.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/debian.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/mariadb.html</loc>
@@ -24,9 +42,6 @@
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/category/sistemas.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/07/un-cluster-activo-activo-de-mariadb.html</loc>
@@ -47,16 +62,10 @@
     <loc>https://www.linuxsysadmin.ml/tag/bash.html</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
-    <lastmod>2022-04-29T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/systemd.html</loc>
     <lastmod>2022-04-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2022/04/construyendo-imagenes-docker-de-forma-correcta.html</loc>
-    <lastmod>2022-04-05T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
     <lastmod>2022-04-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/dockerfile.html</loc>
@@ -171,9 +180,6 @@
     <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/sidekick.html</loc>
-    <lastmod>2021-04-14T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
     <lastmod>2021-04-14T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/healthcheck.html</loc>

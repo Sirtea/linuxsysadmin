@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Limpieza automática de datos sin usar en Docker - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Limpieza automática de datos sin usar en Docker</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-09-05
+	<strong>Tiempo de lectura</strong>: 3 minutos
+	<strong>Categoría</strong>: <a href="/category/operaciones.html">Operaciones</a>
+	<strong>Tags</strong>: <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a> / <a href="/tag/limpieza.html">limpieza</a>
+</p>
+
+<p>Es muy frecuente practicar el despliegue continuo en mis <em>clústeres</em> de <strong>Docker Swarm</strong>. Sin
+embargo, esta práctica viene acompañada de un molesto pequeño problema: se me acaba el espacio en
+disco por acumulación de objetos de <strong>docker</strong> (imágenes, contenedores parados, volúmenes, etc.).</p>
+<p>Aunque ya conocía el comando <code>docker system prune</code>, ejecutarlo alegremente me daba cierto pavor;
+algunos de los objetos podían ser necesarios a muy corto plazo. Esto cambió cuando descubrí que
+el comando aceptaba un <em>flag</em> <code>--filter</code> que me permitía seleccionar los objetos que hacía tiempo
+que no se utilizaban.</p>
+<p>Como no podía ser de otra forma, añadí este nuevo conocimiento en una herramienta en mis <em>swarms</em>,
+como un servicio auxiliar del mismo, ejecutando en un contenedor.</p>
+<h2>La imagen de limpieza</h2>
+<p>Se trata de un contenedor que va a ejecutar periódicamente un el comando <code>docker system prune</code>,
+con lo que vamos a necesitar los binarios de <strong>docker</strong> y acceso al <em>unix socket</em> que le
+permitirá pasarle el comando de limpieza.</p>
+<p>Vamos a encapsular el comando en un <em>script</em>, que nos permitirá acceder a las variables de
+entorno de forma fácil y nos permitirá generar unos <em>logs</em> de ejecución que nos permitan
+ver lo que está pasando.</p>
+<p>Como el <em>script</em> va a ser un <em>shell script</em> estándar, no necesitamos ninguna imagen demasiado
+recargada; en efecto, nos basta con la <a href="https://hub.docker.com/_/docker">imagen oficial de docker</a>, a la que añadiremos el
+<em>script</em>. En el momento de escritura de este artículo, esto se traduce en la imagen <code>docker:20.10</code>.</p>
+<p>En cuanto al <em>script</em>, no tiene mucho misterio; se trata de lanzar el <code>docker system prune</code> cada
+cierto tiempo, con una posible espera inicial adecuada (y puede que aleatoria). Esto nos deja
+un <em>script</em> de este estilo:</p>
+<pre><code class="language-bash">gerard@sandbox:~/wiper$ cat run.sh
+#!/bin/sh
+
+SLEEP_TIME=${SLEEP_TIME:-3600}
+UNUSED_TIME=${UNUSED_TIME:-24h}
+
+prune () {
+    echo &quot;$(date +%FT%T) - Executing system prune...&quot;
+    docker system prune --all --force --filter &quot;until=${UNUSED_TIME}&quot;
+}
+
+sleep $((RANDOM % SLEEP_TIME))
+while true; do
+    prune
+    sleep ${SLEEP_TIME}
+done
+gerard@sandbox:~/wiper$
+</code></pre>
+<p><strong>NOTA</strong>: Estoy en contra de añadir el <em>flag</em> <code>--volumes</code>, puesto que los volúmenes con
+nombre los creamos con mucho cariño y suelen contener información delicada. Prefiero gestionar
+yo mismo su ciclo de vida, de forma manual.</p>
+<p>Solo nos falta empaquetar el <em>script</em> en una imagen, mediante el uso de un fichero <code>Dockerfile</code>:</p>
+<pre><code class="language-bash">gerard@sandbox:~/wiper$ cat Dockerfile
+FROM docker:20.10
+COPY run.sh /
+CMD [&quot;/run.sh&quot;]
+gerard@sandbox:~/wiper$
+</code></pre>
+<h2>Desplegando la imagen en nuestro swarm</h2>
+<p>Suponiendo que tenemos la imagen disponible para todos los nodos del <em>swarm</em> (por ejemplo en
+<strong>DockerHub</strong> o en un registro privado), el despliegue no tiene ninguna complicación. Lo que
+hay que tener en cuenta es que:</p>
+<ol>
+<li>El comando <code>docker</code> funciona escribiendo en el <em>unix socket</em> de la máquina que ejecuta <strong>docker</strong>, en la ruta <code>/var/run/docker.sock</code>. Podemos acceder al <em>unix socket</em> del servidor anfitrión montándolo como un volumen local.</li>
+<li>La idea es que se ejecute un limpiador en cada nodo del <em>swarm</em>, ya que cada contenedor accede al <em>unix socket</em> de su anfitrión; así que la directiva <code>deploy.mode: global</code> nos viene de perlas.</li>
+<li>Hemos escrito un <em>script</em> que se configura con variables de entorno. Aunque hay unos valores por defecto de tiempo de espera (<code>SLEEP_TIME</code> = 3600 segundos = 1 hora) y de antigüedad de los objetos (<code>UNUSED_TIME</code> = 24 horas), es interesante definir los valores a unos más adecuados según las políticas de despliegue de la empresa.</li>
+</ol>
+<p>Llegados a este punto, suponiendo que ejecutamos cada día y que eliminamos los objetos
+que lleven una semana sin usarse, tendríamos un <em>stack</em> bastante simple:</p>
+<pre><code class="language-bash">gerard@sandbox:~/tools$ cat stack.yml
+version: '3'
+services:
+  wiper:
+    image: wiper
+    environment:
+        SLEEP_TIME: 86400
+        UNUSED_TIME: 168h
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      mode: global
+gerard@sandbox:~/tools$
+</code></pre>
+<p>Lo acompañamos con un <em>script</em> de despliegue estándar, y listo:</p>
+<pre><code class="language-bash">gerard@sandbox:~/tools$ cat deploy.sh
+#!/bin/bash
+
+docker stack deploy -c stack.yml tools
+gerard@sandbox:~/tools$
+</code></pre>
+<p><strong>CONCLUSIÓN</strong>: Nunca más tuvimos problemas de espacio por acumulación innecesaria de elementos <strong>docker</strong> sin usar.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
