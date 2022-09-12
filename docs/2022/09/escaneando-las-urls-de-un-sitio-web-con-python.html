@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Escaneando las URLs de un sitio web con Python - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Escaneando las URLs de un sitio web con Python</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-09-12
+	<strong>Tiempo de lectura</strong>: 4 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+	<strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/sitemap.html">sitemap</a> / <a href="/tag/xml.html">xml</a> / <a href="/tag/cache.html">cache</a>
+</p>
+
+<p>Hay muchos motivos para recolectar las URLs de un sitio web, tanto legítimas como
+ilegítimas; es una herramienta que, como todas, se puede utilizar para el bien o para
+el mal. En mi caso, la petición recibida era legítima: un cliente necesitaba hacer
+peticiones web con regularidad para mantenerlas <em>cacheadas</em> en la CDN que usaba.</p>
+<p>Pensándolo bien, solo hay dos tareas necesarias para cumplir con esto:</p>
+<ul>
+<li>Extraer las URLs de alguna lista o, mejor todavía, de un <em>sitemap</em>.</li>
+<li>Una forma de lanzar esas peticiones con cierta regularidad:
+<ul>
+<li>Un <em>script</em> en una tarea tipo <strong>cron</strong> que las vaya pidiendo todas, una tras otra.</li>
+<li>Un servicio en <em>background</em> que vaya lanzándolas poco a poco, posiblemente desde una cola circular previamente cargada.</li>
+</ul>
+</li>
+</ul>
+<p>En este artículo nos vamos a centrar en la primera parte, que es la de extraer las
+URLs de un <em>sitemap</em>, con el único propósito de demostrar una vez más que <strong>python</strong>
+nos ofrece todo lo que podamos necesitar.</p>
+<p>Es bien cierto que si rebuscamos entre los paquetes de <a href="https://pypi.org/">PyPi</a> podemos encontrar
+paquetes que nos hacen el trabajo sucio, como por ejemplo <a href="https://pypi.org/project/ultimate-sitemap-parser/">este</a> <a href="https://github.com/mediacloud/ultimate-sitemap-parser">mismo</a>.</p>
+<p>Si hacemos esto, vamos a necesitar confiar en librerías de terceras personas, que
+normalmente tienen un soporte limitado o no reciben atención desde hace años
+(ahora mismo, el último <em>commit</em> es de septiembre de 2020). Mejor nos centramos en
+la librería estándar de <strong>python</strong>.</p>
+<h2>Construyendo nuestro propio extractor de URLs</h2>
+<p>Todos sabemos lo que es un <em>sitemap</em>: un documento formal XML que puede incluir URLs
+de páginas y otros <em>sitemaps</em>. Podemos descargarnos ese documento XML con cualquier
+librería que nos permita hacer una petición web, y luego <em>parsear</em> el resultado
+buscando lo que nos interesa.</p>
+<p>Para limitarme a la librería estándar, voy a utilizar los módulos <strong>urllib</strong> y
+<strong>xml</strong>, que me ofrecen el método <code>urlopen</code> y el <em>parser</em> <code>minidom</code> en la misma
+librería estándar de <strong>python</strong>. Esto solo es una decisión personal y hay otras
+maneras de hacerlo, como por ejemplo el módulo <strong>lxml</strong>, <strong>beautifulsoup</strong> o
+<strong>requests</strong> para las peticiones al <em>sitemap</em>.</p>
+<p>Lo importante a tener en cuenta es que el <em>tag</em> <code>url</code> puede estar en dos contextos:
+dentro de un <code>urlset</code> (que indica que es un grupo de URLs de páginas), o dentro del
+<em>tag</em> <code>sitemap</code> dentro de un <em>tag</em> <code>sitemapindex</code>.</p>
+<p>El resto no tiene ninguna complicación: creamos un generador <code>extract_urls</code> que
+reciba la URL del <em>sitemap</em> y nos vaya dando sus URLs, con la opción de mirar
+en los otros posibles <em>sitemaps</em> encontrados, de forma recursiva.</p>
+<p>A partir de aquí, lo que se haga con la lista, entraría en otro objetivo. Para
+tener la foto completa, me limitaré a recoger las URLs (quitando posibles repetidos)
+y a pedirlas una a una, separadas por una pequeña espera.</p>
+<p>El resultado en toda su gloria, apenas 10 líneas del generador, otras tantas para
+el lanzador de peticiones y poco más&hellip;</p>
+<pre><code class="language-python">#!/usr/bin/env python3
+
+import sys
+from urllib.request import Request, urlopen
+from xml.dom.minidom import parseString
+import time
+import requests
+
+SITEMAP = sys.argv[1]
+
+
+def extract_urls(sitemap_url, recurse=True):
+    with urlopen(Request(sitemap_url)) as resp:
+        dom = parseString(resp.read())
+        for urls in dom.getElementsByTagName('urlset'):
+            for loc in urls.getElementsByTagName('loc'):
+                yield loc.childNodes[0].data
+        if recurse:
+            for sitemaps in dom.getElementsByTagName('sitemap'):
+                for loc in sitemaps.getElementsByTagName('loc'):
+                    yield from extract_urls(loc.childNodes[0].data)
+
+
+if __name__ == '__main__':
+    print(f'Warming URLs from {SITEMAP}')
+    urls = set(extract_urls(SITEMAP, recurse=True))
+    i = 0
+    for url in urls:
+        i += 1
+        print(f'{i}/{len(urls)} - {url}')
+        r = requests.get(url)
+        time.sleep(0.1)
+</code></pre>
+<p><strong>NOTA</strong>: El lanzador de peticiones web se ha puesto con <strong>requests</strong>. Esto obedece
+a un intento de simplificar la solución; como no es la parte importante del artículo,
+no le voy a prestar más atención. Podéis cambiar el <code>requests.get</code> por un <code>urlopen</code>
+que ya hemos hecho más arriba.</p>
+<pre><code class="language-bash">gerard@tropico:~/workspace$ ./warmer.py https://www.linuxsysadmin.ml/sitemap.xml
+Warming URLs from https://www.linuxsysadmin.ml/sitemap.xml
+1/578 - https://www.linuxsysadmin.ml/tag/backup.html
+2/578 - https://www.linuxsysadmin.ml/tag/libc.html
+3/578 - https://www.linuxsysadmin.ml/tag/blog.html
+4/578 - https://www.linuxsysadmin.ml/tag/mongodb.html
+5/578 - https://www.linuxsysadmin.ml/tag/isolinux.html
+6/578 - https://www.linuxsysadmin.ml/2017/05/generacion-facil-de-certificados-con-easyrsa.html
+7/578 - https://www.linuxsysadmin.ml/2022/07/haciendo-backups-de-repositorios-git.html
+...
+</code></pre>
+<p>Y con esto, sumo otro éxito para <strong>python</strong>, con una solución simple, rápida y elegante.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>

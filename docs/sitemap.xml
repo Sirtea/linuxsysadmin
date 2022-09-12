@@ -3,10 +3,34 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://www.linuxsysadmin.ml/archives.html</loc>
-    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/cache.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/categories.html</loc>
-    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/category/desarrollo.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/2022/09/escaneando-las-urls-de-un-sitio-web-con-python.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/python.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/sitemap.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://www.linuxsysadmin.ml/tag/xml.html</loc>
+    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/docker.html</loc>
     <lastmod>2022-09-05T00:00:00+00:00</lastmod>
@@ -17,16 +41,10 @@
     <loc>https://www.linuxsysadmin.ml/2022/09/limpieza-automatica-de-datos-sin-usar-en-docker.html</loc>
     <lastmod>2022-09-05T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://www.linuxsysadmin.ml/</loc>
-    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://www.linuxsysadmin.ml/category/operaciones.html</loc>
     <lastmod>2022-09-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/swarm.html</loc>
-    <lastmod>2022-09-05T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tags.html</loc>
     <lastmod>2022-09-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/tag/cluster.html</loc>
@@ -171,9 +189,6 @@
     <lastmod>2021-05-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/05/prototipos-de-proyectos-de-forma-facil.html</loc>
-    <lastmod>2021-05-28T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/python.html</loc>
     <lastmod>2021-05-28T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2021/04/creando-sidekick-containers-en-docker-swarm.html</loc>
@@ -592,9 +607,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/12/usando-docker-para-saltarse-los-permisos-de-linux.html</loc>
     <lastmod>2018-12-17T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/category/desarrollo.html</loc>
-    <lastmod>2018-12-10T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2018/12/enviando-mensajes-a-slack-desde-python-usando-webhooks.html</loc>
     <lastmod>2018-12-10T00:00:00+00:00</lastmod>
@@ -1171,9 +1183,6 @@
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2017/05/desarrollando-aplicaciones-web-con-python-y-bottle.html</loc>
     <lastmod>2017-05-15T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://www.linuxsysadmin.ml/tag/cache.html</loc>
-    <lastmod>2017-05-08T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://www.linuxsysadmin.ml/2017/05/reduciendo-el-tiempo-de-build-con-docker-y-su-cache.html</loc>
     <lastmod>2017-05-08T00:00:00+00:00</lastmod>
