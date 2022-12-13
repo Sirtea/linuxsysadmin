@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>El balanceador externo perfecto: Debian, HAProxy y LetsEncrypt - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://www.linuxsysadmin.ml/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>El balanceador externo perfecto: Debian, HAProxy y LetsEncrypt</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2022-12-13
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/debian.html">debian</a> / <a href="/tag/haproxy.html">haproxy</a> / <a href="/tag/letsencrypt.html">letsencrypt</a> / <a href="/tag/certificado.html">certificado</a> / <a href="/tag/ssl.html">ssl</a>
+</p>
+
+<p>Hace mucho tiempo que no reviso mi política de <em>hosting</em>. Tras la renovación
+de alguno de mis servicios, decidí que era tiempo de recortar en gastos para
+los más simples. Así pues, decidí moverme a un servicio de <em>hosting</em> de estos
+que van por horas, con terminación SSL gratuita.</p>
+<p>Y es que no es de recibo pagar un ojo de la cara por un certificado SSL si
+nos vale con uno gratis renovable cada 3 meses; eso si, de forma automatizada,
+porque no quiero tener que ir preocupándome de ello.</p>
+<p>El combo es simple:</p>
+<ul>
+<li>Un servidor con un sistema operativo con el que nos sintamos cómodos. En mi caso, eso se traduce como <strong>Debian</strong> (concretamente <strong>Debian Bullseye</strong>, actual estable).</li>
+<li>Un balanceador por requisito de mi servicio. Nos vale cualquiera, pero me decanto por <strong>HAProxy</strong>; otras opciones incluirían <strong>Nginx</strong> o <strong>Caddy</strong>, pero voy a tirar por la solución 100% libre.</li>
+<li>Un certificado SSL generado por <strong>Let&rsquo;s Encrypt</strong> o una entidad similar. Como nunca había utilizado <strong>Let&rsquo;s Encrypt</strong>, me decanto por él; cosas de la curiosidad humana.</li>
+</ul>
+<p>Hay muchos proveedores de VPS &ldquo;por horas&rdquo;. Puedo mencionar algunos como
+<strong>DigitalOcean</strong>, <strong>Scaleway</strong> o <strong>Linode</strong>. Sin embargo, en esta ocasión me
+decanto por <strong>Vultr</strong> por sus instancias mínimas de 2,5 $ mensuales (en realidad
+3,5 $, porque acabé abrazando la simplicidad de la dirección pública IPv4).</p>
+<p>Esto no es un artículo de tutorial sobre este portal, así que vamos a asumir que
+ya tenemos nuestro VPS aprovisionado y un registro DNS apuntando a su dirección
+IP. Supongamos que el dominio es <code>www.example.com</code>.</p>
+<p>Procedemos a instalar el <strong>HAProxy</strong> y el cliente de <strong>Let&rsquo;s Encrypt</strong> (que es
+<strong>certbot</strong>). Hay muchos otros clientes, pero nos limitaremos a este por estar en
+los repositorios oficiales.</p>
+<pre><code class="language-bash">root@balancer:~# apt install haproxy certbot
+...
+root@balancer:~#
+</code></pre>
+<p>El requisito imprescindible que vamos a imponer es que <strong>no vamos a parar el
+HAProxy bajo ninguna circunstancia</strong>, para evitar <em>downtime</em> mientras se renueva
+el certificado; solamente lo vamos a tocar para montarlo. De hecho, todo se
+puede hacer con <em>reloads</em> de ahora en adelante.</p>
+<h2>Generar el certificado</h2>
+<p><strong>WARNING</strong>: Es un buen momento para asegurar que el puerto HTTP y HTTPS están
+permitidos en nuestro firewall (tanto el del <em>hosting</em> como el del servidor).
+En mi caso tenía instalado <strong>ufw</strong> y lo vi con <code>ufw status</code>. Me faltó ejecutar
+un <code>ufw allow http</code> y <code>ufw allow https</code>.</p>
+<p>La generación del certificado la vamos a hacer con el <em>HTTP challenge</em>, que
+básicamente significa poner un fichero en nuestro servidor para que
+<strong>Let&rsquo;s Encrypt</strong> pueda verificar que es de nuestra propiedad.</p>
+<p>Sin embargo, <strong>HAProxy</strong> no es un servidor web. Necesitamos otro servidor web
+al que se pueda llegar desde el exterior; por suerte, el mismo cliente de
+<strong>certbot</strong> nos ofrece un servidor <em>standalone</em>. Como no podemos reemplazar el
+<strong>HAProxy</strong>, solo necesitamos desviar una ruta concreta hacia el servidor
+auxiliar (que levantaré en el puerto 8888).</p>
+<pre><code class="language-bash">root@balancer:~# cat /etc/haproxy/haproxy.cfg
+...
+frontend public
+        bind :80
+        use_backend letsencrypt if { path -m beg /.well-known/acme-challenge/ }
+        ...
+...
+backend letsencrypt
+        server letsencrypt 127.0.0.1:8888
+...
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# systemctl reload haproxy
+root@balancer:~#
+</code></pre>
+<p>Ahora basta con la línea mágica (cambiad el dominio y el email):</p>
+<pre><code class="language-bash">root@balancer:~# certbot certonly --standalone -d &lt;domain&gt; --non-interactive --agree-tos --email &lt;email&gt; --http-01-port=8888
+...
+root@balancer:~#
+</code></pre>
+<p>En este momento, el servidor auxiliar se ha parado solo y tenemos los certificados
+en <code>/etc/letsencrypt/live/&lt;domain&gt;/</code>. Específicamente nos interesan el <code>fullchain.pem</code>
+y el <code>privkey.pem</code>, que en el caso de <strong>HAProxy</strong> deben ir juntos, por ejemplo,
+en <code>/etc/haproxy/certs/</code>.</p>
+<pre><code class="language-bash">root@balancer:~# mkdir /etc/haproxy/certs
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# cat /etc/letsencrypt/live/&lt;domain&gt;/{fullchain,privkey}.pem &gt; /etc/haproxy/certs/&lt;domain&gt;.pem
+root@balancer:~#
+</code></pre>
+<p>Vamos a poner la configuración relevante en el <strong>HAProxy</strong> para servir HTTPS:</p>
+<pre><code class="language-bash">root@balancer:~# cat /etc/haproxy/haproxy.cfg
+...
+frontend public
+        bind :80
+        bind :443 ssl crt /etc/haproxy/certs/&lt;domain&gt;.pem
+        http-request redirect scheme https code 301 unless { ssl_fc }
+        use_backend letsencrypt if { path -m beg /.well-known/acme-challenge/ }
+...
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# systemctl reload haproxy
+root@balancer:~#
+</code></pre>
+<p>Y con esto ya tenemos HTTPS.</p>
+<h2>Renovar el certificado</h2>
+<p>Otra cosa que nos dejó la ejecución de <strong>certbot</strong> es la configuración de
+los parámetros con los que lo ejecutamos:</p>
+<pre><code class="language-bash">root@balancer:~# cat /etc/letsencrypt/renewal/&lt;domain&gt;.conf
+# renew_before_expiry = 30 days
+version = 1.12.0
+archive_dir = /etc/letsencrypt/archive/&lt;domain&gt;
+cert = /etc/letsencrypt/live/&lt;domain&gt;/cert.pem
+privkey = /etc/letsencrypt/live/&lt;domain&gt;/privkey.pem
+chain = /etc/letsencrypt/live/&lt;domain&gt;/chain.pem
+fullchain = /etc/letsencrypt/live/&lt;domain&gt;/fullchain.pem
+
+# Options used in the renewal process
+[renewalparams]
+account = &lt;secret&gt;
+http01_port = 8888
+authenticator = standalone
+server = https://acme-v02.api.letsencrypt.org/directory
+root@balancer:~#
+</code></pre>
+<p>Esto nos permite ejecutar el comando <code>certbot renew</code> sin añadir nada nuevo
+(podemos evitar ejecutar cambios con el <em>flag</em> <code>--dry-run</code>).</p>
+<pre><code class="language-bash">root@balancer:~# certbot renew --dry-run
+...
+Cert not due for renewal, but simulating renewal for dry run
+...
+Congratulations, all simulated renewals succeeded:
+  /etc/letsencrypt/live/&lt;domain&gt;/fullchain.pem (success)
+...
+root@balancer:~#
+</code></pre>
+<p>Hay que tener en cuenta algunos detalles:</p>
+<ul>
+<li>El cliente <strong>certbot</strong> no actualiza los servidores hasta que no faltan 30 días para su renovación, así que no habríamos cambiado nada. Eso significa que podemos ejecutar la renovación tan a menudo como queramos.</li>
+<li>La renovación funcionó, aunque nos quedaría juntar el certificado en <code>/etc/haproxy/certs/</code> y hacer un <code>systemctl reload haproxy</code> para que se apliquen.</li>
+<li>El comando de renovación levanta el servidor <em>standalone</em> para la renovación, pero lo para inmediatamente después; eso significa que no necesitamos &ldquo;mantener vivo&rdquo; dicho servidor con un servicio de sistema operativo.</li>
+</ul>
+<p>Para no tener que ejecutar nada manualmente, <strong>certbot</strong> nos ofrece los <em>hooks</em>
+que son comandos que se ejecutan durante la renovación, sea antes, después o si
+hay cambios de certificados. Se pueden dar como parámetros a la ejecución de
+<code>certbot renew</code>, o ser <em>scripts</em> en las carpetas adecuadas:</p>
+<pre><code class="language-bash">root@balancer:~# tree /etc/letsencrypt/renewal-hooks/
+/etc/letsencrypt/renewal-hooks/
+├── deploy
+├── post
+└── pre
+
+3 directories, 0 files
+root@balancer:~#
+</code></pre>
+<p>Dejamos un <em>script</em> en la carpeta <code>deploy</code>, que es la que contiene los <em>hooks</em> que
+se ejecutan <strong>si algún certificado se renueva</strong>. Usamos los mismos comandos que antes:</p>
+<pre><code class="language-bash">root@balancer:~# cat /etc/letsencrypt/renewal-hooks/deploy/haproxy
+#!/bin/bash
+
+SITE=&quot;&lt;domain&gt;&quot;
+
+cat /etc/letsencrypt/live/${SITE}/{fullchain,privkey}.pem &gt; /etc/haproxy/certs/${SITE}.pem
+systemctl reload haproxy
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# chmod 755 /etc/letsencrypt/renewal-hooks/deploy/haproxy
+root@balancer:~#
+</code></pre>
+<p>La renovación corre a cargo de un <em>timer</em> de <strong>systemd</strong>, que lo hace 2 veces al
+día (recordad que solo renovará si al certificado le quedan 30 días o menos para
+caducar, así que es seguro). Este <em>timer</em> quedó creado al instalar el paquete
+<strong>certbot</strong>; nuevamente, no tenemos nada que hacer.</p>
+<pre><code class="language-bash">root@balancer:~# cat /usr/lib/systemd/system/certbot.timer
+...
+OnCalendar=*-*-* 00,12:00:00
+...
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# cat /usr/lib/systemd/system/certbot.service
+...
+ExecStart=/usr/bin/certbot -q renew
+...
+root@balancer:~#
+</code></pre>
+<h2>Verificando nuestro setup SSL</h2>
+<p>Si vamos a <code>www.example.com</code> (nuestro dominio) podemos ver el candado al
+lado de la barra de direcciones. No tiene colores, porque el certificado
+de <strong>Let&rsquo;s Encrypt</strong> es básico, pero veremos que la conexión es segura
+y el certificado es confiable.</p>
+<p>Para más nota, podemos analizar nuestro sitio en <a href="https://www.ssllabs.com/ssltest/">Qualys SSL Labs</a>.
+Un análisis en este momento nos va a dar directamente la nota &ldquo;A&rdquo;.
+Podemos conseguir una nota &ldquo;A+&rdquo; fácilmente añadiendo la cabecera HSTS
+(Strict-Transport-Security).</p>
+<pre><code class="language-bash">root@balancer:~# cat /etc/haproxy/haproxy.cfg
+...
+frontend public
+        bind :80
+        bind :443 ssl crt /etc/haproxy/certs/&lt;domain&gt;.pem alpn h2,http/1.1
+        http-request redirect scheme https code 301 unless { ssl_fc }
+        http-response set-header Strict-Transport-Security max-age=63072000
+        use_backend letsencrypt if { path -m beg /.well-known/acme-challenge/ }
+...
+root@balancer:~#
+</code></pre>
+<pre><code class="language-bash">root@balancer:~# systemctl reload haproxy
+root@balancer:~#
+</code></pre>
+<p>La configuración del <strong>HAProxy</strong> solo añade una línea más (la del
+<code>http-response set-header</code>); aunque por convicción personal modifico
+otra (la del <code>bind :443 ssl</code>), para que el balanceador acepte HTTP/2.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2022 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
