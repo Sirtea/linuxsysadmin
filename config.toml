@@ -1,4 +1,4 @@
-baseURL = "https://www.linuxsysadmin.ml/"
+baseURL = "https://linuxsysadmin.gerardmb.xyz/"
 languageCode = "es-es"
 title = "Linux Sysadmin"
 theme = "linuxsysadmin"
