@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Una breve introducción a Firewalld - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://linuxsysadmin.gerardmb.xyz/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Una breve introducción a Firewalld</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2023-03-31
+	<strong>Tiempo de lectura</strong>: 8 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/firewall.html">firewall</a> / <a href="/tag/iptables.html">iptables</a> / <a href="/tag/firewalld.html">firewalld</a>
+</p>
+
+<p>Como ya sabéis, este blog ha ido cambiando las tecnologías tal como han ido saliendo nuevas o
+más adecuadas. La siguiente que me veo obligado a apartar es <strong>Shorewall</strong>, debido a que su
+desarrollador se ha retirado y no lo va a seguir adaptando a las situaciones siempre cambiantes.</p>
+<p>Hace relativamente poco, me enteré por <a href="https://news.ycombinator.com/item?id=19219212">dos</a> <a href="https://sourceforge.net/p/shorewall/mailman/message/36589783/">artículos</a> que su creador, <strong>Tom Eastep</strong>,
+se retiraba para disfrutar de su jubilación. Aunque sigo creyendo que es la mejor capa de
+abstracción sobre <strong>iptables</strong>, se va a quedar atrás rápidamente.</p>
+<blockquote>
+<p>Shorewall Community &hellip;</p>
+<p>I am now in my mid 70s and have spent almost 50 years in tech-related
+industries. More than three years ago, I retired from my position at
+Hewlett Packard Enterprise, and while I have continued to develop and
+support Shorewall, I feel that it is now time to say goodbye.</p>
+<p>Shorewall 5.2.3 will be my last Shorewall release. If you find problems
+with that release, I will attempt to resolve them. But, I am now
+departing on an extended trip to visit some of the places in the world
+that I have always dreamed of seeing.</p>
+<p>If I have left you with unresolved problems, I am sorry. If you would
+like to see Shorewall continue and are willing to help with development
+and support, please let me know. I am more than willing to help ensure
+that Shorewall continues.</p>
+<p>Most of all, I want to thank all of you who have used Shorewall and who
+have helped make it better over the years. You are the ones that I will
+miss the most.</p>
+<p>-Tom</p>
+</blockquote>
+<p>Esto me obligó a buscar otra solución, y esta llegó en forma de <strong>Firewalld</strong>. Aunque no he
+conseguido crear <em>firewalls</em> de 3 o más patas con <strong>Firewalld</strong>, ha llegado el momento de
+escribir una ligera introducción que pueda servirle a alguien en el futuro.</p>
+<h2>Conceptos básicos</h2>
+<p>Empecemos por lo básico: <strong>firewalld</strong> utiliza el concepto de <strong>zonas</strong>. Aviso para el que
+venga de <strong>Shorewall</strong>, estas no tienen nada que ver entre sí. Las zonas de <strong>Firewalld</strong> son
+solamente pegamento que permite agrupar un conjunto de reglas y políticas, el origen de los
+paquetes afectados y otras reglas aplicables.</p>
+<p>Empezaremos por instalar el paquete <strong>firewalld</strong> si no lo tuviéramos ya:</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo apt install firewalld
+...
+gerard@bastion:~$
+</code></pre>
+<p>Aunque podemos crear zonas nuevas, vamos a aprovechar que <strong>Firewalld</strong> viene con algunas
+zonas prefabricadas para ver un ejemplo:</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --get-zones
+block dmz drop external home internal public trusted work
+gerard@bastion:~$
+
+gerard@bastion:~$ sudo firewall-cmd --zone=public --list-all
+public
+  target: default
+  icmp-block-inversion: no
+  interfaces:
+  sources:
+  services: dhcpv6-client ssh
+  ports:
+  protocols:
+  forward: no
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+gerard@bastion:~$
+</code></pre>
+<p>En este caso se trata de una zona llamada &ldquo;public&rdquo; (el nombre no es importante), que no afecta
+a nada (directivas <code>interfaces</code> y <code>sources</code>) y que permitiría acceder a ella a los servicios
+<strong>dhcpv6-client</strong> y <strong>ssh</strong>, sin otros protocolos o puertos (directivas <code>services</code>, <code>protocols</code>
+y <code>ports</code>).</p>
+<p>Un punto interesante es que los comandos de <strong>firewall-cmd</strong> nos permiten modificar el <em>firewall</em>
+en caliente o de forma permanente, nunca ambos estados a la vez. Esto nos obliga a repetir los
+comandos con y sin el <em>flag</em> <code>--permanent</code>. Alternativamente, podemos salvar el <em>runtime</em> con el
+comando <code>firewall-cmd --runtime-to-permanent</code> o aplicar lo salvado con <code>firewall-cmd --reload</code>.</p>
+<p><strong>NOTA</strong>: No pretendo abarcar todo lo que puede hacer <strong>Firewalld</strong>, solo lo básico. Si queréis
+seguir tirando del hilo, el proyecto dispone de <a href="https://firewalld.org/documentation/">una amplia documentación</a>.</p>
+<h2>Un firewall simple</h2>
+<p>Supongamos que tenemos un servidor que ofrece HTTP y HTTPS en los puertos estándar, así como
+un servicio SSH en el puerto TCP 2222. La idea es que vamos a hacer un DROP de todo lo demás.</p>
+<p>El primer paso consiste en crear o adaptar una zona para cubrir este caso; por no ir creando
+zonas, voy a adaptar la zona &ldquo;public&rdquo;. Como hemos visto un poco más arriba, viene con algunos
+servicios aceptados, que no queremos, así que los quitamos:</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --zone=public --remove-service=dhcpv6-client --remove-service=ssh --permanent
+success
+gerard@bastion:~$
+</code></pre>
+<p>Podemos añadir lo que nos interesa, que es la política DROP, los servicios HTTP y HTTPS y un
+puerto TCP &ldquo;no común&rdquo;. Podríamos haber permitido los tres puertos sin usar servicios, pero así
+queda más bonito.</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --zone=public --set-target DROP --permanent
+success
+gerard@bastion:~$
+
+gerard@bastion:~$ sudo firewall-cmd --zone=public --add-service=http --permanent
+success
+gerard@bastion:~$
+
+gerard@bastion:~$ sudo firewall-cmd --zone=public --add-service=https --permanent
+success
+gerard@bastion:~$
+
+gerard@bastion:~$ sudo firewall-cmd --zone=public --add-port=2222/tcp --permanent
+success
+gerard@bastion:~$
+</code></pre>
+<p>Ahora que tenemos el conjunto de reglas y políticas listas, solo nos falta indicar qué
+paquetes de red deben usar esta zona. En mi caso, vamos a utilizar esta zona para todo
+lo que entre por la única interfaz de red que tengo. Es importante saber que la interfaz
+de <em>localhost</em> no quedará nunca afectada, hagamos lo que hagamos.</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --zone=public --add-interface=enp0s3 --permanent
+success
+gerard@bastion:~$
+</code></pre>
+<p>Ahora, todos estos cambios están guardados en ficheros de configuración; esto significa
+que van a aplicar en el siguiente reinicio. Como no tengo paciencia para ello, voy a
+recargar la configuración a mano:</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --reload
+success
+gerard@bastion:~$
+</code></pre>
+<p>Solo nos queda ver que la zona queda como <strong>activa</strong> (es decir, que se aplica a <em>algo</em>),
+y ver que las reglas son las que queríamos:</p>
+<pre><code class="language-bash">gerard@bastion:~$ sudo firewall-cmd --get-active-zones
+public
+  interfaces: enp0s3
+gerard@bastion:~$
+
+gerard@bastion:~$ sudo firewall-cmd --zone=public --list-all
+public (active)
+  target: DROP
+  icmp-block-inversion: no
+  interfaces: enp0s3
+  sources:
+  services: http https
+  ports: 2222/tcp
+  protocols:
+  forward: no
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+gerard@bastion:~$
+</code></pre>
+<h2>Un firewall de dos patas</h2>
+<p>Este otro ejemplo se basa en una máquina tipo <em>firewall</em> de dos patas que conecta una red
+externa con una interna. La interfaz de red externa es <strong>enp0s3</strong> y la interfaz conectada
+a la red interna es la <strong>enp0s8</strong>.</p>
+<p>La idea es la misma, se trata de dos patas de red que estarán afectadas por una zona cada
+una. Podría usar la misma zona para ambas, pero prefiero utilizar reglas diferentes en cada
+pata de red.</p>
+<p>Mirando las zonas prefabricadas, veo que hay dos que tienen un nombre muy descriptivo para
+las redes que estoy separando: <strong>internal</strong> y <strong>external</strong>. Así pues, voy a reutilizarlas.</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --get-zones
+block dmz drop external home internal public trusted work
+gerard@firewall:~$
+</code></pre>
+<p>Empezaremos por la fácil: la pata interna. La revisamos y vemos su configuración por defecto:</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=internal --list-all
+internal
+  target: default
+  icmp-block-inversion: no
+  interfaces:
+  sources:
+  services: dhcpv6-client mdns samba-client ssh
+  ports:
+  protocols:
+  forward: no
+  masquerade: no
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+gerard@firewall:~$
+</code></pre>
+<p>De todos estos servicios, no nos interesa conservar ninguno; no queremos que los servidores de
+la red interna puedan acceder a ninguno de ellos. En cambio, vamos a suponer que este <em>firewall</em>
+tiene instalado el paquete <strong>dnsmasq</strong> y ofrece DHCP y DNS a las máquinas de la red interna,
+por lo que hay que permitirlos. La política que viene por defecto es <code>default</code>, que resulta
+en un conveniente REJECT.</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=internal --remove-service=dhcpv6-client --remove-service=mdns --remove-service=samba-client --remove-service=ssh --permanent
+success
+gerard@firewall:~$
+
+gerard@firewall:~$ sudo firewall-cmd --zone=internal --add-service=dhcp --add-service=dns --permanent
+success
+gerard@firewall:~$
+</code></pre>
+<p>Solo nos falta asignar la zona a la pata de la red interna y cargar esa configuración guardada
+en los ficheros de configuración:</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=internal --add-interface=enp0s8 --permanent
+success
+gerard@firewall:~$
+
+gerard@firewall:~$ sudo firewall-cmd --reload
+success
+gerard@firewall:~$
+</code></pre>
+<p>Ahora le toca el turno a la pata de la red externa. Miramos lo que lleva por defecto:</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=external --list-all
+external
+  target: default
+  icmp-block-inversion: no
+  interfaces:
+  sources:
+  services: ssh
+  ports:
+  protocols:
+  forward: no
+  masquerade: yes
+  forward-ports:
+  source-ports:
+  icmp-blocks:
+  rich rules:
+gerard@firewall:~$
+</code></pre>
+<p>El SSH ya nos viene bien, pero hay que cambiar la política por un DROP. Adicionalmente,
+vamos a poner una regla de <em>port forward</em>, de forma que todo lo que entre por los puertos
+TCP 80 y 443 (HTTP y HTTPS) se los vamos a tirar al servidor web (10.0.0.2), mismos
+puertos (directivas <code>toaddr</code> y <code>toport</code>).</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=external --set-target=DROP --permanent
+success
+gerard@firewall:~$
+
+gerard@firewall:~$ sudo firewall-cmd --zone=external --add-forward-port=port=80:proto=tcp:toaddr=10.0.0.2:toport=80 --permanent
+success
+gerard@firewall:~$
+
+gerard@firewall:~$ sudo firewall-cmd --zone=external --add-forward-port=port=443:proto=tcp:toaddr=10.0.0.2:toport=443 --permanent
+success
+gerard@firewall:~$
+</code></pre>
+<p>Asignamos la pata de red externa y recargamos las reglas, desde el &ldquo;permanent&rdquo; hasta el &ldquo;runtime&rdquo;:</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo firewall-cmd --zone=external --add-interface=enp0s3 --permanent
+success
+gerard@firewall:~$
+
+gerard@firewall:~$ sudo firewall-cmd --reload
+success
+gerard@firewall:~$
+</code></pre>
+<p>El último paso para permitir que los paquetes salgan por la pata externa y sepan volver al
+<em>firewall</em> es hacer SNAT o MASQUERADE. Eso se consigue con el comando <code>firewall-cmd --add-masquerade</code>;
+sin embargo, la zona &ldquo;external&rdquo; ya lo llevaba activado (directiva <code>masquerade: yes</code> cuando hemos
+revisado la configuración inicial).</p>
+<p><strong>TRUCO</strong>: Para que los paquetes pasen de una red a otra, hay que cambiar el fichero
+<code>/proc/sys/net/ipv4/ip_forward</code> a &ldquo;1&rdquo;. Si ponemos el <em>masquerade</em> o una regla de <em>port forward</em>,
+<strong>Firewalld</strong> ya lo hace por nosotros&hellip;</p>
+<pre><code class="language-bash">gerard@firewall:~$ cat /proc/sys/net/ipv4/ip_forward
+1
+gerard@firewall:~$
+</code></pre>
+<h2>Sobre la configuración permanente y los backups</h2>
+<p>Cuando instalamos el paquete <strong>firewalld</strong>, viene con varios objetos prefabricados. Estos se
+encuentran en <code>/usr/lib/firewalld/</code>. En caso de crear objetos nuevos (o modificar los existentes),
+la política de la herramienta es la de utilizar otro sitio en donde guardar las modificaciones.</p>
+<p>Este otro sitio es <code>/etc/firewalld/</code> y es donde deberíamos hacer copias de seguridad, para cubrir
+nuestra política de <em>backups</em> en caso de desastre.</p>
+<pre><code class="language-bash">gerard@firewall:~$ sudo tree /etc/firewalld/
+/etc/firewalld/
+├── firewalld.conf
+├── helpers
+├── icmptypes
+├── ipsets
+├── lockdown-whitelist.xml
+├── policies
+├── services
+└── zones
+    ├── external.xml
+    ├── external.xml.old
+    ├── internal.xml
+    └── internal.xml.old
+
+6 directories, 6 files
+gerard@firewall:~$
+</code></pre>
+
+
+<p class="footer">Copyright &copy; 2015-2023 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
