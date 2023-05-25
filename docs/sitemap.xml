@@ -3,10 +3,34 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://linuxsysadmin.gerardmb.xyz/archives.html</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/categories.html</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/pyenv.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/python.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/2023/05/usando-diferentes-versiones-de-python-con-pyenv.html</loc>
+    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/firewall.html</loc>
     <lastmod>2023-03-31T00:00:00+00:00</lastmod>
@@ -17,25 +41,10 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/iptables.html</loc>
     <lastmod>2023-03-31T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
-    <lastmod>2023-03-31T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2023/03/una-breve-introduccion-a-firewalld.html</loc>
     <lastmod>2023-03-31T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/certificado.html</loc>
-    <lastmod>2022-12-13T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
     <lastmod>2022-12-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2022/12/el-balanceador-externo-perfecto-debian-haproxy-y-letsencrypt.html</loc>
@@ -57,9 +66,6 @@
     <lastmod>2022-09-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2022/09/escaneando-las-urls-de-un-sitio-web-con-python.html</loc>
-    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/python.html</loc>
     <lastmod>2022-09-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/sitemap.html</loc>

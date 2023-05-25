@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Usando diferentes versiones de Python con pyenv - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://linuxsysadmin.gerardmb.xyz/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Usando diferentes versiones de Python con pyenv</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2023-05-25
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/linux.html">linux</a> / <a href="/tag/debian.html">debian</a> / <a href="/tag/python.html">python</a> / <a href="/tag/pyenv.html">pyenv</a>
+</p>
+
+<p>Tal como el mundo de las aplicaciones va adoptando arquitecturas orientadas a microservicios
+nos encontramos con la necesidad de alojar más aplicaciones pequeñas, y normalmente con
+requisitos distintos en cuanto al lenguaje de programación, su versión o sus librerías;
+esto nos lleva a la adopción de contenedores, pero no siempre es posible.</p>
+<p>Ya sea en una máquina de trabajo de un desarrollador o en un servidor que no disponga
+de capacidad de despliegue de contenedores, no nos queda otra que hacer convivir el
+conjunto de aplicaciones que estamos desarrollando o sirviendo.</p>
+<p><strong>Python</strong> tiene una forma muy interesante de gestionar los conflictos de librerías que
+se llama <strong>virtualenv</strong>; sin embargo, las versiones de <strong>Python</strong> son otro tema. Como
+alguien me dijo una vez, es una mala idea toquetear el <strong>python</strong> del sistema operativo;
+es muy fácil romper las herramientas más básicas del mismo.</p>
+<p>Así pues, la recomendación es separar las diferentes versiones de <strong>python</strong>, y eso solo
+se puede hacer de unas pocas formas: o bien utilizamos jaulas (o contenedores), o bien
+tenemos instalaciones independientes para poder usar. Es en esta última forma en la que
+<strong>pyenv</strong> nos ayuda; se trata de manejar varias versiones de <strong>python</strong> de forma fácil,
+e instalarlas o eliminarlas de forma (más o menos) fácil.</p>
+<h2>Instalación de pyenv</h2>
+<p>La instalación de <strong>pyenv</strong> es muy simple; basta con utilizar un <em>script</em> alojado en
+su web. Para ello vamos a necesitar <strong>curl</strong> o <strong>wget</strong>. El <em>script</em> en sí mismo está
+escrito en <strong>bash</strong> y requiere de <strong>git</strong>. Empezaremos instalándolos todos:</p>
+<pre><code class="language-bash">gerard@asclepius:~$ sudo apt install curl git
+...
+gerard@asclepius:~$
+</code></pre>
+<p>La instalación a partir de aquí es ejecutar el <em>script</em> que <a href="https://github.com/pyenv/pyenv#automatic-installer">se nos indica</a>:</p>
+<pre><code class="language-bash">gerard@asclepius:~$ curl https://pyenv.run | bash
+...
+WARNING: seems you still have not added 'pyenv' to the load path.
+
+# Load pyenv automatically by appending
+# the following to
+~/.bash_profile if it exists, otherwise ~/.profile (for login shells)
+and ~/.bashrc (for interactive shells) :
+
+export PYENV_ROOT=&quot;$HOME/.pyenv&quot;
+command -v pyenv &gt;/dev/null || export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;
+eval &quot;$(pyenv init -)&quot;
+
+# Restart your shell for the changes to take effect.
+
+# Load pyenv-virtualenv automatically by adding
+# the following to ~/.bashrc:
+
+eval &quot;$(pyenv virtualenv-init -)&quot;
+
+gerard@asclepius:~$
+</code></pre>
+<p>Solo nos falta añadir al <code>.bash_profile</code> o al <code>.profile</code> lo que nos indica:</p>
+<pre><code class="language-bash">gerard@asclepius:~$ tail -3 .profile
+export PYENV_ROOT=&quot;$HOME/.pyenv&quot;
+command -v pyenv &gt;/dev/null || export PATH=&quot;$PYENV_ROOT/bin:$PATH&quot;
+eval &quot;$(pyenv init -)&quot;
+gerard@asclepius:~$
+</code></pre>
+<p>Salimos de la sesión para que, al entrar, nos aplique el nuevo <code>.profile</code>.</p>
+<h2>Instalando versiones nuevas de python</h2>
+<p>La instalación no puede ser más fácil: <code>pyenv install &lt;version&gt;</code>. Podemos elegir versión de
+entre las disponibles, que veremos con el comando <code>pyenv install --list</code>.</p>
+<p>Lo único que debe decirse es que <strong>pyenv</strong> instala la versión <strong>compilándola</strong> <em>in situ</em>.
+Esto nos obliga a tener una serie de compiladores, herramientas y cabeceras de librerías.</p>
+<p>La <a href="https://github.com/pyenv/pyenv/wiki#suggested-build-environment">documentación</a> indica los paquetes que tenemos que instalar, pero podemos prescindir
+de algunos; en concreto me bastan con el compilador <strong>gcc</strong> y la herramienta <strong>make</strong>. Las
+cabeceras de las librerías no son tan importantes y, si faltan, habrá módulos de la librería
+estándar no disponibles. Como pretendo trabajar con aplicaciones &ldquo;servidor&rdquo;, el módulo <strong>tkinter</strong>
+que sirve para hacer aplicaciones de escritorio, no me sirve y quito <code>tk-dev</code>. El resto se
+quedan, ya que no pesan mucho y pueden sernos útiles.</p>
+<pre><code class="language-bash">gerard@asclepius:~$ sudo apt install make gcc libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libncurses-dev libxml2-dev libffi-dev liblzma-dev uuid-dev
+...
+gerard@asclepius:~$
+</code></pre>
+<p>Ahora sí: vamos a &ldquo;instalar&rdquo; la versión 3.11 de <strong>python</strong>. Esto solo debería hacerse una
+vez (me ha tardado unos 4 minutos en una máquina virtualizada con <strong>VirtualBox</strong>, con un
+solo procesador y 512mb de memoria).</p>
+<pre><code class="language-bash">gerard@asclepius:~$ pyenv install 3.11
+Downloading Python-3.11.3.tar.gz...
+-&gt; https://www.python.org/ftp/python/3.11.3/Python-3.11.3.tgz
+Installing Python-3.11.3...
+Installed Python-3.11.3 to /home/gerard/.pyenv/versions/3.11.3
+gerard@asclepius:~$
+</code></pre>
+<p>Encontraremos nuestro nuevo <strong>python</strong> en <code>~/.pyenv/versions/</code>. Aunque no es muy relevante,
+podemos sacar un <em>backup</em> para no tener que volver a compilarla, o copiarla para otra máquina.</p>
+<p><strong>TRUCO</strong>: Esta instalación ocupa 321mb de disco. Podemos reducir el tamaño eliminando la carpeta
+<code>lib/python3.11/test/</code> (118mb menos), eliminando la librería estática (que no vamos a usar)
+<code>lib/python3.11/config-3.11-x86_64-linux-gnu/libpython3.11.a</code> (55mb menos), haciendo un <strong>strip</strong>
+masivo (35mb menos) y limpiando los ficheros <code>.pyc</code> o sus carpetas <code>__pycache__</code> contenedoras
+(68mb menos, aunque estos se van a ir recreando según haga falta). Ahora ocupa 45mb de disco.</p>
+<p>Si decidimos copiar la carpeta <code>~/.pyenv/versions/</code> a otro servidor con <strong>pyenv</strong> (y posiblemente
+sin compiladores), bastará con asegurar que tenemos todas las librerías <em>runtime</em> necesarias
+para que nos funcionen todos los módulos. Por ejemplo, el módulo <strong>sqlite3</strong>:</p>
+<pre><code class="language-bash">gerard@jormundgander:~$ python -c &quot;import sqlite3&quot;
+Traceback (most recent call last):
+  File &quot;&lt;string&gt;&quot;, line 1, in &lt;module&gt;
+  File &quot;/home/gerard/.pyenv/versions/3.11.3/lib/python3.11/sqlite3/__init__.py&quot;, line 57, in &lt;module&gt;
+    from sqlite3.dbapi2 import *
+  File &quot;/home/gerard/.pyenv/versions/3.11.3/lib/python3.11/sqlite3/dbapi2.py&quot;, line 27, in &lt;module&gt;
+    from _sqlite3 import *
+ImportError: libsqlite3.so.0: cannot open shared object file: No such file or directory
+gerard@jormundgander:~$
+</code></pre>
+<p>Esto pasa porque el módulo <strong>sqlite3</strong> es un fichero <code>.so</code>, que depende de otra librería, que
+solamente tenemos que instalar de la forma habitual:</p>
+<pre><code class="language-bash">gerard@jormundgander:~$ find .pyenv/versions/ -type f | xargs ldd 2&gt;/dev/null | grep &quot;not found&quot;
+        libsqlite3.so.0 =&gt; not found
+gerard@jormundgander:~$
+</code></pre>
+<pre><code class="language-bash">gerard@jormundgander:~$ sudo apt install libsqlite3-0
+...
+gerard@jormundgander:~$
+</code></pre>
+<pre><code class="language-bash">gerard@jormundgander:~$ python -c &quot;import sqlite3&quot;
+gerard@jormundgander:~$
+</code></pre>
+<p><strong>WARNING</strong>: Tras añadir o retirar ficheros binarios de forma manual en <code>~/.pyenv/versions/</code>,
+conviene hacer un <code>pyenv rehash</code> (o el <code>pyenv init</code> implícito del fichero <code>.profile</code>, que
+hace un <em>rehash</em>) para que los detecte el nuevo <strong>pyenv</strong>.</p>
+<h2>Utilizando pyenv</h2>
+<p>Si vamos poniendo instalaciones de <strong>python</strong>, veremos que tenemos disponibles varias de ellas:</p>
+<pre><code class="language-bash">gerard@asclepius:~$ pyenv versions
+  3.8.16
+  3.9.16
+  3.10.11
+  3.11.3
+gerard@asclepius:~$
+</code></pre>
+<p>Cada vez que invocamos el comando <code>python</code>, <strong>pyenv</strong> nos va a ejecutar de forma transparente
+el <strong>python</strong> que corresponda al contexto en el que estamos. Este contexto puede ser <strong>global</strong>,
+<strong>local</strong> o <strong>shell</strong>.</p>
+<p>El contexto <strong>shell</strong> indica que el <strong>python</strong> indicado se aplica solamente a la sesión en
+curso. Esto se consigue con la variable de entorno <code>PYENV_VERSION</code>, que <strong>pyenv</strong> cambiará
+según convenga, y que podemos restaurar con <code>pyenv shell --unset</code> si es necesario. Se trata del
+que tiene preferencia. Entonces, si yo quiero utilizar en un terminal <strong>python 3.11</strong>, haré:</p>
+<pre><code class="language-bash">gerard@asclepius:~$ pyenv shell 3.11
+gerard@asclepius:~$
+</code></pre>
+<pre><code class="language-bash">gerard@asclepius:~$ python -V
+Python 3.11.3
+gerard@asclepius:~$
+</code></pre>
+<p>El segundo contexto por prioridad de aplicación es el contexto <strong>local</strong>. El <strong>python</strong> que
+así se define, lo hace para la carpeta actual y todas sus subcarpetas, haciendo muy fácil
+cambiar de proyecto sin preocuparse por la versión de <strong>python</strong> del mismo.
+Esto lo consigue <strong>pyenv</strong> creando en la carpeta indicada un fichero <code>.python-version</code>,
+que indica la versión utilizada y es una bonita forma de indicar la versión de <strong>python</strong>
+necesaria para ejecutar el proyecto, especialmente para guardarlo en un repositorio de código.</p>
+<pre><code class="language-bash">gerard@asclepius:~/project1$ pyenv local 3.8
+gerard@asclepius:~/project1$
+</code></pre>
+<pre><code class="language-bash">gerard@asclepius:~/project2$ pyenv local 3.10
+gerard@asclepius:~/project2$
+</code></pre>
+<pre><code class="language-bash">gerard@asclepius:~$ (cd project1 &amp;&amp; python -V)
+Python 3.8.16
+gerard@asclepius:~$ (cd project2 &amp;&amp; python -V)
+Python 3.10.11
+gerard@asclepius:~$
+</code></pre>
+<p>Finalmente, el contexto <strong>global</strong> indica el <strong>python</strong> por defecto para el usuario actual
+del sistema operativo, que se va a utilizar si no hay otra opción más específica. En este caso,
+esta versión se guarda en <code>~/.pyenv/version</code>.</p>
+<pre><code class="language-bash">gerard@asclepius:~$ pyenv global 3.11
+gerard@asclepius:~$
+</code></pre>
+<p>En caso de no tener claro qué <strong>python</strong> aplica en un momento dado, podemos consultarlo;
+ya de paso nos va a decir por qué toca esa versión concreta:</p>
+<pre><code class="language-bash">gerard@asclepius:~/project1$ pyenv version
+3.8.16 (set by /home/gerard/project1/.python-version)
+gerard@asclepius:~/project1$
+</code></pre>
+<p>Sabiendo qué versión está activa, nuestra mecánica de trabajo es la de siempre, utilizando
+las herramientas habituales, como <strong>python</strong>, <strong>pip</strong> y los <strong>virtualenvs</strong>.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2023 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
