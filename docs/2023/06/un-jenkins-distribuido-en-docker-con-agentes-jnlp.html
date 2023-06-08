@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Un Jenkins distribuido en Docker con agentes JNLP - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://linuxsysadmin.gerardmb.xyz/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Un Jenkins distribuido en Docker con agentes JNLP</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2023-06-08
+	<strong>Tiempo de lectura</strong>: 5 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/jenkins.html">jenkins</a> / <a href="/tag/docker.html">docker</a> / <a href="/tag/swarm.html">swarm</a>
+</p>
+
+<p>Ya sabéis que me encantan los sistemas reconstruibles y, en ese aspecto, nada supera a <strong>Docker</strong>.
+Sin embargo, la imagen oficial de <strong>Jenkins</strong> para <strong>Docker</strong> normalmente no contiene las herramientas
+que nos interesan. Por eso podemos descargar los trabajos a  agentes más adecuados, posiblemente
+desplegados también en contenedores <strong>Docker</strong>.</p>
+<p>Partiremos de un <em>clúster</em> de <strong>Docker Swarm</strong>, aunque este hecho es irrelevante; podría ser un
+<em>clúster</em> de <strong>Kubernetes</strong>, un solo servidor, o cualquier otra arquitectura que tengamos. En este
+caso concreto, utilizaremos un <em>clúster</em> de un solo nodo que ejecuta <strong>Debian Bullseye</strong> y dispone
+de 1gb de memoria (con 512mb no conseguí levantar el servicio <strong>Jenkins</strong> y un solo agente).</p>
+<h2>El servidor de Jenkins</h2>
+<p>Empezamos con el servicio <strong>Jenkins</strong>, con un <em>stack</em> bastante normal. Solo tendremos la precaución
+de guardar la carpeta de estado de <strong>Jenkins</strong> en un volumen y expondremos el puerto para poder
+entrar cómodamente a la interfaz web.</p>
+<pre><code class="language-bash">gerard@sandbox:~/jenkins$ cat stack.yml
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins
+    volumes:
+      - data:/var/jenkins_home
+    ports:
+      - &quot;8080:8080&quot;
+volumes:
+  data:
+gerard@sandbox:~/jenkins$
+</code></pre>
+<pre><code class="language-bash">gerard@sandbox:~/jenkins$ cat deploy.sh
+#!/bin/bash
+
+docker stack deploy -c stack.yml jenkins
+gerard@sandbox:~/jenkins$
+</code></pre>
+<p>Desplegamos el <em>stack</em> usando los comandos y métodos habituales:</p>
+<pre><code class="language-bash">gerard@sandbox:~/jenkins$ ./deploy.sh
+Creating network jenkins_default
+Creating service jenkins_jenkins
+gerard@sandbox:~/jenkins$
+</code></pre>
+<p>Solo nos queda seguir el proceso de <em>setup</em> que nos ofrece la interfaz web. Seguimos los pasos que nos
+indica, sacando el valor secreto del contenedor (en <code>/var/jenkins_home/secrets/initialAdminPassword</code>) o
+de los logs del servicio <code>jenkins_jenkins</code>. Solamente necesitamos instalar un único <em>plugin</em> que es el
+&ldquo;Instance Identity&rdquo;, aunque no sale en la lista de <em>plugins</em> durante el <em>setup</em> y tenemos que instalarlo
+<em>a posteriori</em>; podemos encontrarlo siguiendo los menús: <code>Panel de Control &gt; Administrar Jenkins &gt; Plugins (Available plugins)</code>.</p>
+<p>Con esto tenemos el servidor levantado y listo para utilizar, aunque no tenemos agentes con tecnologías
+concretas, que es el punto de este artículo. Seguiremos por este camino, de ahora en adelante.</p>
+<h2>Un agente de Docker</h2>
+<p>Ahora necesitamos añadir agentes que nos ofrezcan los comandos necesarios para ejecutar nuestros <em>jobs</em>.
+Como ya sabéis que me gusta <strong>Docker</strong>, voy a añadir su agente para obtener acceso a los comandos propios
+del cliente <code>docker</code>.</p>
+<p>Añadiremos un nuevo nodo en la interfaz web, en <code>Panel de Control &gt; Administrar Jenkins &gt; Nodos</code>. Crearemos
+un &ldquo;New node&rdquo; y del tipo &ldquo;Permanent Agent&rdquo;. El único campo requerido es el &ldquo;Directorio raíz remoto&rdquo;, que
+hay que poner a <code>/home/jenkins/agent</code>. También me gusta limitar las tareas que se ejecutan en él, de forma
+que solo se ejecuten los que así lo configuren; esto se hace indicando el campo &ldquo;Usar&rdquo;, y poner en
+&ldquo;Dejar este nodo para ejecutar solamente tareas vinculadas a él&rdquo;. Ahora ya podemos &ldquo;Guardar&rdquo;.</p>
+<p>Si volvemos a abrir el nodo, veremos que nos indica diferentes formas de levantar el agente. De esta página
+necesitamos anotar dos cosas: el nombre del agente y el <em>secret</em> del mismo. El resto lo levantaremos añadiendo
+el agente en nuestro <em>stack</em> en el <em>swarm</em>.</p>
+<p>Nos vamos a nuestro nodo <em>manager</em> del <em>swarm</em>, en donde añadiremos un nuevo servicio a nuestro <em>stack</em>,
+que en este caso será el de <strong>Docker</strong>.</p>
+<pre><code class="language-bash">gerard@sandbox:~/jenkins$ cat stack.yml
+version: '3'
+services:
+  jenkins:
+    image: jenkins/jenkins
+    volumes:
+      - data:/var/jenkins_home
+    ports:
+      - &quot;8080:8080&quot;
+  agent-docker:
+    image: jenkins/jnlp-agent-docker
+    user: 1000:998
+    environment:
+      JENKINS_URL: http://jenkins:8080/
+      JENKINS_AGENT_NAME: docker
+      JENKINS_SECRET: 456326a4974441a24fe21be2495ef1177d1b660c8177376e5765b2cd9b1cb975
+    volumes:
+      - &quot;/var/run/docker.sock:/var/run/docker.sock&quot;
+volumes:
+  data:
+gerard@sandbox:~/jenkins$
+</code></pre>
+<p>Hay varios puntos importantes, y algunos específicos, de este agente concreto:</p>
+<ul>
+<li>La imagen es la que nos convenga, utilizando el protocolo JNLP.</li>
+<li>Las variables de entorno <code>JENKINS_URL</code>, <code>JENKINS_AGENT_NAME</code> y <code>JENKINS_SECRET</code> (los dos últimos anotados de la interfaz web).</li>
+<li>Otros específicos del agente JNLP de <strong>Docker</strong>
+<ul>
+<li>El volumen que inserta el <em>socket</em> del servidor <strong>Docker</strong> del <em>host</em> (tiene que ser de un nodo <em>manager</em>).</li>
+<li>Un usuario y grupo de ejecución que nos permita escribir el <em>socket</em> anterior:
+<ul>
+<li>Dejamos &ldquo;1000&rdquo; que es el usuario <strong>jenkins</strong> original del contenedor.</li>
+<li>Ponemos &ldquo;998&rdquo; de grupo, que se corresponde con el grupo <strong>docker</strong> en el <em>host</em>, con permisos de escritura.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Desplegamos el <em>stack</em> de nuevo, para que se cree el servicio del agente nuevo, y observamos
+en la interfaz web que el nodo pasa a estar disponible.</p>
+<pre><code class="language-bash">gerard@sandbox:~/jenkins$ ./deploy.sh
+Creating service jenkins_agent-docker
+Updating service jenkins_jenkins (id: uaee5mcowov3vl2jlx99yk051)
+gerard@sandbox:~/jenkins$
+</code></pre>
+<p><strong>TRUCO</strong>: Ya que estamos en la página de nodos, podemos asignar 0 ejecutores al nodo &ldquo;principal&rdquo; para
+que no ejecute tareas, cosa que se desaconseja y que es responsabilidad de los agentes que vayamos levantando.</p>
+<h2>Una tarea de prueba</h2>
+<p>Podemos probar que nuestro agente funciona asignándole una tarea y viendo que sus comandos básicos
+ejecutan en caso de ser necesarios. Como seguimos hablando de <strong>Docker</strong>, nos basta configurar una
+tarea que lance un <code>docker info</code> o similar.</p>
+<p>Para ello vamos a <code>Panel de control &gt; Nueva Tarea</code>, creando una tarea estándar con un nombre cualquiera
+y un proyecto de tipo libre eligiendo &ldquo;Crear un proyecto de estilo libre&rdquo;; añadimos un &ldquo;Build Step&rdquo; tipo
+&ldquo;shell&rdquo; y escribimos <code>docker info</code>. Es importante marcar la casilla &ldquo;Restringir dónde se puede ejecutar este proyecto&rdquo;
+y poner una expresión que seleccione los agentes <strong>Docker</strong>, por ejemplo, indicando &ldquo;docker&rdquo;, que es el
+nombre del agente que hemos puesto.</p>
+<p>Lanzamos la tarea y deberíamos ver la salida con la información solicitada. En un caso real, esta tarea
+estaría parametrizada y haría algo más impresionante, pero esto queda como deberes para el lector.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2023 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
