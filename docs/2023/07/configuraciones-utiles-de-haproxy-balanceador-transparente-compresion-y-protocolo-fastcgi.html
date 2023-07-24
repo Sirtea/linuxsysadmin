@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Configuraciones útiles de HAProxy: balanceador transparente, compresión y protocolo FastCGI - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://linuxsysadmin.gerardmb.xyz/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Configuraciones útiles de HAProxy: balanceador transparente, compresión y protocolo FastCGI</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2023-07-24
+	<strong>Tiempo de lectura</strong>: 6 minutos
+	<strong>Categoría</strong>: <a href="/category/sistemas.html">Sistemas</a>
+	<strong>Tags</strong>: <a href="/tag/haproxy.html">haproxy</a> / <a href="/tag/balanceador.html">balanceador</a> / <a href="/tag/transparente.html">transparente</a> / <a href="/tag/compresion.html">compresión</a> / <a href="/tag/php.html">php</a> / <a href="/tag/php-fpm.html">php-fpm</a>
+</p>
+
+<p>Cada vez que trabajo con HAProxy me gusta más, y es que si tienes la documentación a mano, verás
+que las posibilidades son infinitas. Para no ir perdiendo estas configuraciones, las estoy poniendo
+en artículos en este blog; espero que me sean útiles en un futuro no muy lejano.</p>
+<h2>Balanceador transparente</h2>
+<p>Poner balanceadores o <em>proxies</em> delante de nuestros servidores de aplicaciones nos ofrece un sinfín
+de posibilidades en cuanto a seguridad y escalabilidad. Sin embargo, no están exentos de problemas;
+las peticiones que se reciben en el servidor de aplicaciones se ven como si vinieran del balanceador,
+y esto puede provocar algunos problemas en la aplicación.</p>
+<p>Los dos problemas más frecuentes suelen darse en la generación de nuevas URLs al crear redirecciones,
+y en bucles de redirección HTTP/HTTPS cuando la aplicación así lo fuerza. Por suerte, la mayoría de
+aplicaciones o <em>frameworks</em> respetan el estándar definido y pueden deducir los parámetros relevantes
+de cabeceras HTTP extras.</p>
+<p>Las cabeceras que podemos definir -sacándolas de la petición original- son las siguientes:</p>
+<ul>
+<li><strong>X-Forwarded-For</strong> → Contiene la lista de IPs por las que la petición ha pasado; de ahí se puede deducir la IP origen de la petición original contra el balanceador.</li>
+<li><strong>X-Forwarded-Port</strong> → Contiene el puerto original al que se hizo la petición contra el balanceador.</li>
+<li><strong>X-Forwarded-Proto</strong> → Suele indicarse &ldquo;https&rdquo; en el caso de que la petición original se hiciera usando ese protocolo, y le sirve a la aplicación para no forzar otra redirección a HTTPS.</li>
+</ul>
+<p>Indicar estas tres cabeceras no tiene ningún misterio en HAProxy: basta con indicar en un <em>frontend</em>
+o en un <em>backend</em> una configuración como la que sigue:</p>
+<pre><code class="language-bash">frontend web
+        bind :80
+        bind :443 ssl crt /etc/haproxy/certs/
+        http-request redirect scheme https unless { ssl_fc }
+        option forwardfor
+        http-request set-header X-Forwarded-Port %[dst_port]
+        http-request add-header X-Forwarded-Proto https if { ssl_fc }
+        default_backend myapp
+
+backend myapp
+        server myapp 127.0.0.1:8080 check
+</code></pre>
+<p><strong>NOTA</strong>: Cabe indicar que el <em>frontend</em> &ldquo;web&rdquo; puede atender peticiones en ambos protocolos (aunque
+en este caso hace una redirección&hellip;). En este caso indicamos el protocolo solamente en el caso de
+HTTPS, utilizando la función <code>ssl_fc</code>.</p>
+<h2>Compresión de respuestas</h2>
+<p>Tenemos un sistema que responde por HTTP(S). No es importante si se trata de páginas web estáticas,
+dinámicas o respuestas de una API. Estas respuestas pueden ser bastante largas y nos puede interesar
+utilizar un poco de CPU en el balanceador para comprimirlas, quitando presión a la red.</p>
+<p>Como este tipo de respuestas suelen comprimir bien, muchos sistemas ya hacen esto por defecto. Si
+no es el caso, podemos instruir a <strong>HAProxy</strong> para que se encargue de eso, con una configuración
+bastante sencilla.</p>
+<p>Vamos a suponer que tenemos un sistema por HTTP que nos da páginas web. Lo simularemos con un
+servidor <strong>Nginx</strong> local y una página de contenido irrelevante:</p>
+<pre><code class="language-bash">gerard@server:~$ sudo apt update &amp;&amp; sudo apt install nginx-light
+...
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ cat /etc/nginx/sites-enabled/*
+server {
+        listen 127.0.0.1:8080;
+        root /srv/www;
+        index index.html;
+        gzip off;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ ls /srv/www/
+index.html
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:/srv/www$ sudo systemctl reload nginx
+gerard@server:/srv/www$
+</code></pre>
+<p><strong>NOTA</strong>: Es importante deshabilitar la compresión de <strong>Nginx</strong> explícitamente con la directiva
+<code>gzip off</code>, puesto que viene habilitada en <code>/etc/nginx/nginx.conf</code> en la mayoría de distribuciones
+<strong>Linux</strong>. Para este artículo concreto y por un tema puramente académico, nos interesa que la
+compresión la haga el <strong>HAProxy</strong>.</p>
+<p>El siguiente paso es tener un <strong>HAProxy</strong> instalado y listo para darnos las respuestas del servidor web.</p>
+<pre><code class="language-bash">gerard@server:~$ sudo apt update &amp;&amp; sudo apt install haproxy
+...
+gerard@server:~$
+</code></pre>
+<p>Para ver las diferencias, vamos a crear dos puertos en el balanceador; se comportan igual, pero vamos
+a poner compresión en uno de ellos, y en el otro no. No hay que olvidar de aplicar la nueva configuración.</p>
+<pre><code class="language-bash">gerard@server:~$ cat /etc/haproxy/haproxy.cfg
+...
+listen web-plain
+        bind :8001
+        server nginx 127.0.0.1:8080 check
+
+listen web-gzip
+        bind :8002
+        compression algo gzip
+        compression type text/html
+        server nginx 127.0.0.1:8080 check
+gerard@server:~$
+</code></pre>
+<pre><code class="language-bash">gerard@server:~$ sudo systemctl reload haproxy
+gerard@server:~$
+</code></pre>
+<p><strong>NOTA</strong>: Esta configuración solamente aplicaría compresión en los ficheros tipo &ldquo;text/html&rdquo;.
+Con un poco más de trabajo podemos comprimir CSS, Javascript, APIs o texto plano; comprimir
+imágenes, vídeos y sonido no suele valer la pena.</p>
+<p>Vamos a hacer una petición a cada puerto; es importante indicar que aceptamos respuestas en
+formato <strong>gzip</strong>, con la cabecera <code>Accept-Encoding: gzip</code> en el caso de utilizar <strong>curl</strong>.</p>
+<pre><code class="language-bash">gerard@client:~$ curl -H &quot;Accept-Encoding: gzip&quot; http://server:8001/ &gt;/dev/null
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  2873  100  2873    0     0   561k      0 --:--:-- --:--:-- --:--:--  561k
+gerard@client:~$
+</code></pre>
+<pre><code class="language-bash">gerard@client:~$ curl -H &quot;Accept-Encoding: gzip&quot; http://server:8002/ &gt;/dev/null
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1744    0  1744    0     0   283k      0 --:--:-- --:--:-- --:--:--  340k
+gerard@client:~$
+</code></pre>
+<p>En el primer caso, vamos a ver un tamaño descargado (columna &ldquo;Total&rdquo;) de 2873 bytes, que es el
+tamaño original del fichero HTML. En el segundo (que es el puerto que aplica la compresión)
+recibimos solamente 1744 bytes, que asumo que es el tamaño comprimido.</p>
+<h2>Protocolo FastCGI</h2>
+<p>Muchos de nosotros servimos PHP utilizando <strong>php-fpm</strong> detrás de un <strong>nginx</strong>. Este <strong>nginx</strong>
+se encarga de la traducción de protocolo de HTTP a FastCGI, más otras funciones que se puedan
+necesitar (<em>virtualhosts</em>, terminación SSL&hellip;).</p>
+<p>La verdad es que podemos reemplazar el <strong>nginx</strong> por un <strong>haproxy</strong>. Las últimas modificaciones
+nos permiten directamente definir <em>backends</em> que usan el protocolo FastCGI.</p>
+<p>Solo necesitamos declarar dos bloques nuevos: el <code>fastcgi-app</code> que nos permite definir los
+parámetros, y declarar el protocolo <code>fcgi</code> en los diferentes servidores de <em>backend</em>.</p>
+<pre><code class="language-bash">gerard@balancer:~$ diff /etc/haproxy/haproxy.cfg{,.orig}
+35,48d34
+&lt;
+&lt; frontend www
+&lt;     bind :8080
+&lt;     default_backend php
+&lt;
+&lt; backend php
+&lt;     use-fcgi-app php
+&lt;     server php01 127.0.0.1:9000 proto fcgi
+&lt;
+&lt; fcgi-app php
+&lt;     log-stderr global
+&lt;     docroot /
+&lt;     index index.php
+&lt;     path-info ^(/.+\.php)(/.*)?$
+gerard@balancer:~$
+</code></pre>
+<p>En este caso, declaramos que el <em>path</em> en donde encontraremos los ficheros PHP es en <code>/</code>, del
+servidor php01. Como esto va cambiando de servidor en servidor, he decidido enjaular el proceso
+<strong>php-fpm</strong> para estandarizar el <em>path</em> y poder reutilizar el bloque <code>fcgi-app</code> entre varios <em>backend</em>.</p>
+<p>Para conseguir esto, necesitamos modificar la configuración del proceso <strong>fpm</strong> para cumplir
+dos cosas: el enjaulado y escuchar en un puerto TCP.</p>
+<pre><code class="language-bash">gerard@balancer:~$ diff /etc/php/8.2/fpm/pool.d/www.conf{,.orig}
+41c41
+&lt; listen = 127.0.0.1:9000
+---
+&gt; listen = /run/php/php8.2-fpm.sock
+420c420
+&lt; chroot = /srv/www
+---
+&gt; ;chroot =
+gerard@balancer:~$
+</code></pre>
+<p>Si ejecutamos varios <em>pools</em> de <strong>php-fpm</strong> en la misma máquina, quedamos afectados por el
+<em>bug</em> <a href="https://regilero.github.io/english/drupal/2013/05/16/Warning_chrooted_php_fpm_and_apc/">siguiente</a>, lo que nos obliga a poner otra cosa:</p>
+<pre><code class="language-bash">gerard@balancer:~$ diff /etc/php/8.2/fpm/php.ini{,.orig}
+1922c1922
+&lt; opcache.validate_root=1
+---
+&gt; ;opcache.validate_root=0
+gerard@balancer:~$
+</code></pre>
+<p>Aplicamos ambas configuraciones y ya tenemos nuestro combo <strong>haproxy</strong>/<strong>php-fpm</strong> funcionando:</p>
+<pre><code class="language-bash">gerard@balancer:~$ sudo systemctl restart php8.2-fpm
+gerard@balancer:~$
+</code></pre>
+<pre><code class="language-bash">gerard@balancer:~$ sudo systemctl reload haproxy
+gerard@balancer:~$
+</code></pre>
+<p>Solo nos faltaría lanzar algunas peticiones al balanceador para ver que todo funciona según lo esperado:</p>
+<pre><code class="language-bash">gerard@balancer:~$ curl -s http://localhost:8080/
+hello world
+gerard@balancer:~$
+</code></pre>
+<pre><code class="language-bash">gerard@balancer:~$ curl -s http://localhost:8080/info.php | grep phpinfo
+&lt;title&gt;PHP 8.2.7 - phpinfo()&lt;/title&gt;&lt;meta name=&quot;ROBOTS&quot; content=&quot;NOINDEX,NOFOLLOW,NOARCHIVE&quot; /&gt;&lt;/head&gt;
+gerard@balancer:~$
+</code></pre>
+<p><strong>NOTA</strong>: El balanceador <strong>haproxy</strong> es incapaz de servir contenido estático; esto limita la
+efectividad de esta solución a aplicaciones que solo ejecutan PHP puro. Eso nos limita a APIs,
+pero nos elimina la posibilidad de servir una web tradicional.</p>
+
+
+<p class="footer">Copyright &copy; 2015-2023 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
