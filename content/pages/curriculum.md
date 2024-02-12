@@ -29,13 +29,21 @@ slug: "curriculum"
 * M102: MongoDB for DBAs (10gen)
 * M202: MongoDB Advanced Deployment and Operations (10gen)
 * Cloudera Custom Training for Apache Hadoop (Cloudera - presencial)
+* Certificación CKAD (Linux Foundation, validez de 11/2023 al 11/2026)
 
 ---
 
 ## Experiencia
 
+* **Empresa**: Teradisk SL
+  * **Periodo**: 05/2021 - actualidad
+  * **Actividades realizadas**: Administrador de sistemas Linux, Operaciones, automatización e I+D
+  * **Tecnologías utilizadas**: AWS, Kubernetes, Chef, Python, sistemas operativos Linux (Centos, Ubuntu) y servicios varios (pfsense, haproxy, nginx, php-fpm, varnish, mariadb, redis)
+
+<!-- -->
+
 * **Empresa**: Jumbo Tours / SII Concatel
-  * **Periodo**: 04/2019 - 12/2019 (consultor externo de SII Concatel) y 12/2019 - actualidad (interno)
+  * **Periodo**: 04/2019 - 12/2019 (consultor externo de SII Concatel) y 12/2019 - 05/2021 (interno)
   * **Actividades realizadas**: Administrador de sistemas Linux, Operaciones, DBA de MongoDB y de DB2
   * **Tecnologías utilizadas**: DB2, MongoDB, Docker Swarm, Centos
 
@@ -148,6 +156,7 @@ slug: "curriculum"
 | --------------------------- | ----- | ----- |
 | Apache                      | Alto  | -     |
 | Nginx                       | Alto  | -     |
+| PfSense                     | Medio | -     |
 | HAproxy                     | Medio | -     |
 | Tomcat                      | Medio | -     |
 | uWSGI                       | Medio | -     |
@@ -167,9 +176,11 @@ slug: "curriculum"
 | Ansible            | Alto  | -                       |
 | Nagios             | Alto  | Programación de plugins |
 | IPtables           | Alto  | -                       |
+| Kubernetes         | Medio | Certificado CKAD        |
 | Jenkins            | Medio | -                       |
 | Fabric             | Medio | -                       |
-| AWS EC2, RDS y EC2 | Bajo  | -                       |
+| AWS                | Bajo  | -                       |
 | Kibana             | Bajo  | -                       |
 | Splunk             | Bajo  | -                       |
 | Puppet             | Bajo  | -                       |
+| Chef               | Bajo  | -                       |
