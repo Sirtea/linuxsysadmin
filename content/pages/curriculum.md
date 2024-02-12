@@ -156,8 +156,6 @@ slug: "curriculum"
 | --------------------------- | ----- | ----- |
 | Apache                      | Alto  | -     |
 | Nginx                       | Alto  | -     |
-| PfSense                     | Medio | -     |
-| HAproxy                     | Medio | -     |
 | Tomcat                      | Medio | -     |
 | uWSGI                       | Medio | -     |
 | Gunicorn                    | Medio | -     |
@@ -177,6 +175,8 @@ slug: "curriculum"
 | Nagios             | Alto  | Programación de plugins |
 | IPtables           | Alto  | -                       |
 | Kubernetes         | Medio | Certificado CKAD        |
+| PfSense            | Medio | -                       |
+| HAproxy            | Medio | -                       |
 | Jenkins            | Medio | -                       |
 | Fabric             | Medio | -                       |
 | AWS                | Bajo  | -                       |
