@@ -3,12 +3,45 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://linuxsysadmin.gerardmb.xyz/archives.html</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/balanceador.html</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/categories.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mariadb.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mysql.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/nginx.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/php-fpm.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/phpmyadmin.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/2024/03/preparando-un-servidor-mariadb-con-phpmyadmin-nginx-y-php-fpm.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
+    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/balanceador.html</loc>
     <lastmod>2023-07-24T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/compresion.html</loc>
@@ -20,19 +53,7 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/haproxy.html</loc>
     <lastmod>2023-07-24T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/php.html</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/php-fpm.html</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
-    <lastmod>2023-07-24T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
     <lastmod>2023-07-24T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/transparente.html</loc>
@@ -49,12 +70,6 @@
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2023/06/un-jenkins-distribuido-en-docker-con-agentes-jnlp.html</loc>
     <lastmod>2023-06-08T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
-    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
-    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/pyenv.html</loc>
     <lastmod>2023-05-25T00:00:00+00:00</lastmod>
@@ -116,12 +131,6 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/cluster.html</loc>
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mariadb.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mysql.html</loc>
-    <lastmod>2022-07-30T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2022/07/un-cluster-activo-activo-de-mariadb.html</loc>
     <lastmod>2022-07-30T00:00:00+00:00</lastmod>
   </url><url>
@@ -161,9 +170,6 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/hosting.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/nginx.html</loc>
-    <lastmod>2022-03-22T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/openssl.html</loc>
     <lastmod>2022-03-22T00:00:00+00:00</lastmod>
   </url><url>
@@ -187,9 +193,6 @@
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/uuid.html</loc>
     <lastmod>2022-02-17T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/phpmyadmin.html</loc>
-    <lastmod>2022-01-25T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2022/01/volviendo-a-usar-mysql-y-mariadb.html</loc>
     <lastmod>2022-01-25T00:00:00+00:00</lastmod>
