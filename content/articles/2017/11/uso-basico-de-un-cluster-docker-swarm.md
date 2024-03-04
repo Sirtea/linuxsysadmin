@@ -3,7 +3,7 @@ title: "Uso básico de un cluster Docker Swarm"
 slug: "uso-basico-de-un-cluster-docker-swarm"
 date: 2017-11-06
 categories: ['Sistemas']
-tags: ['docker', 'swarm', 'cluster', 'uso', 'basico']
+tags: ['docker', 'swarm', 'cluster', 'uso', 'básico']
 ---
 
 Usar un *cluster* de **docker swarm** no es transparente para nuestro uso; necesitamos cambiar de mentalidad y tener en cuenta algunos conceptos. Donde antes hablábamos de contenedores, aquí se habla de **servicios**, que básicamente son un número variable de contenedores repartidos por los diferentes nodos del *cluster* de forma balanceada.<!--more-->
