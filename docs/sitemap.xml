@@ -3,18 +3,39 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://linuxsysadmin.gerardmb.xyz/archives.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/2024/03/breve-introduccion-a-los-ficheros-zipapp-de-python.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/categories.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/category/desarrollo.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/gunicorn.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/pip.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/python.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/zipapp.html</loc>
+    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/mariadb.html</loc>
@@ -36,9 +57,6 @@
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/balanceador.html</loc>
@@ -74,9 +92,6 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/pyenv.html</loc>
     <lastmod>2023-05-25T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/python.html</loc>
-    <lastmod>2023-05-25T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2023/05/usando-diferentes-versiones-de-python-con-pyenv.html</loc>
     <lastmod>2023-05-25T00:00:00+00:00</lastmod>
   </url><url>
@@ -105,9 +120,6 @@
     <lastmod>2022-12-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/cache.html</loc>
-    <lastmod>2022-09-12T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/category/desarrollo.html</loc>
     <lastmod>2022-09-12T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2022/09/escaneando-las-urls-de-un-sitio-web-con-python.html</loc>
@@ -327,9 +339,6 @@
     <lastmod>2020-01-13T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2019/12/desplegando-aplicaciones-python-con-gunicorn-y-systemd.html</loc>
-    <lastmod>2019-12-30T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/gunicorn.html</loc>
     <lastmod>2019-12-30T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/buster.html</loc>
@@ -948,9 +957,6 @@
     <lastmod>2018-01-29T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2018/01/evitando-usar-virtualenv-mediante-el-uso-de-pythonpath.html</loc>
-    <lastmod>2018-01-22T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/pip.html</loc>
     <lastmod>2018-01-22T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/virtualenv.html</loc>

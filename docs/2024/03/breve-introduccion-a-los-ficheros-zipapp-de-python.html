@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Breve introducción a los ficheros zipapp de python - Linux Sysadmin</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" />
+	
+	<script type="text/javascript" src="//www.FreePrivacyPolicy.com/cookie-consent/releases/3.0.0/cookie-consent.js"></script>
+	<script type="text/javascript">
+	document.addEventListener('DOMContentLoaded', function () {
+		cookieconsent.run({"notice_banner_type":"interstitial","consent_type":"express","palette":"dark","change_preferences_selector":"#changePreferences","language":"es","website_name":"LinuxSysadmin","cookies_policy_url":"https://linuxsysadmin.gerardmb.xyz/cookies.html"});
+	});
+	</script>
+	<noscript>GDPR Cookie Consent by <a href="https://www.freeprivacypolicy.com/">FreePrivacyPolicy</a></noscript>
+	
+
+	<script type="text/plain" cookie-consent="tracking">
+	var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+	var doNotTrack = (dnt == "1" || dnt == "yes");
+	if (!doNotTrack) {
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-68486572-1', 'auto');
+		ga('set', 'anonymizeIp', true);
+		ga('send', 'pageview');
+	}
+	</script>
+	</head>
+<body>
+<div class="menu">
+	<a class="important" href="/">Linux Sysadmin</a>
+	<a href="/about.html">Sobre mí</a>
+	<a href="/curriculum.html">Curriculum Vitae</a>
+	<div class="right">
+		<a href="/cookies.html">Cookies</a>
+		<a href="/categories.html">Categorías</a>
+		<a href="/tags.html">Tags</a>
+		<a href="/archives.html">Archivos</a>
+	</div>
+</div>
+
+<h1>Breve introducción a los ficheros zipapp de python</h1>
+
+<p class="headline">
+	<strong>Fecha</strong>: 2024-03-18
+	<strong>Tiempo de lectura</strong>: 7 minutos
+	<strong>Categoría</strong>: <a href="/category/desarrollo.html">Desarrollo</a>
+	<strong>Tags</strong>: <a href="/tag/python.html">python</a> / <a href="/tag/zipapp.html">zipapp</a> / <a href="/tag/pip.html">pip</a> / <a href="/tag/gunicorn.html">gunicorn</a>
+</p>
+
+<p>Hace mucho tiempo que sé que puedo importar módulos y paquetes de <strong>python</strong> desde
+un archivo <code>.zip</code>, pero desconocía que puedo &ldquo;empaquetar&rdquo; un <em>script</em> con todas las
+dependencias que tiene y hacerlo autocontenido, ya sea ejecutable o no. Solo haría
+falta un intérprete de <strong>python</strong> y su librería estándar para ejecutarlo.</p>
+<p>Desde la versión 2.6, <strong>python</strong> puede interpretar un fichero <code>.zip</code>, ejecutando un
+fichero <code>__main__.py</code> como su punto de entrada. En la versión 3.5, esta funcionalidad
+se hizo oficial, aprovechando que un fichero <code>.zip</code> puede contener datos arbitrarios
+para añadir el intérprete a usar, en caso de ser ejecutable.</p>
+<p>Además de este fichero <code>__main__.py</code>, este fichero puede contener otros paquetes,
+ajenos o propios, que serán importables por el intérprete que ejecute el fichero.
+Esto lo convierte en un fichero tipo <code>.jar</code> de <strong>java</strong>, y nos permite crear un
+fichero ejecutable, que solo necesitaría un intérprete de <strong>python</strong> adecuado.</p>
+<p><strong>AVISO</strong>: Las extensiones compiladas en fichero <code>.so</code> o binarios en el fichero
+<code>.zip</code> no se pueden cargar, por limitaciones del sistema operativo. Es importante
+que el código contenido pueda ejecutar sin ellos, o que el sistema operativo
+disponga de ellos de forma externa.</p>
+<h2>Empaquetando un script arbitrario</h2>
+<p>Supongamos que tenemos un <em>script</em> para obtener nuestra dirección IP pública, usando
+la API que nos ofrece <a href="https://www.ipify.org/">ipify</a>. Para conseguir este fin, vamos a utilizar <strong>urllib3</strong>,
+que no está en la librería estándar y nos obligará a incluirlo en nuestra <strong>zipapp</strong>:</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ cat ipify.py
+import urllib3
+
+def show_my_ip():
+    resp = urllib3.request('GET', 'https://api.ipify.org?format=json')
+    print(f'IP Address: {resp.json().get(&quot;ip&quot;)}')
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>Para gestionar las dependencias, voy a utilizar un fichero <code>requirements.txt</code> y voy
+a instalarlas usando <strong>pip</strong>. De esta forma, ambos ficheros pueden ser versionados
+en un repositorio de código fuente.</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ cat requirements.txt
+urllib3==2.2.1
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>La idea es que vamos a preparar una carpeta base para el fichero <strong>zipapp</strong>, y vamos
+a añadir nuestro código, todas las dependencias, y un fichero <code>__main__.py</code>. Empezamos
+instalando las dependencias necesarias; acto seguido copiamos nuestro código, que se
+limita al fichero <code>ipify.py</code>.</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ pip install -r requirements.txt -t dist
+...
+gerard@leviathan:~/workspace$
+</code></pre>
+<p><strong>NOTA</strong>: Al instalar las dependencias, puede interesarnos añadir los <em>flags</em>
+<code>--no-compile</code> (para evitar ficheros <code>.pyc</code>) y <code>--no-binary :all:</code> para obtener
+paquetes sin extensiones compiladas (si el paquete lo admite). Esto reducirá el tamaño
+final del empaquetado, aunque va a causar que el código se cargue un poco más lento.</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ cp ipify.py dist/
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>Solo nos faltaría un fichero <code>__main__.py</code>, que se va a limitar a importar la función
+<code>show_my_ip()</code> y a ejecutarla. Tan común es este caso, que el proceso de empaquetado
+nos ofrece la generación del <code>__main__.py</code> con este comportamiento; voy a utilizar
+esta facilidad, en el momento del empaquetado. En este momento, tenemos este contenido
+para empaquetar:</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ tree -L 1 dist/
+dist/
+├── urllib3
+├── urllib3-2.2.1.dist-info
+└── ipify.py
+
+2 directories, 1 file
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>Para empaquetar nuestra <strong>zipapp</strong>, basta con invocar el módulo <code>zipapp</code>, con algunos
+<em>flags</em> interesantes:</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ python3 -m zipapp dist/ -o show_my_ip.pyz -m ipify:show_my_ip -p &quot;/usr/bin/env python3&quot; -c
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>Los <em>flags</em> y argumentos utilizados son:</p>
+<ul>
+<li><code>dist/</code> → es la carpeta que será la base del fichero <code>.zip</code> (nuestra <strong>zipapp</strong>)</li>
+<li><code>-o</code>/<code>--output</code> → sirve para indicar el fichero de salida; en caso de no indicarse, utilizaría el mismo nombre de la carpeta base, con extensión <code>.pyz</code> (<code>dist.pyz</code> en nuestro caso)</li>
+<li><code>-m</code>/<code>--main</code> → indica que hay que crear un fichero <code>__main__.py</code> que importará y ejecutará nuestra función (en nuestro caso, usaríamos la función <code>show_my_ip()</code> del módulo <code>ipify</code>)</li>
+<li><code>-p</code>/<code>--python</code> → indica que el fichero resultante será ejecutable, y que se interpreta con el <em>shebang</em> indicado (<code>/usr/bin/env python3</code> en nuestro caso)</li>
+<li><code>-c</code>/<code>--compress</code> → indica que nuestra <strong>zipapp</strong> será un fichero comprimido (añadiendo tiempo de carga a cambio de tamaño en disco)</li>
+</ul>
+<p>Y con esto tenemos un fichero <strong>zipapp</strong> que funcionaría de forma similar a un <em>script</em>,
+siendo interpretado con el <em>shebang</em> indicado. El nombre del mismo no es importante, y
+lo podemos poner en una carpeta en nuestro <strong>path</strong> para su fácil acceso.</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ ./show_my_ip.pyz
+IP Address: 213.94.42.212
+gerard@leviathan:~/workspace$
+</code></pre>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ show_my_ip
+IP Address: 213.94.42.212
+gerard@leviathan:~/workspace$
+</code></pre>
+<p>Es interesante ver que nuestra <strong>zipapp</strong> tiene lo mismo que la carpeta <code>dist/</code>,
+con el añadido del fichero <code>__main__.py</code>, cuyo contenido es bastante simple.</p>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ unzip -l show_my_ip.pyz | awk '{print $4}'
+...
+__main__.py
+ipify.py
+urllib3-2.2.1.dist-info/
+urllib3/
+...
+gerard@leviathan:~/workspace$
+</code></pre>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ unzip show_my_ip.pyz __main__.py
+Archive:  show_my_ip.pyz
+  inflating: __main__.py
+gerard@leviathan:~/workspace$
+</code></pre>
+<pre><code class="language-bash">gerard@leviathan:~/workspace$ cat __main__.py
+# -*- coding: utf-8 -*-
+import ipify
+ipify.show_my_ip()
+gerard@leviathan:~/workspace$
+</code></pre>
+<h2>Empaquetando una aplicación WSGI</h2>
+<p>Crear un <strong>zipapp</strong> de una aplicación WSGI no es muy diferente; el único concepto
+diferente es que no ejecutamos la aplicación, sino un servidor de aplicaciones
+que va a importar nuestra aplicación.</p>
+<p>Para empezar el empaquetado, podemos utilizar cualquier aplicación WSGI; desde la
+aplicación <code>wsgiref.simple_server:demo_app</code> hasta una aplicación escrita sin ningún
+<em>framework</em>, pasando por todas las opciones de <em>framework</em> imaginables. En este
+momento es irrelevante como esté construida la aplicación así que usamos un ejemplo
+mínimo, contenido en su propio <em>package</em> y sacado de <a href="https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface">la wikipedia</a>:</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cat webapp/__init__.py
+def application(environ, start_response):
+    start_response('200 OK', [('Content-Type', 'text/plain')])
+    yield b'Hello, World!\n'
+
+app = application
+gerard@builder:~/webapp$
+</code></pre>
+<p>Es importante recordar que no podemos ejecutar binarios dentro del fichero <code>.zip</code>,
+ni importar librerías de sistema, así que vamos a optar por un servidor de aplicaciones
+<em>pure python</em>, como podría ser <strong>gunicorn</strong>, que vamos a poner también en nuestra
+<strong>zipapp</strong>. Nuestra aplicación no necesita más requisitos, así que nos quedaría
+muy simple (de momento, no he puesto ni la versión de <strong>gunicorn</strong>):</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cat requirements.txt
+gunicorn
+gerard@builder:~/webapp$
+</code></pre>
+<p>De forma análoga al caso anterior, nos limitamos a instalar las dependencias en una
+carpeta temporal, en donde también copiaremos nuestra aplicación:</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ pip install -r requirements.txt -t dist
+gerard@builder:~/webapp$
+</code></pre>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cp -R webapp/ dist/
+gerard@builder:~/webapp$
+</code></pre>
+<p>Llegados a este punto, tenemos el siguiente contenido en la carpeta temporal:</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ tree dist -L 1
+dist
+├── bin
+├── gunicorn
+├── gunicorn-21.2.0.dist-info
+├── packaging
+├── packaging-24.0.dist-info
+└── webapp
+
+6 directories, 0 files
+gerard@builder:~/webapp$
+</code></pre>
+<p><strong>TRUCO</strong>: Cuando <strong>gunicorn</strong> importa la aplicación lo hace desde varios <em>pythonpath</em>.
+Si la aplicación no se puede cargar del fichero <code>.zip</code> (por ejemplo, porque no la
+pusimos), puede cargar la misma de la carpeta de trabajo o de otras carpetas selectas.
+Esto hace que podamos tener un <strong>zipapp</strong> sin aplicación, con las dependencias y el
+servidor de aplicaciones, mientras modificamos la aplicación en la misma carpeta&hellip;</p>
+<p>En este momento, solo nos falta saber la función que tenemos que ejecutar para levantar
+el servidor <strong>gunicorn</strong>, que usaremos para autogenerar nuestro <code>__main__.py</code>. Solo hace
+falta mirar el <em>script</em> instalador por <strong>pip</strong> para ver lo que ejecuta el binario <code>gunicorn</code>.</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cat dist/bin/gunicorn
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+import re
+import sys
+from gunicorn.app.wsgiapp import run
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(run())
+gerard@builder:~/webapp$
+</code></pre>
+<p>Vemos que se ejecuta una función <code>run()</code> importada del <em>package</em> <code>gunicorn.app.wsgiapp</code>.
+Entonces, tendremos que empaquetar la aplicación indicando que la función es <code>gunicorn.app.wsgiapp:run</code>.</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ python3 -m zipapp dist/ -o webapp.pyz -m gunicorn.app.wsgiapp:run
+gerard@builder:~/webapp$
+</code></pre>
+<p><strong>NOTA</strong>: No se ha indicado el intérprete de <strong>python</strong>; eso obliga a que la invocación
+se haga especificándolo, por ejemplo, <code>python3 webapp.pyz webapp:app</code>. Como esta
+aplicación se va a desplegar en otra máquina, dejamos que el administrador indique el
+<em>path</em> correcto en destino. Tampoco hemos aplicado el <em>flag</em> de compresión, por brevedad.</p>
+<p>Podemos ver el fichero <code>__main__.py</code> generado descomprimiéndolo de nuestra <strong>zipapp</strong>:</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ unzip webapp.pyz __main__.py
+Archive:  webapp.pyz
+ extracting: __main__.py
+gerard@builder:~/webapp$
+</code></pre>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cat __main__.py
+# -*- coding: utf-8 -*-
+import gunicorn.app.wsgiapp
+gunicorn.app.wsgiapp.run()
+gerard@builder:~/webapp$
+</code></pre>
+<p>Podemos versionar este <code>__main__.py</code> para modificarlo a nuestro antojo; dos modificaciones
+útiles son el añadido del parámetro aplicación (así nuestro administrador no necesita poner,
+ni siquiera conocerlo), y una verificación de la versión de <strong>python</strong> (para ahorrarnos
+desagradables sorpresas si no se cumplen nuestras expectativas). Tras ambas modificaciones,
+me quedo con esto:</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cat __main__.py
+import sys
+import gunicorn.app.wsgiapp
+
+if sys.version_info &lt; (3, 8):
+    raise Exception('Required python &gt;= 3.8')
+
+sys.argv.append('webapp:app')
+gunicorn.app.wsgiapp.run()
+gerard@builder:~/webapp$
+</code></pre>
+<p><strong>WARNING</strong>: No os olvidéis de copiarlo en la carpeta <code>dist/</code>; a partir de ahora, el
+comando de empaquetado no necesitará indicar el <em>flag</em> <code>-m</code>, puesto que el <code>__main__.py</code>
+ya lo ponemos nosotros.</p>
+<pre><code class="language-bash">gerard@builder:~/webapp$ cp __main__.py dist/
+gerard@builder:~/webapp$
+</code></pre>
+<pre><code class="language-bash">gerard@builder:~/webapp$ python3 -m zipapp dist/ -o webapp.pyz
+gerard@builder:~/webapp$
+</code></pre>
+<p>Ahora solo nos queda invocar nuestra aplicación con algo tipo <code>python3 webapp.pyz &lt;otros flags&gt;</code>.
+Esto hace la distribución de nuestra aplicación más cómoda, en la forma de un solo fichero.
+La configuración, sin embargo, deberemos indicarla de otra manera (por ejemplo, con variables
+de entorno o ficheros de configuración en un <em>path</em> conocido fuera del <strong>zipapp</strong>).</p>
+
+
+<p class="footer">Copyright &copy; 2015-2024 | Gerard Monells | <a href="https://github.com/sirtea">GitHub</a></p>
+
+</body>
+</html>
