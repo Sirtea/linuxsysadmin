@@ -29,7 +29,7 @@ slug: "curriculum"
 * M102: MongoDB for DBAs (10gen)
 * M202: MongoDB Advanced Deployment and Operations (10gen)
 * Cloudera Custom Training for Apache Hadoop (Cloudera - presencial)
-* Certificación CKAD (Linux Foundation, validez del 11/2023 al 11/2026)
+* Certificación "CKAD - Certified Kubernetes Application Developer" (Linux Foundation, validez del 11/2023 al 11/2026)
 * Certificación "AWS Certified Database - Specialty" (AWS, validez del 04/2024 al 04/2027)
 
 ---
