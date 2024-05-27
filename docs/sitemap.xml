@@ -3,12 +3,39 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://linuxsysadmin.gerardmb.xyz/archives.html</loc>
-    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/2024/03/breve-introduccion-a-los-ficheros-zipapp-de-python.html</loc>
-    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/categories.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/ferretdb.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mongodb.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tag/proxy.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/2024/05/una-alternativa-a-mongodb-completamente-open-source.html</loc>
+    <lastmod>2024-05-27T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>https://linuxsysadmin.gerardmb.xyz/2024/03/breve-introduccion-a-los-ficheros-zipapp-de-python.html</loc>
     <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/category/desarrollo.html</loc>
@@ -17,26 +44,14 @@
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/gunicorn.html</loc>
     <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/</loc>
-    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/pip.html</loc>
     <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/python.html</loc>
     <lastmod>2024-03-18T00:00:00+00:00</lastmod>
   </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tags.html</loc>
-    <lastmod>2024-03-18T00:00:00+00:00</lastmod>
-  </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/zipapp.html</loc>
     <lastmod>2024-03-18T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/debian.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/linux.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/mariadb.html</loc>
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
@@ -54,9 +69,6 @@
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2024/03/preparando-un-servidor-mariadb-con-phpmyadmin-nginx-y-php-fpm.html</loc>
-    <lastmod>2024-03-02T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/category/sistemas.html</loc>
     <lastmod>2024-03-02T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/balanceador.html</loc>
@@ -297,9 +309,6 @@
     <lastmod>2021-01-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/memoria.html</loc>
-    <lastmod>2020-03-03T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/mongodb.html</loc>
     <lastmod>2020-03-03T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/oom-killer.html</loc>
@@ -612,9 +621,6 @@
     <lastmod>2019-04-05T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/2019/02/forzar-rangos-de-ips-prohibidas-para-docker.html</loc>
-    <lastmod>2019-02-19T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>https://linuxsysadmin.gerardmb.xyz/tag/proxy.html</loc>
     <lastmod>2019-02-19T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://linuxsysadmin.gerardmb.xyz/tag/entropia.html</loc>
