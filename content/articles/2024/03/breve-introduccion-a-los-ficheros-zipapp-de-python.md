@@ -222,7 +222,7 @@ servidor de aplicaciones, mientras modificamos la aplicación en la misma carpet
 
 En este momento, solo nos falta saber la función que tenemos que ejecutar para levantar
 el servidor **gunicorn**, que usaremos para autogenerar nuestro `__main__.py`. Solo hace
-falta mirar el *script* instalador por **pip** para ver lo que ejecuta el binario `gunicorn`.
+falta mirar el *script* instalado por **pip** para ver lo que ejecuta el binario `gunicorn`.
 
 ```bash
 gerard@builder:~/webapp$ cat dist/bin/gunicorn
