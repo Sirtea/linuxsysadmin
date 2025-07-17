@@ -180,8 +180,8 @@ slug: "curriculum"
 | HAproxy            | Medio | -                       |
 | Jenkins            | Medio | -                       |
 | Fabric             | Medio | -                       |
+| Chef               | Medio | -                       |
 | AWS                | Bajo  | -                       |
 | Kibana             | Bajo  | -                       |
 | Splunk             | Bajo  | -                       |
 | Puppet             | Bajo  | -                       |
-| Chef               | Bajo  | -                       |

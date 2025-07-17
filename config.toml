@@ -26,11 +26,15 @@ googleAnalytics = "UA-68486572-1"
   [[menu.main]]
     name = "Sobre mí"
     url = "/about.html"
-    weight = -2
+    weight = -3
   [[menu.main]]
     name = "Curriculum Vitae"
     url = "/curriculum.html"
-    weight = -1
+    weight = -2
+#  [[menu.main]]
+#    name = "Curriculum Vitae (eng)"
+#    url = "/curriculum-eng.html"
+#    weight = -1
   [[menu.main]]
     name = "Cookies"
     url = "/cookies.html"
